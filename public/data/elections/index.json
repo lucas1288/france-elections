@@ -1,0 +1,10 @@
+{
+  "elections": [
+    {
+      "type": "presidential",
+      "year": 2022,
+      "rounds": 2,
+      "label": "Présidentielle 2022"
+    }
+  ]
+}
