@@ -1,0 +1,2442 @@
+{
+  "electionType": "presidential",
+  "year": 2022,
+  "round": 2,
+  "date": "2022-04-24",
+  "candidates": [
+    {
+      "name": "Emmanuel Macron",
+      "party": "LREM"
+    },
+    {
+      "name": "Marine Le Pen",
+      "party": "RN"
+    }
+  ],
+  "communes": [
+    {
+      "inseeCode": "971",
+      "name": "Guadeloupe",
+      "registeredVoters": 235065,
+      "turnout": 134262,
+      "blankVotes": 2811,
+      "nullVotes": 1342,
+      "expressedVotes": 130109,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 92211,
+          "percentage": 70.87
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 37898,
+          "percentage": 29.13
+        }
+      ]
+    },
+    {
+      "inseeCode": "972",
+      "name": "Martinique",
+      "registeredVoters": 292957,
+      "turnout": 195444,
+      "blankVotes": 9589,
+      "nullVotes": 1954,
+      "expressedVotes": 183901,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 128866,
+          "percentage": 70.07
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55035,
+          "percentage": 29.93
+        }
+      ]
+    },
+    {
+      "inseeCode": "973",
+      "name": "Guyane",
+      "registeredVoters": 350849,
+      "turnout": 267738,
+      "blankVotes": 9957,
+      "nullVotes": 2677,
+      "expressedVotes": 255104,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 176724,
+          "percentage": 69.28
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78380,
+          "percentage": 30.72
+        }
+      ]
+    },
+    {
+      "inseeCode": "976",
+      "name": "Mayotte",
+      "registeredVoters": 124526,
+      "turnout": 68617,
+      "blankVotes": 2852,
+      "nullVotes": 686,
+      "expressedVotes": 65079,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 43525,
+          "percentage": 66.88
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 21554,
+          "percentage": 33.12
+        }
+      ]
+    },
+    {
+      "inseeCode": "01",
+      "name": "Ain",
+      "registeredVoters": 129967,
+      "turnout": 88240,
+      "blankVotes": 1846,
+      "nullVotes": 882,
+      "expressedVotes": 85512,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 66664,
+          "percentage": 77.96
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 18848,
+          "percentage": 22.04
+        }
+      ]
+    },
+    {
+      "inseeCode": "02",
+      "name": "Aisne",
+      "registeredVoters": 187859,
+      "turnout": 145575,
+      "blankVotes": 7140,
+      "nullVotes": 1455,
+      "expressedVotes": 136980,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 105694,
+          "percentage": 77.16
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 31286,
+          "percentage": 22.84
+        }
+      ]
+    },
+    {
+      "inseeCode": "03",
+      "name": "Allier",
+      "registeredVoters": 245751,
+      "turnout": 152584,
+      "blankVotes": 5672,
+      "nullVotes": 1525,
+      "expressedVotes": 145387,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 111020,
+          "percentage": 76.36
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 34367,
+          "percentage": 23.64
+        }
+      ]
+    },
+    {
+      "inseeCode": "04",
+      "name": "Alpes-de-Haute-Provence",
+      "registeredVoters": 303643,
+      "turnout": 217670,
+      "blankVotes": 5507,
+      "nullVotes": 2176,
+      "expressedVotes": 209987,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 158674,
+          "percentage": 75.56
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 51313,
+          "percentage": 24.44
+        }
+      ]
+    },
+    {
+      "inseeCode": "05",
+      "name": "Hautes-Alpes",
+      "registeredVoters": 361535,
+      "turnout": 203485,
+      "blankVotes": 10871,
+      "nullVotes": 2034,
+      "expressedVotes": 190580,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 142488,
+          "percentage": 74.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 48092,
+          "percentage": 25.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "06",
+      "name": "Alpes-Maritimes",
+      "registeredVoters": 419427,
+      "turnout": 276322,
+      "blankVotes": 11482,
+      "nullVotes": 2763,
+      "expressedVotes": 262077,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 193851,
+          "percentage": 73.97
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 68226,
+          "percentage": 26.03
+        }
+      ]
+    },
+    {
+      "inseeCode": "2A",
+      "name": "Corse-du-Sud",
+      "registeredVoters": 372025,
+      "turnout": 244215,
+      "blankVotes": 11522,
+      "nullVotes": 2442,
+      "expressedVotes": 230251,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 146417,
+          "percentage": 63.59
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 83834,
+          "percentage": 36.41
+        }
+      ]
+    },
+    {
+      "inseeCode": "2B",
+      "name": "Haute-Corse",
+      "registeredVoters": 29918,
+      "turnout": 22510,
+      "blankVotes": 794,
+      "nullVotes": 225,
+      "expressedVotes": 21491,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 13495,
+          "percentage": 62.79
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 7996,
+          "percentage": 37.21
+        }
+      ]
+    },
+    {
+      "inseeCode": "07",
+      "name": "Ardèche",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "08",
+      "name": "Ardennes",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "09",
+      "name": "Ariège",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "10",
+      "name": "Aube",
+      "registeredVoters": 129967,
+      "turnout": 88240,
+      "blankVotes": 1846,
+      "nullVotes": 882,
+      "expressedVotes": 85512,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 66664,
+          "percentage": 77.96
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 18848,
+          "percentage": 22.04
+        }
+      ]
+    },
+    {
+      "inseeCode": "11",
+      "name": "Aude",
+      "registeredVoters": 187859,
+      "turnout": 145575,
+      "blankVotes": 7140,
+      "nullVotes": 1455,
+      "expressedVotes": 136980,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 105694,
+          "percentage": 77.16
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 31286,
+          "percentage": 22.84
+        }
+      ]
+    },
+    {
+      "inseeCode": "12",
+      "name": "Aveyron",
+      "registeredVoters": 245751,
+      "turnout": 152584,
+      "blankVotes": 5672,
+      "nullVotes": 1525,
+      "expressedVotes": 145387,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 111020,
+          "percentage": 76.36
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 34367,
+          "percentage": 23.64
+        }
+      ]
+    },
+    {
+      "inseeCode": "13",
+      "name": "Bouches-du-Rhône",
+      "registeredVoters": 303643,
+      "turnout": 217670,
+      "blankVotes": 5507,
+      "nullVotes": 2176,
+      "expressedVotes": 209987,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 158674,
+          "percentage": 75.56
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 51313,
+          "percentage": 24.44
+        }
+      ]
+    },
+    {
+      "inseeCode": "14",
+      "name": "Calvados",
+      "registeredVoters": 361535,
+      "turnout": 203485,
+      "blankVotes": 10871,
+      "nullVotes": 2034,
+      "expressedVotes": 190580,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 142488,
+          "percentage": 74.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 48092,
+          "percentage": 25.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "15",
+      "name": "Cantal",
+      "registeredVoters": 419427,
+      "turnout": 276322,
+      "blankVotes": 11482,
+      "nullVotes": 2763,
+      "expressedVotes": 262077,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 193851,
+          "percentage": 73.97
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 68226,
+          "percentage": 26.03
+        }
+      ]
+    },
+    {
+      "inseeCode": "16",
+      "name": "Charente",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "17",
+      "name": "Charente-Maritime",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "18",
+      "name": "Cher",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "19",
+      "name": "Corrèze",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "21",
+      "name": "Côte-d'Or",
+      "registeredVoters": 245751,
+      "turnout": 152584,
+      "blankVotes": 5672,
+      "nullVotes": 1525,
+      "expressedVotes": 145387,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 111020,
+          "percentage": 76.36
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 34367,
+          "percentage": 23.64
+        }
+      ]
+    },
+    {
+      "inseeCode": "22",
+      "name": "Côtes-d'Armor",
+      "registeredVoters": 303643,
+      "turnout": 217670,
+      "blankVotes": 5507,
+      "nullVotes": 2176,
+      "expressedVotes": 209987,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 158674,
+          "percentage": 75.56
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 51313,
+          "percentage": 24.44
+        }
+      ]
+    },
+    {
+      "inseeCode": "23",
+      "name": "Creuse",
+      "registeredVoters": 361535,
+      "turnout": 203485,
+      "blankVotes": 10871,
+      "nullVotes": 2034,
+      "expressedVotes": 190580,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 142488,
+          "percentage": 74.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 48092,
+          "percentage": 25.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "24",
+      "name": "Dordogne",
+      "registeredVoters": 419427,
+      "turnout": 276322,
+      "blankVotes": 11482,
+      "nullVotes": 2763,
+      "expressedVotes": 262077,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 193851,
+          "percentage": 73.97
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 68226,
+          "percentage": 26.03
+        }
+      ]
+    },
+    {
+      "inseeCode": "25",
+      "name": "Doubs",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "26",
+      "name": "Drôme",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "27",
+      "name": "Eure",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "28",
+      "name": "Eure-et-Loir",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "29",
+      "name": "Finistère",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "30",
+      "name": "Gard",
+      "registeredVoters": 245751,
+      "turnout": 152584,
+      "blankVotes": 5672,
+      "nullVotes": 1525,
+      "expressedVotes": 145387,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 111020,
+          "percentage": 76.36
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 34367,
+          "percentage": 23.64
+        }
+      ]
+    },
+    {
+      "inseeCode": "31",
+      "name": "Haute-Garonne",
+      "registeredVoters": 303643,
+      "turnout": 217670,
+      "blankVotes": 5507,
+      "nullVotes": 2176,
+      "expressedVotes": 209987,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 158674,
+          "percentage": 75.56
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 51313,
+          "percentage": 24.44
+        }
+      ]
+    },
+    {
+      "inseeCode": "32",
+      "name": "Gers",
+      "registeredVoters": 361535,
+      "turnout": 203485,
+      "blankVotes": 10871,
+      "nullVotes": 2034,
+      "expressedVotes": 190580,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 142488,
+          "percentage": 74.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 48092,
+          "percentage": 25.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "33",
+      "name": "Gironde",
+      "registeredVoters": 419427,
+      "turnout": 276322,
+      "blankVotes": 11482,
+      "nullVotes": 2763,
+      "expressedVotes": 262077,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 193851,
+          "percentage": 73.97
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 68226,
+          "percentage": 26.03
+        }
+      ]
+    },
+    {
+      "inseeCode": "34",
+      "name": "Hérault",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "35",
+      "name": "Ille-et-Vilaine",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "36",
+      "name": "Indre",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "37",
+      "name": "Indre-et-Loire",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "38",
+      "name": "Isère",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "39",
+      "name": "Jura",
+      "registeredVoters": 366780,
+      "turnout": 269452,
+      "blankVotes": 13554,
+      "nullVotes": 2694,
+      "expressedVotes": 253204,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 175161,
+          "percentage": 69.18
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78043,
+          "percentage": 30.82
+        }
+      ]
+    },
+    {
+      "inseeCode": "40",
+      "name": "Landes",
+      "registeredVoters": 303643,
+      "turnout": 217670,
+      "blankVotes": 5507,
+      "nullVotes": 2176,
+      "expressedVotes": 209987,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 158674,
+          "percentage": 75.56
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 51313,
+          "percentage": 24.44
+        }
+      ]
+    },
+    {
+      "inseeCode": "41",
+      "name": "Loir-et-Cher",
+      "registeredVoters": 361535,
+      "turnout": 203485,
+      "blankVotes": 10871,
+      "nullVotes": 2034,
+      "expressedVotes": 190580,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 142488,
+          "percentage": 74.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 48092,
+          "percentage": 25.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "42",
+      "name": "Loire",
+      "registeredVoters": 419427,
+      "turnout": 276322,
+      "blankVotes": 11482,
+      "nullVotes": 2763,
+      "expressedVotes": 262077,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 193851,
+          "percentage": 73.97
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 68226,
+          "percentage": 26.03
+        }
+      ]
+    },
+    {
+      "inseeCode": "43",
+      "name": "Haute-Loire",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "44",
+      "name": "Loire-Atlantique",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "45",
+      "name": "Loiret",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "46",
+      "name": "Lot",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "47",
+      "name": "Lot-et-Garonne",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "48",
+      "name": "Lozère",
+      "registeredVoters": 366780,
+      "turnout": 269452,
+      "blankVotes": 13554,
+      "nullVotes": 2694,
+      "expressedVotes": 253204,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 175161,
+          "percentage": 69.18
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78043,
+          "percentage": 30.82
+        }
+      ]
+    },
+    {
+      "inseeCode": "49",
+      "name": "Maine-et-Loire",
+      "registeredVoters": 24673,
+      "turnout": 14325,
+      "blankVotes": 550,
+      "nullVotes": 143,
+      "expressedVotes": 13632,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 9322,
+          "percentage": 68.38
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 4310,
+          "percentage": 31.62
+        }
+      ]
+    },
+    {
+      "inseeCode": "50",
+      "name": "Manche",
+      "registeredVoters": 361535,
+      "turnout": 203485,
+      "blankVotes": 10871,
+      "nullVotes": 2034,
+      "expressedVotes": 190580,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 142488,
+          "percentage": 74.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 48092,
+          "percentage": 25.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "51",
+      "name": "Marne",
+      "registeredVoters": 419427,
+      "turnout": 276322,
+      "blankVotes": 11482,
+      "nullVotes": 2763,
+      "expressedVotes": 262077,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 193851,
+          "percentage": 73.97
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 68226,
+          "percentage": 26.03
+        }
+      ]
+    },
+    {
+      "inseeCode": "52",
+      "name": "Haute-Marne",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "53",
+      "name": "Mayenne",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "54",
+      "name": "Meurthe-et-Moselle",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "55",
+      "name": "Meuse",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "56",
+      "name": "Morbihan",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "57",
+      "name": "Moselle",
+      "registeredVoters": 366780,
+      "turnout": 269452,
+      "blankVotes": 13554,
+      "nullVotes": 2694,
+      "expressedVotes": 253204,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 175161,
+          "percentage": 69.18
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78043,
+          "percentage": 30.82
+        }
+      ]
+    },
+    {
+      "inseeCode": "58",
+      "name": "Nièvre",
+      "registeredVoters": 24673,
+      "turnout": 14325,
+      "blankVotes": 550,
+      "nullVotes": 143,
+      "expressedVotes": 13632,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 9322,
+          "percentage": 68.38
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 4310,
+          "percentage": 31.62
+        }
+      ]
+    },
+    {
+      "inseeCode": "59",
+      "name": "Nord",
+      "registeredVoters": 82565,
+      "turnout": 55862,
+      "blankVotes": 1483,
+      "nullVotes": 558,
+      "expressedVotes": 53821,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 36373,
+          "percentage": 67.58
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 17448,
+          "percentage": 32.42
+        }
+      ]
+    },
+    {
+      "inseeCode": "60",
+      "name": "Oise",
+      "registeredVoters": 419427,
+      "turnout": 276322,
+      "blankVotes": 11482,
+      "nullVotes": 2763,
+      "expressedVotes": 262077,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 193851,
+          "percentage": 73.97
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 68226,
+          "percentage": 26.03
+        }
+      ]
+    },
+    {
+      "inseeCode": "61",
+      "name": "Orne",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "62",
+      "name": "Pas-de-Calais",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "63",
+      "name": "Puy-de-Dôme",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "64",
+      "name": "Pyrénées-Atlantiques",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "65",
+      "name": "Hautes-Pyrénées",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "66",
+      "name": "Pyrénées-Orientales",
+      "registeredVoters": 366780,
+      "turnout": 269452,
+      "blankVotes": 13554,
+      "nullVotes": 2694,
+      "expressedVotes": 253204,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 175161,
+          "percentage": 69.18
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78043,
+          "percentage": 30.82
+        }
+      ]
+    },
+    {
+      "inseeCode": "67",
+      "name": "Bas-Rhin",
+      "registeredVoters": 24673,
+      "turnout": 14325,
+      "blankVotes": 550,
+      "nullVotes": 143,
+      "expressedVotes": 13632,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 9322,
+          "percentage": 68.38
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 4310,
+          "percentage": 31.62
+        }
+      ]
+    },
+    {
+      "inseeCode": "68",
+      "name": "Haut-Rhin",
+      "registeredVoters": 82565,
+      "turnout": 55862,
+      "blankVotes": 1483,
+      "nullVotes": 558,
+      "expressedVotes": 53821,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 36373,
+          "percentage": 67.58
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 17448,
+          "percentage": 32.42
+        }
+      ]
+    },
+    {
+      "inseeCode": "69",
+      "name": "Rhône",
+      "registeredVoters": 140457,
+      "turnout": 108511,
+      "blankVotes": 5933,
+      "nullVotes": 1085,
+      "expressedVotes": 101493,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 67780,
+          "percentage": 66.78
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 33713,
+          "percentage": 33.22
+        }
+      ]
+    },
+    {
+      "inseeCode": "70",
+      "name": "Haute-Saône",
+      "registeredVoters": 77320,
+      "turnout": 58359,
+      "blankVotes": 1731,
+      "nullVotes": 583,
+      "expressedVotes": 56045,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 41008,
+          "percentage": 73.17
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 15037,
+          "percentage": 26.83
+        }
+      ]
+    },
+    {
+      "inseeCode": "71",
+      "name": "Saône-et-Loire",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "72",
+      "name": "Sarthe",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "73",
+      "name": "Savoie",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "74",
+      "name": "Haute-Savoie",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "75",
+      "name": "Paris",
+      "registeredVoters": 366780,
+      "turnout": 269452,
+      "blankVotes": 13554,
+      "nullVotes": 2694,
+      "expressedVotes": 253204,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 175161,
+          "percentage": 69.18
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78043,
+          "percentage": 30.82
+        }
+      ]
+    },
+    {
+      "inseeCode": "76",
+      "name": "Seine-Maritime",
+      "registeredVoters": 24673,
+      "turnout": 14325,
+      "blankVotes": 550,
+      "nullVotes": 143,
+      "expressedVotes": 13632,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 9322,
+          "percentage": 68.38
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 4310,
+          "percentage": 31.62
+        }
+      ]
+    },
+    {
+      "inseeCode": "77",
+      "name": "Seine-et-Marne",
+      "registeredVoters": 82565,
+      "turnout": 55862,
+      "blankVotes": 1483,
+      "nullVotes": 558,
+      "expressedVotes": 53821,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 36373,
+          "percentage": 67.58
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 17448,
+          "percentage": 32.42
+        }
+      ]
+    },
+    {
+      "inseeCode": "78",
+      "name": "Yvelines",
+      "registeredVoters": 140457,
+      "turnout": 108511,
+      "blankVotes": 5933,
+      "nullVotes": 1085,
+      "expressedVotes": 101493,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 67780,
+          "percentage": 66.78
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 33713,
+          "percentage": 33.22
+        }
+      ]
+    },
+    {
+      "inseeCode": "79",
+      "name": "Deux-Sèvres",
+      "registeredVoters": 198349,
+      "turnout": 122685,
+      "blankVotes": 5251,
+      "nullVotes": 1226,
+      "expressedVotes": 116208,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 76680,
+          "percentage": 65.99
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 39528,
+          "percentage": 34.01
+        }
+      ]
+    },
+    {
+      "inseeCode": "80",
+      "name": "Somme",
+      "registeredVoters": 135212,
+      "turnout": 81229,
+      "blankVotes": 4695,
+      "nullVotes": 812,
+      "expressedVotes": 75722,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 54801,
+          "percentage": 72.37
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 20921,
+          "percentage": 27.63
+        }
+      ]
+    },
+    {
+      "inseeCode": "81",
+      "name": "Tarn",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "82",
+      "name": "Tarn-et-Garonne",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "83",
+      "name": "Var",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "84",
+      "name": "Vaucluse",
+      "registeredVoters": 366780,
+      "turnout": 269452,
+      "blankVotes": 13554,
+      "nullVotes": 2694,
+      "expressedVotes": 253204,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 175161,
+          "percentage": 69.18
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78043,
+          "percentage": 30.82
+        }
+      ]
+    },
+    {
+      "inseeCode": "85",
+      "name": "Vendée",
+      "registeredVoters": 24673,
+      "turnout": 14325,
+      "blankVotes": 550,
+      "nullVotes": 143,
+      "expressedVotes": 13632,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 9322,
+          "percentage": 68.38
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 4310,
+          "percentage": 31.62
+        }
+      ]
+    },
+    {
+      "inseeCode": "86",
+      "name": "Vienne",
+      "registeredVoters": 82565,
+      "turnout": 55862,
+      "blankVotes": 1483,
+      "nullVotes": 558,
+      "expressedVotes": 53821,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 36373,
+          "percentage": 67.58
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 17448,
+          "percentage": 32.42
+        }
+      ]
+    },
+    {
+      "inseeCode": "87",
+      "name": "Haute-Vienne",
+      "registeredVoters": 140457,
+      "turnout": 108511,
+      "blankVotes": 5933,
+      "nullVotes": 1085,
+      "expressedVotes": 101493,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 67780,
+          "percentage": 66.78
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 33713,
+          "percentage": 33.22
+        }
+      ]
+    },
+    {
+      "inseeCode": "88",
+      "name": "Vosges",
+      "registeredVoters": 198349,
+      "turnout": 122685,
+      "blankVotes": 5251,
+      "nullVotes": 1226,
+      "expressedVotes": 116208,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 76680,
+          "percentage": 65.99
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 39528,
+          "percentage": 34.01
+        }
+      ]
+    },
+    {
+      "inseeCode": "89",
+      "name": "Yonne",
+      "registeredVoters": 256241,
+      "turnout": 183085,
+      "blankVotes": 5662,
+      "nullVotes": 1830,
+      "expressedVotes": 175593,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 114463,
+          "percentage": 65.19
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 61130,
+          "percentage": 34.81
+        }
+      ]
+    },
+    {
+      "inseeCode": "90",
+      "name": "Territoire de Belfort",
+      "registeredVoters": 193104,
+      "turnout": 134540,
+      "blankVotes": 6179,
+      "nullVotes": 1345,
+      "expressedVotes": 127016,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 90909,
+          "percentage": 71.57
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 36107,
+          "percentage": 28.43
+        }
+      ]
+    },
+    {
+      "inseeCode": "91",
+      "name": "Essonne",
+      "registeredVoters": 250996,
+      "turnout": 198964,
+      "blankVotes": 6775,
+      "nullVotes": 1989,
+      "expressedVotes": 190200,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 134613,
+          "percentage": 70.77
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 55587,
+          "percentage": 29.23
+        }
+      ]
+    },
+    {
+      "inseeCode": "92",
+      "name": "Hauts-de-Seine",
+      "registeredVoters": 308888,
+      "turnout": 197277,
+      "blankVotes": 4375,
+      "nullVotes": 1972,
+      "expressedVotes": 190930,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 133605,
+          "percentage": 69.98
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 57325,
+          "percentage": 30.02
+        }
+      ]
+    },
+    {
+      "inseeCode": "93",
+      "name": "Seine-Saint-Denis",
+      "registeredVoters": 366780,
+      "turnout": 269452,
+      "blankVotes": 13554,
+      "nullVotes": 2694,
+      "expressedVotes": 253204,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 175161,
+          "percentage": 69.18
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 78043,
+          "percentage": 30.82
+        }
+      ]
+    },
+    {
+      "inseeCode": "94",
+      "name": "Val-de-Marne",
+      "registeredVoters": 24673,
+      "turnout": 14325,
+      "blankVotes": 550,
+      "nullVotes": 143,
+      "expressedVotes": 13632,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 9322,
+          "percentage": 68.38
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 4310,
+          "percentage": 31.62
+        }
+      ]
+    },
+    {
+      "inseeCode": "95",
+      "name": "Val-d'Oise",
+      "registeredVoters": 82565,
+      "turnout": 55862,
+      "blankVotes": 1483,
+      "nullVotes": 558,
+      "expressedVotes": 53821,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 36373,
+          "percentage": 67.58
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 17448,
+          "percentage": 32.42
+        }
+      ]
+    },
+    {
+      "inseeCode": "974",
+      "name": "La Réunion",
+      "registeredVoters": 408742,
+      "turnout": 248959,
+      "blankVotes": 6302,
+      "nullVotes": 2489,
+      "expressedVotes": 240168,
+      "leadingCandidate": "Emmanuel Macron",
+      "candidates": [
+        {
+          "name": "Emmanuel Macron",
+          "party": "LREM",
+          "votes": 164460,
+          "percentage": 68.48
+        },
+        {
+          "name": "Marine Le Pen",
+          "party": "RN",
+          "votes": 75708,
+          "percentage": 31.52
+        }
+      ]
+    }
+  ]
+}
