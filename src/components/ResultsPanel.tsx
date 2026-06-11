@@ -23,6 +23,15 @@ function fmtInt(n: number) {
   return n.toLocaleString('fr-FR')
 }
 
+// Overseas commune codes: 5 digits starting with 97x or 98x.
+// The corresponding département code is the first 3 digits.
+function overseasDeptCode(code: string): string | null {
+  if (code.length === 5 && (code.startsWith('97') || code.startsWith('98'))) {
+    return code.slice(0, 3)
+  }
+  return null
+}
+
 export function ResultsPanel({ electionData, communeData, communeChoro, circoData, circoChoro, granularity, circoAvailable }: Props) {
   const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget } = useElectionStore()
 
@@ -31,15 +40,25 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
   const commune = (() => {
     if (!activeCode) return null
     if (granularity === 'commune' && communeData) {
-      return communeData.communes.find((c) => c.inseeCode === activeCode)
+      const direct = communeData.communes.find((c) => c.inseeCode === activeCode)
         ?? electionData?.communes.find((c) => c.inseeCode === activeCode)
-        ?? null
+      if (direct) return direct
+      // Overseas commune fallback: use département-level data
+      const deptCode = overseasDeptCode(activeCode)
+      return deptCode ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null) : null
     }
     if (granularity === 'circonscription' && circoData) {
       return circoData.communes.find((c) => c.inseeCode === activeCode) ?? null
     }
     return electionData?.communes.find((c) => c.inseeCode === activeCode) ?? null
   })()
+
+  // True when we're showing département-level data as a fallback for an overseas commune click
+  const isOverseasFallback =
+    commune !== null &&
+    activeCode !== null &&
+    overseasDeptCode(activeCode) !== null &&
+    commune.inseeCode !== activeCode
 
   if (!commune) {
     const hint =
@@ -219,6 +238,16 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
         <p className="mt-0.5 text-base font-bold text-gray-900">{commune.name}</p>
         <p className="text-xs text-gray-500">INSEE {commune.inseeCode}</p>
       </div>
+
+      {/* Overseas fallback notice */}
+      {isOverseasFallback && (
+        <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-100">
+          <p className="text-xs text-amber-700 leading-relaxed">
+            Les données par commune pour les départements et territoires d'outre-mer n'ont pas été
+            rendues disponibles par le ministère de l'Intérieur. Résultats affichés au niveau du département.
+          </p>
+        </div>
+      )}
 
       {/* Turnout */}
       <div className="p-4 border-b border-gray-100 space-y-1">
