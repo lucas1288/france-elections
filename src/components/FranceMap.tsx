@@ -6,6 +6,7 @@ import type { ChoroplethData } from '../hooks/useElectionData'
 import { useElectionStore } from '../store/electionStore'
 import { getCandidateColor } from '../utils/partyColors'
 import { OverseasInsets } from './OverseasInsets'
+import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 
 interface Props {
   electionData: RoundData | undefined
@@ -74,6 +75,7 @@ function makeStyle(): maplibregl.StyleSpecification {
 
   return {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
       admin: {
         type: 'vector',
@@ -89,6 +91,17 @@ function makeStyle(): maplibregl.StyleSpecification {
         type: 'geojson',
         data: '/data/geo/overseas.geojson',
         promoteId: 'code',
+      },
+      'top-cities-points': {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: TOP_CITIES.map((city) => ({
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: [city.lng, city.lat] },
+            properties: { name: city.name, population: city.population },
+          })),
+        },
       },
     },
     layers: [
@@ -118,6 +131,24 @@ function makeStyle(): maplibregl.StyleSpecification {
         layout: { visibility: 'none' },
         paint: { 'line-color': '#94a3b8', 'line-width': 0.3, 'line-opacity': 0.5 } },
 
+      // Top-30 city boundaries — white halo + black line so it reads on any election color
+      { id: 'top-cities-highlight-bg', type: 'line', source: 'admin', 'source-layer': 'communes',
+        filter: ['match', ['id'], TOP_CITY_CODES, true, false],
+        minzoom: 5,
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 5, 12, 9],
+          'line-opacity': 0.6,
+        } },
+      { id: 'top-cities-highlight', type: 'line', source: 'admin', 'source-layer': 'communes',
+        filter: ['match', ['id'], TOP_CITY_CODES, true, false],
+        minzoom: 5,
+        paint: {
+          'line-color': '#000000',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 5, 2.5, 12, 5],
+          'line-opacity': 0.9,
+        } },
+
       // Département outlines — always visible as reference, slightly thicker than sub-layers
       { id: 'dept-outline', type: 'line', source: 'admin', 'source-layer': 'departements',
         paint: outlinePaint(1.4) },
@@ -125,6 +156,23 @@ function makeStyle(): maplibregl.StyleSpecification {
       // Circonscription outlines — shown when circo layer is active
       { id: 'circo-outline', type: 'line', source: 'circo', 'source-layer': 'circonscriptions',
         layout: { visibility: 'none' }, paint: outlinePaint(0.7) },
+
+      // Top-30 city labels — on top of everything for orientation at any zoom
+      { id: 'top-cities-labels', type: 'symbol', source: 'top-cities-points',
+        minzoom: 5,
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 5, 10, 10, 14],
+          'text-anchor': 'center',
+          'text-allow-overlap': false,
+          'symbol-sort-key': ['*', -1, ['get', 'population']],
+        },
+        paint: {
+          'text-color': '#0f172a',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 1.5,
+        } },
     ],
   }
 }
@@ -172,6 +220,21 @@ function applyChoroplethColors(map: maplibregl.Map, choropleth: ChoroplethData) 
   }
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function getFeatureBounds(geometry: GeoJSON.Geometry): maplibregl.LngLatBoundsLike | null {
+  const coords: number[][] = []
+  if (geometry.type === 'Polygon') {
+    geometry.coordinates[0].forEach((c) => coords.push(c))
+  } else if (geometry.type === 'MultiPolygon') {
+    geometry.coordinates.forEach((poly) => poly[0].forEach((c) => coords.push(c)))
+  }
+  if (!coords.length) return null
+  const lngs = coords.map((c) => c[0])
+  const lats = coords.map((c) => c[1])
+  return [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]]
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type SourceLayer = 'communes' | 'departements' | 'circonscriptions'
@@ -190,7 +253,7 @@ export function FranceMap({ electionData, choroplethData }: Props) {
     sourceLayer: 'departements', source: 'admin',
   })
 
-  const { setHoveredCommune, setClickedCommune, clickedCommune, focusedTerritory, setFocusedTerritory } = useElectionStore()
+  const { setHoveredCommune, setClickedCommune, clickedCommune, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget } = useElectionStore()
 
   // ── Map initialisation (runs once) ──────────────────────────────────────────
   useEffect(() => {
@@ -270,17 +333,22 @@ export function FranceMap({ electionData, choroplethData }: Props) {
     map.on('mouseleave', 'overseas-fill', handleMouseLeave)
 
     // ── Click handlers ────────────────────────────────────────────────────────
-    const makeClickHandler = (sourceLayer: SourceLayer, source: 'admin' | 'circo') =>
+    const makeClickHandler = (sourceLayer: SourceLayer, source: 'admin' | 'circo', zoomOnClick = false) =>
       (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
-        const id = String(e.features?.[0]?.id ?? '')
+        const feature = e.features?.[0]
+        const id = String(feature?.id ?? '')
         if (id) {
           clickedSourceLayerRef.current = { sourceLayer, source }
           setClickedCommune(id)
+          if (zoomOnClick && feature?.geometry) {
+            const bounds = getFeatureBounds(feature.geometry)
+            if (bounds) map.fitBounds(bounds, { padding: 60, duration: 800, maxZoom: 12 })
+          }
         }
       }
 
-    map.on('click', 'dept-fill', makeClickHandler('departements', 'admin'))
-    map.on('click', 'communes-fill', makeClickHandler('communes', 'admin'))
+    map.on('click', 'dept-fill', makeClickHandler('departements', 'admin', true))
+    map.on('click', 'communes-fill', makeClickHandler('communes', 'admin', true))
     map.on('click', 'circo-fill', makeClickHandler('circonscriptions', 'circo'))
     map.on('click', 'overseas-fill', makeClickHandler('departements', 'admin'))
 
@@ -331,6 +399,14 @@ export function FranceMap({ electionData, choroplethData }: Props) {
     }
   }, [focusedTerritory])
 
+  // ── Fly to programmatic target (e.g. city list click) ────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !flyTarget) return
+    map.flyTo({ center: [flyTarget.lng, flyTarget.lat], zoom: flyTarget.zoom, duration: 800 })
+    setFlyTarget(null)
+  }, [flyTarget, setFlyTarget])
+
   // ── Sync Zustand selected → MapLibre feature state ─────────────────────────
   useEffect(() => {
     const map = mapRef.current
@@ -354,7 +430,12 @@ export function FranceMap({ electionData, choroplethData }: Props) {
   return (
     <div className="h-full w-full relative">
       <div ref={containerRef} className="h-full w-full" />
-      <OverseasInsets electionData={electionData} />
+      <div
+        className="transition-opacity duration-300"
+        style={{ opacity: (!clickedCommune || clickedCommune === '99') && !focusedTerritory ? 1 : 0, pointerEvents: (!clickedCommune || clickedCommune === '99') && !focusedTerritory ? 'auto' : 'none' }}
+      >
+        <OverseasInsets electionData={electionData} />
+      </div>
       {focusedTerritory && (
         <button
           className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded px-2 py-1 shadow-sm"
@@ -363,12 +444,15 @@ export function FranceMap({ electionData, choroplethData }: Props) {
           ← France métropolitaine
         </button>
       )}
-      {clickedCommune && (
+      {clickedCommune && !focusedTerritory && (
         <button
-          className="absolute top-3 right-14 z-10 text-xs text-gray-400 hover:text-gray-600 bg-white border border-gray-200 rounded px-2 py-1 shadow-sm"
-          onClick={() => setClickedCommune(null)}
+          className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded px-2 py-1 shadow-sm"
+          onClick={() => {
+            setClickedCommune(null)
+            mapRef.current?.fitBounds(METRO_BOUNDS, { padding: 40, duration: 800 })
+          }}
         >
-          ✕ Désélectionner
+          ← Vue générale
         </button>
       )}
     </div>

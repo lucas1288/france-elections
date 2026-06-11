@@ -5,6 +5,7 @@ import { FranceMap } from './components/FranceMap'
 import { ElectionSelector } from './components/ElectionSelector'
 import { ResultsPanel } from './components/ResultsPanel'
 import { Legend } from './components/Legend'
+import { AbroadMap } from './components/AbroadMap'
 
 function GranularityToggle({
   value,
@@ -35,7 +36,6 @@ function GranularityToggle({
 
   return (
     <div className="flex items-center gap-1 border border-gray-200 rounded p-0.5 bg-gray-50">
-      {btn('departement', 'Département', true)}
       {btn('commune', 'Commune', communeAvailable)}
       {btn('circonscription', 'Circonscription', circoAvailable)}
     </div>
@@ -43,7 +43,7 @@ function GranularityToggle({
 }
 
 export default function App() {
-  const { selected, granularity, setGranularity } = useElectionStore()
+  const { selected, granularity, setGranularity, clickedCommune, focusedTerritory } = useElectionStore()
   const electionQuery = useElectionData(selected.type, selected.year, selected.round)
   const choroplethQuery = useChoroplethData(selected.type, selected.year, selected.round)
   const circoQuery = useCircoChoroplethData(selected.type, selected.year, selected.round)
@@ -60,9 +60,7 @@ export default function App() {
   const circoAvailable = !!circoQuery.data
 
   const effectiveChoropleth =
-    granularity === 'commune' ? (choroplethQuery.data ?? null) :
-    granularity === 'circonscription' ? (circoQuery.data ?? null) :
-    null
+    granularity === 'commune' ? (choroplethQuery.data ?? null) : (circoQuery.data ?? null)
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -74,9 +72,7 @@ export default function App() {
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">
             Résultats par {
-              granularity === 'commune' && communeAvailable ? 'commune' :
-              granularity === 'circonscription' && circoAvailable ? 'circonscription' :
-              'département'
+              granularity === 'circonscription' && circoAvailable ? 'circonscription' : 'commune'
             }
           </p>
         </div>
@@ -113,14 +109,32 @@ export default function App() {
           )}
 
           <FranceMap electionData={electionQuery.data} choroplethData={effectiveChoropleth} />
-          <Legend electionData={electionQuery.data} />
+          {/* Top-right overlay: legend + abroad panel stacked */}
+          <div className="absolute top-4 right-14 z-10 flex flex-col gap-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            <Legend electionData={electionQuery.data} />
+            <div
+              className="transition-opacity duration-300"
+              style={{
+                opacity: (!clickedCommune || clickedCommune === '99') && !focusedTerritory ? 1 : 0,
+                pointerEvents: (!clickedCommune || clickedCommune === '99') && !focusedTerritory ? 'auto' : 'none',
+              }}
+            >
+              <AbroadMap
+                electionData={electionQuery.data}
+                circoChoro={circoQuery.data ?? null}
+                granularity={granularity}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Sidebar */}
         <ResultsPanel
           electionData={electionQuery.data}
           communeData={fullCommuneQuery.data ?? null}
+          communeChoro={choroplethQuery.data ?? null}
           circoData={fullCircoQuery.data ?? null}
+          circoChoro={circoQuery.data ?? null}
           granularity={granularity}
           circoAvailable={circoAvailable}
         />

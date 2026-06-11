@@ -18,6 +18,8 @@
     "pmtiles": "^4.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
@@ -26,6 +28,8 @@
     "@types/d3-scale-chromatic": "^3.0.3",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.1",
