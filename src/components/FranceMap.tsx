@@ -7,6 +7,7 @@ import { useElectionStore } from '../store/electionStore'
 import { getCandidateColor } from '../utils/partyColors'
 import { OverseasInsets } from './OverseasInsets'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
+import { ADMIN_CENTERS } from '../utils/adminCenters'
 
 interface Props {
   electionData: RoundData | undefined
@@ -92,14 +93,26 @@ function makeStyle(): maplibregl.StyleSpecification {
         data: '/data/geo/overseas.geojson',
         promoteId: 'code',
       },
+      'admin-centers': {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: ADMIN_CENTERS.map((c) => ({
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: [c.lng, c.lat] },
+            properties: { name: c.name, type: c.type },
+          })),
+        },
+      },
       'top-cities-points': {
         type: 'geojson',
+        promoteId: 'inseeCode',
         data: {
           type: 'FeatureCollection',
           features: TOP_CITIES.map((city) => ({
             type: 'Feature' as const,
             geometry: { type: 'Point' as const, coordinates: [city.lng, city.lat] },
-            properties: { name: city.name, population: city.population },
+            properties: { name: city.name, population: city.population, inseeCode: city.inseeCode },
           })),
         },
       },
@@ -157,9 +170,60 @@ function makeStyle(): maplibregl.StyleSpecification {
       { id: 'circo-outline', type: 'line', source: 'circo', 'source-layer': 'circonscriptions',
         layout: { visibility: 'none' }, paint: outlinePaint(0.7) },
 
+      // Top-30 city dots — colored by leading candidate, visible only at low zoom in commune mode
+      { id: 'city-dots', type: 'circle', source: 'top-cities-points',
+        maxzoom: 8,
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 7, 9],
+          'circle-color': ['coalesce', ['feature-state', 'color'], '#e2e8f0'],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 6, 1, 8, 0],
+          'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 6, 1, 8, 0],
+        } },
+
+      // Préfecture labels — commune mode, zoom ≥ 8
+      { id: 'prefecture-labels', type: 'symbol', source: 'admin-centers',
+        minzoom: 8,
+        filter: ['==', ['get', 'type'], 'prefecture'],
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 8, 10, 12, 13],
+          'text-anchor': 'center',
+          'text-allow-overlap': false,
+          'symbol-sort-key': 0,
+          visibility: 'none',
+        },
+        paint: {
+          'text-color': '#1e293b',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 1.5,
+        } },
+
+      // Sous-préfecture labels — commune mode, zoom ≥ 10
+      { id: 'sous-prefecture-labels', type: 'symbol', source: 'admin-centers',
+        minzoom: 10,
+        filter: ['==', ['get', 'type'], 'sous-prefecture'],
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 10, 9, 13, 11],
+          'text-anchor': 'center',
+          'text-allow-overlap': false,
+          'symbol-sort-key': 1,
+          visibility: 'none',
+        },
+        paint: {
+          'text-color': '#475569',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 1.2,
+        } },
+
       // Top-30 city labels — on top of everything for orientation at any zoom
       { id: 'top-cities-labels', type: 'symbol', source: 'top-cities-points',
-        minzoom: 5,
+        minzoom: 8,
         layout: {
           'text-field': ['get', 'name'],
           'text-font': ['Open Sans Bold'],
@@ -194,8 +258,9 @@ function applyDeptColors(map: maplibregl.Map, electionData: RoundData) {
 }
 
 // Our CIRLG parser produces INSEE-derived codes (e.g. '97101') but the circo PMTiles
-// uses the original Z-codes from the data.gouv.fr GeoJSON (e.g. 'ZA01'). Translate
-// before calling setFeatureState so overseas circos get colored correctly.
+// uses the original Z-codes from the data.gouv.fr GeoJSON (e.g. 'ZA01'). We need
+// both directions: INSEE→Zcode for setFeatureState (coloring), Zcode→INSEE for clicks
+// (so ResultsPanel can find results in the JSON data).
 const INSEE_TO_CIRCO_ZCODE: Record<string, string> = {
   '97101': 'ZA01', '97102': 'ZA02', '97103': 'ZA03', '97104': 'ZA04',
   '97201': 'ZB01', '97202': 'ZB02', '97203': 'ZB03', '97204': 'ZB04',
@@ -205,6 +270,9 @@ const INSEE_TO_CIRCO_ZCODE: Record<string, string> = {
   '97501': 'ZS01',
   '97601': 'ZM01', '97602': 'ZM02',
 }
+const CIRCO_ZCODE_TO_INSEE: Record<string, string> = Object.fromEntries(
+  Object.entries(INSEE_TO_CIRCO_ZCODE).map(([insee, zcode]) => [zcode, insee])
+)
 
 function applyChoroplethColors(map: maplibregl.Map, choropleth: ChoroplethData) {
   const parties = partyByName(choropleth.candidates)
@@ -283,11 +351,24 @@ export function FranceMap({ electionData, choroplethData }: Props) {
       if (choroplethRef.current) {
         applyChoroplethColors(map, choroplethRef.current)
         const isCirco = choroplethRef.current.granularity === 'circonscription'
+        const isCommune = choroplethRef.current.granularity === 'commune'
         if (isCirco) {
           map.setLayoutProperty('circo-fill', 'visibility', 'visible')
           map.setLayoutProperty('circo-outline', 'visibility', 'visible')
-        } else {
+        } else if (isCommune) {
           map.setLayoutProperty('communes-fill', 'visibility', 'visible')
+          map.setLayoutProperty('city-dots', 'visibility', 'visible')
+          map.setLayoutProperty('prefecture-labels', 'visibility', 'visible')
+          map.setLayoutProperty('sous-prefecture-labels', 'visibility', 'visible')
+          const parties = partyByName(choroplethRef.current.candidates)
+          const choroplethMap = new Map(choroplethRef.current.communes.map(c => [c.inseeCode, c]))
+          for (const city of TOP_CITIES) {
+            const entry = choroplethMap.get(city.inseeCode)
+            const color = entry
+              ? getCandidateColor(entry.leadingCandidate, 0, parties.get(entry.leadingCandidate))
+              : '#e2e8f0'
+            map.setFeatureState({ source: 'top-cities-points', id: city.inseeCode }, { color })
+          }
         }
       }
     })
@@ -336,8 +417,11 @@ export function FranceMap({ electionData, choroplethData }: Props) {
     const makeClickHandler = (sourceLayer: SourceLayer, source: 'admin' | 'circo', zoomOnClick = false) =>
       (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
         const feature = e.features?.[0]
-        const id = String(feature?.id ?? '')
-        if (id) {
+        const rawId = String(feature?.id ?? '')
+        if (rawId) {
+          // Circo PMTiles uses Z-codes (e.g. 'ZA01') but our JSON data uses INSEE codes
+          // (e.g. '97101'). Translate so ResultsPanel can find the results.
+          const id = source === 'circo' ? (CIRCO_ZCODE_TO_INSEE[rawId] ?? rawId) : rawId
           clickedSourceLayerRef.current = { sourceLayer, source }
           setClickedCommune(id)
           if (zoomOnClick && feature?.geometry) {
@@ -350,7 +434,18 @@ export function FranceMap({ electionData, choroplethData }: Props) {
     map.on('click', 'dept-fill', makeClickHandler('departements', 'admin', true))
     map.on('click', 'communes-fill', makeClickHandler('communes', 'admin', true))
     map.on('click', 'circo-fill', makeClickHandler('circonscriptions', 'circo'))
-    map.on('click', 'overseas-fill', makeClickHandler('departements', 'admin'))
+
+    // overseas-fill covers the same area as circo/commune polygons when zoomed in.
+    // Only handle it when no more specific layer was also hit at this point.
+    map.on('click', 'overseas-fill', (e) => {
+      const moreSpecific = map.queryRenderedFeatures(e.point, { layers: ['circo-fill', 'communes-fill'] })
+      if (moreSpecific.length > 0) return
+      const rawId = String(e.features?.[0]?.id ?? '')
+      if (rawId) {
+        clickedSourceLayerRef.current = { sourceLayer: 'departements', source: 'admin' }
+        setClickedCommune(rawId)
+      }
+    })
 
     map.on('click', (e) => {
       const hits = map.queryRenderedFeatures(e.point, { layers: ['dept-fill', 'communes-fill', 'circo-fill'] })
@@ -380,12 +475,28 @@ export function FranceMap({ electionData, choroplethData }: Props) {
     const isCirco = choroplethData?.granularity === 'circonscription'
     const isCommune = choroplethData?.granularity === 'commune' && !!choroplethData
 
-    map.setLayoutProperty('communes-fill',    'visibility', isCommune ? 'visible' : 'none')
-    map.setLayoutProperty('communes-outline', 'visibility', isCommune ? 'visible' : 'none')
-    map.setLayoutProperty('circo-fill',       'visibility', isCirco   ? 'visible' : 'none')
-    map.setLayoutProperty('circo-outline',    'visibility', isCirco   ? 'visible' : 'none')
+    map.setLayoutProperty('communes-fill',         'visibility', isCommune ? 'visible' : 'none')
+    map.setLayoutProperty('communes-outline',      'visibility', isCommune ? 'visible' : 'none')
+    map.setLayoutProperty('circo-fill',            'visibility', isCirco   ? 'visible' : 'none')
+    map.setLayoutProperty('circo-outline',         'visibility', isCirco   ? 'visible' : 'none')
+    map.setLayoutProperty('city-dots',             'visibility', isCommune ? 'visible' : 'none')
+    map.setLayoutProperty('prefecture-labels',     'visibility', isCommune ? 'visible' : 'none')
+    map.setLayoutProperty('sous-prefecture-labels','visibility', isCommune ? 'visible' : 'none')
 
     if (choroplethData) applyChoroplethColors(map, choroplethData)
+
+    // Color city dots by their leading candidate from the commune choropleth
+    if (isCommune && choroplethData) {
+      const parties = partyByName(choroplethData.candidates)
+      const choroplethMap = new Map(choroplethData.communes.map(c => [c.inseeCode, c]))
+      for (const city of TOP_CITIES) {
+        const entry = choroplethMap.get(city.inseeCode)
+        const color = entry
+          ? getCandidateColor(entry.leadingCandidate, 0, parties.get(entry.leadingCandidate))
+          : '#e2e8f0'
+        map.setFeatureState({ source: 'top-cities-points', id: city.inseeCode }, { color })
+      }
+    }
   }, [choroplethData, electionData])
 
   // ── Fly to focused overseas territory ─────────────────────────────────────
@@ -420,8 +531,11 @@ export function FranceMap({ electionData, choroplethData }: Props) {
     }
     if (clickedCommune) {
       const { sourceLayer, source } = clickedSourceLayerRef.current
-      map.setFeatureState({ source, sourceLayer, id: clickedCommune }, { selected: true })
-      prevSelectedRef.current = { id: clickedCommune, sourceLayer, source }
+      // clickedCommune holds an INSEE code; the PMTiles circo layer uses Z-codes, so
+      // translate back before applying feature state.
+      const mapId = source === 'circo' ? (INSEE_TO_CIRCO_ZCODE[clickedCommune] ?? clickedCommune) : clickedCommune
+      map.setFeatureState({ source, sourceLayer, id: mapId }, { selected: true })
+      prevSelectedRef.current = { id: mapId, sourceLayer, source }
     } else {
       prevSelectedRef.current = null
     }
@@ -436,18 +550,11 @@ export function FranceMap({ electionData, choroplethData }: Props) {
       >
         <OverseasInsets electionData={electionData} />
       </div>
-      {focusedTerritory && (
-        <button
-          className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded px-2 py-1 shadow-sm"
-          onClick={() => setFocusedTerritory(null)}
-        >
-          ← France métropolitaine
-        </button>
-      )}
-      {clickedCommune && !focusedTerritory && (
+      {(focusedTerritory || (clickedCommune && clickedCommune !== '99')) && (
         <button
           className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded px-2 py-1 shadow-sm"
           onClick={() => {
+            setFocusedTerritory(null)
             setClickedCommune(null)
             mapRef.current?.fitBounds(METRO_BOUNDS, { padding: 40, duration: 800 })
           }}
