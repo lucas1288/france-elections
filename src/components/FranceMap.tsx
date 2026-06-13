@@ -519,7 +519,14 @@ export function FranceMap({ electionData, choroplethData, palette, geometry }: P
     choroplethRef.current = choroplethData
     paletteRef.current = palette
     const map = mapRef.current
-    if (!map || !map.isStyleLoaded()) return
+    if (!map) return
+    if (!map.isStyleLoaded()) {
+      // Cold load: the data can arrive before the style finishes. Don't drop the
+      // sync — defer it until the map settles, reading the latest data from refs.
+      const onReady = () => syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current)
+      map.once('idle', onReady)
+      return () => { map.off('idle', onReady) }
+    }
     syncMapData(map, electionData, choroplethData, palette)
   }, [choroplethData, electionData, palette])
 
