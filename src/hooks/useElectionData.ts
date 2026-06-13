@@ -1,10 +1,40 @@
 import { useQuery } from '@tanstack/react-query'
-import type { RoundData } from '../types/election'
+import type { ElectionRef, Palette, RoundData } from '../types/election'
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`)
   return res.json() as Promise<T>
+}
+
+/**
+ * Shared shape of the compact choropleth files used to colour the map.
+ * Contains only inseeCode + leadingCandidate per geographic unit.
+ */
+export interface ChoroplethData {
+  granularity: 'commune' | 'circonscription'
+  year: number
+  round: number
+  candidates: Array<{ name: string; party: string }>
+  communes: Array<{ inseeCode: string; leadingCandidate: string }>
+}
+
+/**
+ * Fetches a JSON data file that may legitimately not exist for a given
+ * election/round (returns null on 404 instead of erroring). Cached forever.
+ */
+function useOptionalJson<T>(queryKey: unknown[], url: string, enabled = true) {
+  return useQuery<T | null>({
+    queryKey,
+    queryFn: async () => {
+      const res = await fetch(url)
+      if (!res.ok) return null
+      return res.json() as Promise<T>
+    },
+    enabled,
+    retry: false,
+    staleTime: Infinity,
+  })
 }
 
 /** Fetches département-level election results (sidebar data). */
@@ -16,92 +46,55 @@ export function useElectionData(type: string, year: number, round: number) {
   })
 }
 
-/**
- * Fetches the compact commune-level choropleth data used to colour the map.
- * Contains only inseeCode + leadingCandidate per commune (~2 MB).
- * Returns null when no commune data exists for this round (map falls back
- * to département-level colours automatically).
- */
-export interface ChoroplethData {
-  granularity: 'commune' | 'circonscription'
-  year: number
-  round: number
-  candidates: Array<{ name: string; party: string }>
-  communes: Array<{ inseeCode: string; leadingCandidate: string }>
+/** Compact commune choropleth — null when no commune data exists for this round. */
+export function useChoroplethData(type: string, year: number, round: number, enabled = true) {
+  return useOptionalJson<ChoroplethData>(
+    ['election-choropleth', type, year, round],
+    `/data/elections/${type}/${year}/round${round}-communes-choropleth.json`,
+    enabled,
+  )
 }
 
-export function useChoroplethData(type: string, year: number, round: number) {
-  return useQuery<ChoroplethData | null>({
-    queryKey: ['election-choropleth', type, year, round],
-    queryFn: async () => {
-      const url = `/data/elections/${type}/${year}/round${round}-communes-choropleth.json`
-      const res = await fetch(url)
-      if (!res.ok) return null
-      return res.json() as Promise<ChoroplethData>
-    },
-    retry: false,
-    staleTime: Infinity,
-  })
+/** Compact circonscription choropleth. */
+export function useCircoChoroplethData(type: string, year: number, round: number, enabled = true) {
+  return useOptionalJson<ChoroplethData>(
+    ['election-circo', type, year, round],
+    `/data/elections/${type}/${year}/round${round}-circ-choropleth.json`,
+    enabled,
+  )
 }
 
-export function useCircoChoroplethData(type: string, year: number, round: number) {
-  return useQuery<ChoroplethData | null>({
-    queryKey: ['election-circo', type, year, round],
-    queryFn: async () => {
-      const url = `/data/elections/${type}/${year}/round${round}-circ-choropleth.json`
-      const res = await fetch(url)
-      if (!res.ok) return null
-      return res.json() as Promise<ChoroplethData>
-    },
-    retry: false,
-    staleTime: Infinity,
-  })
+/** Per-election color palette (small, cached forever; null when absent). */
+export function usePalette(type: string, year: number) {
+  return useOptionalJson<Palette>(
+    ['election-palette', type, year],
+    `/data/elections/${type}/${year}/palette.json`,
+  )
 }
 
-/** Fetches full circonscription-level results (sidebar detail) on demand. */
+/** Full circonscription-level results (sidebar detail), loaded on demand. */
 export function useFullCircoData(type: string, year: number, round: number, enabled: boolean) {
-  return useQuery<RoundData | null>({
-    queryKey: ['election-circo-full', type, year, round],
-    queryFn: async () => {
-      const url = `/data/elections/${type}/${year}/round${round}-circ.json`
-      const res = await fetch(url)
-      if (!res.ok) return null
-      return res.json() as Promise<RoundData>
-    },
+  return useOptionalJson<RoundData>(
+    ['election-circo-full', type, year, round],
+    `/data/elections/${type}/${year}/round${round}-circ.json`,
     enabled,
-    retry: false,
-    staleTime: Infinity,
-  })
+  )
 }
 
-/**
- * Fetches the full commune-level election data (≈34 MB) on demand.
- * Only enabled when the caller passes `enabled: true` (i.e. commune granularity is active).
- * Cached indefinitely after the first load.
- */
+/** Full commune-level results (≈34 MB), loaded on demand when the commune tab is active. */
 export function useFullCommuneData(type: string, year: number, round: number, enabled: boolean) {
-  return useQuery<RoundData | null>({
-    queryKey: ['election-communes-full', type, year, round],
-    queryFn: async () => {
-      const url = `/data/elections/${type}/${year}/round${round}-communes.json`
-      const res = await fetch(url)
-      if (!res.ok) return null
-      return res.json() as Promise<RoundData>
-    },
+  return useOptionalJson<RoundData>(
+    ['election-communes-full', type, year, round],
+    `/data/elections/${type}/${year}/round${round}-communes.json`,
     enabled,
-    retry: false,
-    staleTime: Infinity,
-  })
+  )
 }
 
 /** Fetches the elections index manifest. */
 export function useElectionIndex() {
   return useQuery({
     queryKey: ['election-index'],
-    queryFn: () =>
-      fetchJson<{ elections: Array<{ type: string; year: number; rounds: number; label: string }> }>(
-        '/data/elections/index.json'
-      ),
+    queryFn: () => fetchJson<{ elections: ElectionRef[] }>('/data/elections/index.json'),
     staleTime: Infinity,
   })
 }

@@ -1,0 +1,20 @@
+{
+  "parties": {
+    "DXG": { "label": "Extrême gauche", "color": "#8B0000" },
+    "NUP": { "label": "NUPES", "color": "#CC2443", "alliance": true, "members": ["LFI", "PS", "EELV", "PCF"] },
+    "RDG": { "label": "Parti radical de gauche", "color": "#E8A33D" },
+    "DVG": { "label": "Divers gauche", "color": "#F08080" },
+    "ECO": { "label": "Écologistes", "color": "#2ECC71" },
+    "REG": { "label": "Régionalistes", "color": "#8D6E63" },
+    "DIV": { "label": "Divers", "color": "#9CA3AF" },
+    "ENS": { "label": "Ensemble", "color": "#FF8C00", "alliance": true, "members": ["LREM", "MODEM", "HOR"] },
+    "DVC": { "label": "Divers centre", "color": "#FFB347" },
+    "UDI": { "label": "UDI", "color": "#4FC3F7" },
+    "LR":  { "label": "Les Républicains", "color": "#0066CC" },
+    "DVD": { "label": "Divers droite", "color": "#6699CC" },
+    "DSV": { "label": "Droite souverainiste", "color": "#26466D" },
+    "REC": { "label": "Reconquête", "color": "#1D1D1B" },
+    "RN":  { "label": "Rassemblement national", "color": "#003189" },
+    "DXD": { "label": "Extrême droite", "color": "#3D2B1F" }
+  }
+}
