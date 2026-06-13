@@ -5,6 +5,7 @@ import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { TOP_CITIES } from '../utils/topCities'
 import { CommuneSearch } from './CommuneSearch'
+import { NationalSummary } from './NationalSummary'
 
 interface Props {
   electionData: RoundData | undefined
@@ -137,6 +138,7 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
 
       return (
         <PanelShell>
+          <NationalSummary electionData={electionData} palette={palette} />
           <p className="px-4 pt-3 pb-1 text-xs text-gray-400 leading-relaxed">{hint}</p>
           <div className="px-4 pt-2 pb-4 space-y-3">
             {/* Column headers */}
@@ -209,6 +211,7 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
 
     return (
       <PanelShell>
+        <NationalSummary electionData={electionData} palette={palette} />
         <p className="px-4 pt-3 pb-2 text-xs text-gray-400 leading-relaxed">{hint}</p>
         <CommuneSearch />
         <div className="border-t border-gray-100 px-3 pt-3 pb-4">

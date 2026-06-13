@@ -1,19 +1,29 @@
 import { useRef, useEffect } from 'react'
 import maplibregl from 'maplibre-gl'
 import { Protocol } from 'pmtiles'
-import type { Palette, RoundData } from '../types/election'
+import type { CommuneResult, Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { useElectionStore, useIsOverview } from '../store/electionStore'
+import type { ColorMode } from '../store/electionStore'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
+import { computeNationalTotals } from '../utils/nationalResults'
+import type { NationalTotals } from '../utils/nationalResults'
+import { territoryColor, partyCodeSet } from '../utils/territoryColor'
+import { abstentionShade } from '../utils/gradient'
 import { OverseasInsets } from './OverseasInsets'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
 import { MERGED_COMMUNE_TO_CURRENT } from '../utils/mergedCommunes'
 
+const DEFAULT_COLOR = '#e2e8f0'
+
 interface Props {
   electionData: RoundData | undefined
   choroplethData: ChoroplethData | null | undefined
+  /** Full per-territory data for the active granularity — feeds the gradient views. */
+  fullData: RoundData | null
   palette: Palette | null
+  colorMode: ColorMode
   /** Geometry version ids from the election manifest. */
   geometry?: { admin: string; circo: string }
 }
@@ -255,10 +265,16 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 // Colors départements and mirrors the same colors onto the overseas GeoJSON source.
-function applyDeptColors(map: maplibregl.Map, electionData: RoundData, palette: Palette | null) {
-  const parties = partyByName(electionData.candidates)
+function applyDeptColors(
+  map: maplibregl.Map,
+  electionData: RoundData,
+  palette: Palette | null,
+  mode: ColorMode,
+  national: NationalTotals | null,
+) {
+  const codes = mode.kind === 'party' ? partyCodeSet(mode.party, palette) : undefined
   for (const dept of electionData.communes) {
-    const color = getCandidateColor(dept.leadingCandidate, 0, parties.get(dept.leadingCandidate), palette)
+    const color = territoryColor(dept, mode, palette, national, codes)
     map.setFeatureState({ source: 'admin', sourceLayer: 'departements', id: dept.inseeCode }, { color })
     map.setFeatureState({ source: 'overseas', id: dept.inseeCode }, { color })
   }
@@ -281,42 +297,55 @@ const CIRCO_ZCODE_TO_INSEE: Record<string, string> = Object.fromEntries(
   Object.entries(INSEE_TO_CIRCO_ZCODE).map(([insee, zcode]) => [zcode, insee])
 )
 
-function applyChoroplethColors(map: maplibregl.Map, choropleth: ChoroplethData, palette: Palette | null) {
+// Computes the color for every territory in the active granularity. In leader
+// mode this reads the lightweight choropleth (full coverage, loads first); in a
+// gradient mode it reads the full per-territory data (joined by inseeCode), so
+// it falls back to a neutral color for territories the full data hasn't covered.
+function computeActiveColors(
+  choropleth: ChoroplethData,
+  fullByCode: Map<string, CommuneResult>,
+  palette: Palette | null,
+  mode: ColorMode,
+  national: NationalTotals | null,
+): Map<string, string> {
   const parties = partyByName(choropleth.candidates)
-  const isCirco = choropleth.granularity === 'circonscription'
+  const codes = mode.kind === 'party' ? partyCodeSet(mode.party, palette) : undefined
   const colorByCode = new Map<string, string>()
   for (const c of choropleth.communes) {
-    const color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
-    if (isCirco) {
-      const featureId = INSEE_TO_CIRCO_ZCODE[c.inseeCode] ?? c.inseeCode
-      map.setFeatureState({ source: 'circo', sourceLayer: 'circonscriptions', id: featureId }, { color })
+    let color: string
+    if (mode.kind === 'leader') {
+      color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+    } else if (mode.kind === 'abstention' && c.abstention != null) {
+      // Abstention rides on the lightweight choropleth — no full file needed.
+      color = abstentionShade(c.abstention)
     } else {
-      colorByCode.set(c.inseeCode, color)
-      map.setFeatureState({ source: 'admin', sourceLayer: 'communes', id: c.inseeCode }, { color })
+      const entry = fullByCode.get(c.inseeCode)
+      color = entry ? territoryColor(entry, mode, palette, national, codes) : DEFAULT_COLOR
+    }
+    colorByCode.set(c.inseeCode, color)
+  }
+  return colorByCode
+}
+
+// Applies the active-granularity colors to the polygon layer (handling circo
+// Z-codes and obsolete merged-commune polygons).
+function applyActiveLayerColors(map: maplibregl.Map, granularity: ChoroplethData['granularity'], colorByCode: Map<string, string>) {
+  const isCirco = granularity === 'circonscription'
+  for (const [code, color] of colorByCode) {
+    if (isCirco) {
+      const id = INSEE_TO_CIRCO_ZCODE[code] ?? code
+      map.setFeatureState({ source: 'circo', sourceLayer: 'circonscriptions', id }, { color })
+    } else {
+      map.setFeatureState({ source: 'admin', sourceLayer: 'communes', id: code }, { color })
     }
   }
   if (!isCirco) {
-    // The tile geometry predates some commune mergers: color the obsolete
-    // polygons with their absorbing commune's result.
+    // Tile geometry predates some commune mergers: color obsolete polygons with
+    // their absorbing commune's color.
     for (const [oldCode, currentCode] of Object.entries(MERGED_COMMUNE_TO_CURRENT)) {
       const color = colorByCode.get(currentCode)
-      if (color) {
-        map.setFeatureState({ source: 'admin', sourceLayer: 'communes', id: oldCode }, { color })
-      }
+      if (color) map.setFeatureState({ source: 'admin', sourceLayer: 'communes', id: oldCode }, { color })
     }
-  }
-}
-
-// Colors the top-30 city dots by each city's leading candidate.
-function applyCityDotColors(map: maplibregl.Map, choropleth: ChoroplethData, palette: Palette | null) {
-  const parties = partyByName(choropleth.candidates)
-  const byCode = new Map(choropleth.communes.map((c) => [c.inseeCode, c]))
-  for (const city of TOP_CITIES) {
-    const entry = byCode.get(city.inseeCode)
-    const color = entry
-      ? getCandidateColor(entry.leadingCandidate, 0, parties.get(entry.leadingCandidate), palette)
-      : '#e2e8f0'
-    map.setFeatureState({ source: 'top-cities-points', id: city.inseeCode }, { color })
   }
 }
 
@@ -327,8 +356,11 @@ function syncMapData(
   electionData: RoundData | undefined,
   choroplethData: ChoroplethData | null | undefined,
   palette: Palette | null,
+  fullData: RoundData | null,
+  colorMode: ColorMode,
 ) {
-  if (electionData) applyDeptColors(map, electionData, palette)
+  const national = electionData ? computeNationalTotals(electionData) : null
+  if (electionData) applyDeptColors(map, electionData, palette, colorMode, national)
 
   const isCirco = choroplethData?.granularity === 'circonscription'
   const isCommune = choroplethData?.granularity === 'commune'
@@ -346,8 +378,14 @@ function syncMapData(
   }
 
   if (choroplethData) {
-    applyChoroplethColors(map, choroplethData, palette)
-    if (isCommune) applyCityDotColors(map, choroplethData, palette)
+    const fullByCode = new Map((fullData?.communes ?? []).map((e) => [e.inseeCode, e]))
+    const colorByCode = computeActiveColors(choroplethData, fullByCode, palette, colorMode, national)
+    applyActiveLayerColors(map, choroplethData.granularity, colorByCode)
+    if (isCommune) {
+      for (const city of TOP_CITIES) {
+        map.setFeatureState({ source: 'top-cities-points', id: city.inseeCode }, { color: colorByCode.get(city.inseeCode) ?? DEFAULT_COLOR })
+      }
+    }
   }
 }
 
@@ -370,12 +408,14 @@ type SourceLayer = 'communes' | 'departements' | 'circonscriptions'
 interface HoverTarget { id: string; sourceLayer: SourceLayer; source: 'admin' | 'circo' }
 
 // ── Component ──────────────────────────────────────────────────────────────────
-export function FranceMap({ electionData, choroplethData, palette, geometry }: Props) {
+export function FranceMap({ electionData, choroplethData, fullData, palette, colorMode, geometry }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const electionDataRef = useRef(electionData)
   const choroplethRef = useRef(choroplethData)
+  const fullDataRef = useRef(fullData)
   const paletteRef = useRef(palette)
+  const colorModeRef = useRef(colorMode)
   const geom = geometry ?? DEFAULT_GEOMETRY
   const geometryRef = useRef(geom)
   const appliedGeometryRef = useRef(geom)
@@ -408,7 +448,7 @@ export function FranceMap({ electionData, choroplethData, palette, geometry }: P
     mapRef.current = map
 
     map.on('load', () => {
-      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current)
+      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
     })
 
     // ── Hover handlers — one per fill layer ──────────────────────────────────
@@ -509,26 +549,28 @@ export function FranceMap({ electionData, choroplethData, palette, geometry }: P
     appliedGeometryRef.current = geom
     map.setStyle(makeStyle(geom))
     map.once('styledata', () => {
-      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current)
+      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
     })
   }, [geom])
 
-  // ── Sync election/choropleth data → feature state colors + layer visibility ─
+  // ── Sync election/choropleth/mode → feature state colors + layer visibility ─
   useEffect(() => {
     electionDataRef.current = electionData
     choroplethRef.current = choroplethData
+    fullDataRef.current = fullData
     paletteRef.current = palette
+    colorModeRef.current = colorMode
     const map = mapRef.current
     if (!map) return
     if (!map.isStyleLoaded()) {
       // Cold load: the data can arrive before the style finishes. Don't drop the
       // sync — defer it until the map settles, reading the latest data from refs.
-      const onReady = () => syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current)
+      const onReady = () => syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
       map.once('idle', onReady)
       return () => { map.off('idle', onReady) }
     }
-    syncMapData(map, electionData, choroplethData, palette)
-  }, [choroplethData, electionData, palette])
+    syncMapData(map, electionData, choroplethData, palette, fullData, colorMode)
+  }, [choroplethData, electionData, fullData, palette, colorMode])
 
   // ── Fly to focused overseas territory ─────────────────────────────────────
   useEffect(() => {

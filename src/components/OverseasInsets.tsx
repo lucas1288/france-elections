@@ -11,7 +11,8 @@ import * as d3geo from 'd3-geo'
 import type { Feature, MultiPolygon, Polygon } from 'geojson'
 import type { Palette, RoundData } from '../types/election'
 import { useElectionStore } from '../store/electionStore'
-import { getCandidateColor } from '../utils/partyColors'
+import { computeNationalTotals } from '../utils/nationalResults'
+import { territoryColor } from '../utils/territoryColor'
 
 interface CommuneProperties {
   code: string
@@ -110,6 +111,7 @@ interface Props {
 export function OverseasInsets({ electionData, palette }: Props) {
   const [features, setFeatures] = useState<Map<string, GeoFeature>>(new Map())
   const { hoveredCommune, clickedCommune, focusedTerritory, setHoveredCommune, setClickedCommune, setFocusedTerritory } = useElectionStore()
+  const colorMode = useElectionStore((s) => s.colorMode)
 
   // Fetch overseas GeoJSON once
   useEffect(() => {
@@ -125,21 +127,18 @@ export function OverseasInsets({ electionData, palette }: Props) {
       .catch(console.error)
   }, [])
 
-  const resultsMap = useMemo(() => {
-    const m = new Map<string, { name: string; party: string }>()
+  // Per-territory fill colors, mode-aware (mirrors the main map's dept coloring).
+  const fillByCode = useMemo(() => {
+    const m = new Map<string, string>()
     if (!electionData) return m
+    const national = computeNationalTotals(electionData)
     for (const c of electionData.communes) {
-      const leading = c.candidates.find((x) => x.name === c.leadingCandidate)
-      m.set(c.inseeCode, { name: c.leadingCandidate, party: leading?.party ?? '' })
+      m.set(c.inseeCode, territoryColor(c, colorMode, palette, national))
     }
     return m
-  }, [electionData])
+  }, [electionData, palette, colorMode])
 
-  const getFill = (code: string) => {
-    const leading = resultsMap.get(code)
-    if (!leading) return '#e2e8f0'
-    return getCandidateColor(leading.name, 0, leading.party, palette)
-  }
+  const getFill = (code: string) => fillByCode.get(code) ?? '#e2e8f0'
 
   if (focusedTerritory) return null
 

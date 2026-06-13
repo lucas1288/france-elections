@@ -76,9 +76,12 @@ export default function App() {
     circoAvailable && granularity === 'circonscription',
   )
   const palette = paletteQuery.data ?? null
+  const colorMode = useElectionStore((s) => s.colorMode)
 
   const effectiveChoropleth =
     granularity === 'commune' ? (choroplethQuery.data ?? null) : (circoQuery.data ?? null)
+  const fullData =
+    granularity === 'commune' ? (fullCommuneQuery.data ?? null) : (fullCircoQuery.data ?? null)
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -129,7 +132,9 @@ export default function App() {
           <FranceMap
             electionData={electionQuery.data}
             choroplethData={effectiveChoropleth}
+            fullData={fullData}
             palette={palette}
+            colorMode={colorMode}
             geometry={electionRef?.geometry}
           />
           {/* Top-right overlay: legend + abroad panel stacked */}
@@ -145,6 +150,7 @@ export default function App() {
               <AbroadMap
                 electionData={electionQuery.data}
                 circoChoro={circoQuery.data ?? null}
+                fullData={fullData}
                 granularity={granularity}
                 palette={palette}
               />
