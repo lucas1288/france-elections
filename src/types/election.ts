@@ -1,14 +1,28 @@
 export type ElectionType = 'presidential' | 'legislative' | 'european'
 
+export type Granularity = 'commune' | 'circonscription'
+
+/** One election in the manifest (public/data/elections/index.json). */
 export interface ElectionRef {
   type: ElectionType
   year: number
   rounds: number
   label: string
+  /** Granularities for which data files exist. */
+  granularities: Granularity[]
+  /** Geometry version ids, resolved to tile URLs in FranceMap. */
+  geometry: { admin: string; circo: string }
 }
 
-export interface ElectionIndex {
-  elections: ElectionRef[]
+/**
+ * Per-election color palette (palette.json next to the data files).
+ * `byName` keys candidate names (presidentials); `parties` keys party/nuance
+ * codes (legislatives — pre-electoral alliances like NUPES are nuance codes
+ * of their own, flagged with `alliance`).
+ */
+export interface Palette {
+  byName?: Record<string, string>
+  parties?: Record<string, { label: string; color: string; alliance?: boolean; members?: string[] }>
 }
 
 export interface CandidateResult {
@@ -16,6 +30,8 @@ export interface CandidateResult {
   party: string
   votes: number
   percentage: number
+  /** Won the seat in this round (legislatives). */
+  elected?: boolean
 }
 
 export interface CommuneResult {
@@ -33,10 +49,8 @@ export interface CommuneResult {
 }
 
 export interface RoundData {
-  electionType: ElectionType
   year: number
   round: number
-  date: string
   candidates: Array<{ name: string; party: string }>
   communes: CommuneResult[]
 }
