@@ -18,6 +18,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'fs'
+import { inseeFromMinistry } from './fix-overseas-codes.mjs'
 
 const CAND_START = 19
 const CAND_STRIDE = 7
@@ -53,8 +54,8 @@ for (const line of lines.slice(1)) {
   const deptCode = cols[0].trim()
   const communeCode = cols[2].trim().padStart(3, '0')
 
-  // Build 5-char INSEE code — handles 2A/2B Corsica correctly
-  const inseeCode = deptCode + communeCode
+  // Build 5-char INSEE code — handles 2A/2B Corsica and Z-coded overseas depts
+  const inseeCode = inseeFromMinistry(deptCode + communeCode)
 
   const name = cols[3].trim()
   const inscrits    = parseNum(cols[5])

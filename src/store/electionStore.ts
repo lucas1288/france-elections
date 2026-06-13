@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ElectionType } from '../types/election'
+import type { ElectionType, Granularity } from '../types/election'
 
 interface SelectedElection {
   type: ElectionType
@@ -7,20 +7,28 @@ interface SelectedElection {
   round: number
 }
 
-export type Granularity = 'commune' | 'departement' | 'circonscription'
+export type { Granularity }
+
+interface FlyTarget {
+  lng: number
+  lat: number
+  zoom: number
+}
 
 interface ElectionStore {
   selected: SelectedElection
   granularity: Granularity
   hoveredCommune: string | null
   clickedCommune: string | null
-  focusedTerritory: string | null   // overseas territory code being zoomed into
+  focusedTerritory: string | null
+  flyTarget: FlyTarget | null
 
   setSelected: (sel: SelectedElection) => void
   setGranularity: (g: Granularity) => void
   setHoveredCommune: (inseeCode: string | null) => void
   setClickedCommune: (inseeCode: string | null) => void
   setFocusedTerritory: (code: string | null) => void
+  setFlyTarget: (target: FlyTarget | null) => void
 }
 
 export const useElectionStore = create<ElectionStore>((set) => ({
@@ -29,6 +37,7 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   hoveredCommune: null,
   clickedCommune: null,
   focusedTerritory: null,
+  flyTarget: null,
 
   setSelected: (sel) => set({ selected: sel, hoveredCommune: null, clickedCommune: null }),
   setGranularity: (granularity) => set({ granularity }),
@@ -38,4 +47,16 @@ export const useElectionStore = create<ElectionStore>((set) => ({
       clickedCommune: s.clickedCommune === inseeCode ? null : inseeCode,
     })),
   setFocusedTerritory: (focusedTerritory) => set({ focusedTerritory }),
+  setFlyTarget: (flyTarget) => set({ flyTarget }),
 }))
+
+/**
+ * True when the map shows the full-France overview (nothing selected except
+ * possibly the Français à l'étranger aggregate, no overseas territory focused).
+ * Drives the fade-out of the overseas insets and the abroad panel.
+ */
+export function useIsOverview(): boolean {
+  return useElectionStore(
+    (s) => (!s.clickedCommune || s.clickedCommune === '99') && !s.focusedTerritory,
+  )
+}
