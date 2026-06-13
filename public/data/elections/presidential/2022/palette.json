@@ -1,0 +1,30 @@
+{
+  "byName": {
+    "Emmanuel MACRON": "#FF8C00",
+    "Marine LE PEN": "#003189",
+    "Jean-Luc MÉLENCHON": "#CC2443",
+    "Éric ZEMMOUR": "#1D1D1B",
+    "Valérie PÉCRESSE": "#0066CC",
+    "Yannick JADOT": "#2ECC71",
+    "Jean LASSALLE": "#8B6914",
+    "Anne HIDALGO": "#E75480",
+    "Fabien ROUSSEL": "#B22222",
+    "Nicolas DUPONT-AIGNAN": "#4B0082",
+    "Nathalie ARTHAUD": "#CC0000",
+    "Philippe POUTOU": "#E05206"
+  },
+  "parties": {
+    "LREM": { "label": "La République en marche", "color": "#FF8C00" },
+    "RN":   { "label": "Rassemblement national", "color": "#003189" },
+    "LFI":  { "label": "La France insoumise", "color": "#CC2443" },
+    "REC":  { "label": "Reconquête", "color": "#1D1D1B" },
+    "LR":   { "label": "Les Républicains", "color": "#0066CC" },
+    "EELV": { "label": "Europe Écologie Les Verts", "color": "#2ECC71" },
+    "RES":  { "label": "Résistons !", "color": "#8B6914" },
+    "PS":   { "label": "Parti socialiste", "color": "#E75480" },
+    "PCF":  { "label": "Parti communiste français", "color": "#B22222" },
+    "DLF":  { "label": "Debout la France", "color": "#4B0082" },
+    "LO":   { "label": "Lutte ouvrière", "color": "#CC0000" },
+    "NPA":  { "label": "Nouveau Parti anticapitaliste", "color": "#E05206" }
+  }
+}
