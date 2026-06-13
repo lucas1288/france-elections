@@ -6,10 +6,15 @@ import type { Palette, RoundData } from '../types/election'
 import type { Granularity } from '../store/electionStore'
 import { useElectionStore } from '../store/electionStore'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
+import { computeNationalTotals } from '../utils/nationalResults'
+import { territoryColor } from '../utils/territoryColor'
+import { abstentionShade } from '../utils/gradient'
 
 interface Props {
   electionData: RoundData | undefined
   circoChoro: ChoroplethData | null
+  /** Full per-territory data for the active granularity — feeds gradient dots. */
+  fullData: RoundData | null
   granularity: Granularity
   palette: Palette | null
 }
@@ -41,8 +46,9 @@ const CIRCO_CENTERS: Record<string, [number, number]> = {
   '9911': [ 120,  15],  // Asie + Pacifique
 }
 
-export function AbroadMap({ electionData, circoChoro, granularity, palette }: Props) {
+export function AbroadMap({ electionData, circoChoro, fullData, granularity, palette }: Props) {
   const { clickedCommune, setClickedCommune } = useElectionStore()
+  const colorMode = useElectionStore((s) => s.colorMode)
   const [landPath, setLandPath] = useState<string>('')
 
   useEffect(() => {
@@ -59,6 +65,18 @@ export function AbroadMap({ electionData, circoChoro, granularity, palette }: Pr
   const candidates = circoChoro?.candidates ?? electionData?.candidates ?? []
   const parties = partyByName(candidates)
   const abroadEntries = (circoChoro?.communes ?? []).filter(c => c.inseeCode.startsWith('99'))
+
+  // Mode-aware color for an abroad circo: leader/abstention ride the choropleth,
+  // the party gradient needs the full circo data (only loaded on the circo tab —
+  // falls back to neutral when absent).
+  const national = electionData ? computeNationalTotals(electionData) : null
+  const fullByCode = new Map((fullData?.communes ?? []).map((e) => [e.inseeCode, e]))
+  const dotColor = (c: { inseeCode: string; leadingCandidate: string; abstention?: number }) => {
+    if (colorMode.kind === 'leader') return getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+    if (colorMode.kind === 'abstention') return c.abstention != null ? abstentionShade(c.abstention) : '#e2e8f0'
+    const entry = fullByCode.get(c.inseeCode)
+    return entry ? territoryColor(entry, colorMode, palette, national) : '#e2e8f0'
+  }
 
   // Overall abroad winner: prefer '99' aggregate; fall back to modal leader
   const abroad99 = electionData?.communes.find(c => c.inseeCode === '99')
@@ -108,7 +126,7 @@ export function AbroadMap({ electionData, circoChoro, granularity, palette }: Pr
           const projected = projection(center)
           if (!projected) return null
           const [x, y] = projected
-          const color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+          const color = dotColor(c)
           const isSelected = clickedCommune === c.inseeCode
 
           return (
@@ -130,8 +148,8 @@ export function AbroadMap({ electionData, circoChoro, granularity, palette }: Pr
         <path d={SPHERE_PATH} fill="none" stroke="#94a3b8" strokeWidth={0.8} />
       </svg>
 
-      {/* Dept/Commune mode: aggregate winner label */}
-      {!isCirco && overallWinner && (
+      {/* Dept/Commune mode: aggregate winner label (leader view only) */}
+      {!isCirco && colorMode.kind === 'leader' && overallWinner && (
         <p className="mt-1.5 text-xs text-gray-600">
           En tête :{' '}
           <span
@@ -148,7 +166,7 @@ export function AbroadMap({ electionData, circoChoro, granularity, palette }: Pr
         <div className="mt-2 space-y-0.5">
           {abroadEntries.map(c => {
             const num = parseInt(c.inseeCode.replace('99', ''), 10)
-            const color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+            const color = dotColor(c)
             const isSelected = clickedCommune === c.inseeCode
             // Compact display: surname for "Prénom NOM" candidates, full label for nuances
             const lastWord = c.leadingCandidate.split(' ').pop() ?? c.leadingCandidate

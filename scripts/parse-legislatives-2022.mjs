@@ -163,7 +163,13 @@ for (const [round, circos] of [[1, r1], [2, r2complete]]) {
   })
   write(`round${round}-circ-choropleth.json`, {
     granularity: 'circonscription', year: 2022, round, candidates,
-    communes: circos.map((c) => ({ inseeCode: c.inseeCode, leadingCandidate: label(c.leadingNuance) })),
+    communes: circos.map((c) => ({
+      inseeCode: c.inseeCode,
+      leadingCandidate: label(c.leadingNuance),
+      abstention: c.registeredVoters
+        ? Math.round(((c.registeredVoters - c.turnout) / c.registeredVoters) * 1000) / 10
+        : undefined,
+    })),
   })
 }
 
