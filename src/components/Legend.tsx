@@ -1,11 +1,12 @@
-import type { RoundData } from '../types/election'
+import type { Palette, RoundData } from '../types/election'
 import { getCandidateColor } from '../utils/partyColors'
 
 interface Props {
   electionData: RoundData | undefined
+  palette: Palette | null
 }
 
-export function Legend({ electionData }: Props) {
+export function Legend({ electionData, palette }: Props) {
   if (!electionData) return null
 
   return (
@@ -17,7 +18,7 @@ export function Legend({ electionData }: Props) {
         <div key={cand.name} className="flex items-center gap-2">
           <span
             className="w-3 h-3 rounded-sm shrink-0"
-            style={{ background: getCandidateColor(cand.name, i, cand.party) }}
+            style={{ background: getCandidateColor(cand.name, i, cand.party, palette) }}
           />
           <span className="text-xs text-gray-700">{cand.name}</span>
           <span className="text-xs text-gray-400">({cand.party})</span>

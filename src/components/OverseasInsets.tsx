@@ -6,10 +6,10 @@
  * French Polynesia (987) is omitted — its 20° bounding box makes inset display impractical.
  */
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import * as d3geo from 'd3-geo'
 import type { Feature, MultiPolygon, Polygon } from 'geojson'
-import type { RoundData } from '../types/election'
+import type { Palette, RoundData } from '../types/election'
 import { useElectionStore } from '../store/electionStore'
 import { getCandidateColor } from '../utils/partyColors'
 
@@ -47,7 +47,6 @@ const INSETS: InsetDef[] = [
 ]
 
 const GAP = 4
-const LABEL_H = 14
 
 interface InsetProps extends InsetDef {
   feature: GeoFeature | undefined
@@ -105,9 +104,10 @@ function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, on
 
 interface Props {
   electionData: RoundData | undefined
+  palette: Palette | null
 }
 
-export function OverseasInsets({ electionData }: Props) {
+export function OverseasInsets({ electionData, palette }: Props) {
   const [features, setFeatures] = useState<Map<string, GeoFeature>>(new Map())
   const { hoveredCommune, clickedCommune, focusedTerritory, setHoveredCommune, setClickedCommune, setFocusedTerritory } = useElectionStore()
 
@@ -138,7 +138,7 @@ export function OverseasInsets({ electionData }: Props) {
   const getFill = (code: string) => {
     const leading = resultsMap.get(code)
     if (!leading) return '#e2e8f0'
-    return getCandidateColor(leading.name, 0, leading.party)
+    return getCandidateColor(leading.name, 0, leading.party, palette)
   }
 
   if (focusedTerritory) return null

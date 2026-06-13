@@ -4,7 +4,17 @@
       "type": "presidential",
       "year": 2022,
       "rounds": 2,
-      "label": "Présidentielle 2022"
+      "label": "Présidentielle 2022",
+      "granularities": ["commune", "circonscription"],
+      "geometry": { "admin": "admin-2022", "circo": "circo-2010" }
+    },
+    {
+      "type": "legislative",
+      "year": 2022,
+      "rounds": 2,
+      "label": "Législatives 2022",
+      "granularities": ["circonscription"],
+      "geometry": { "admin": "admin-2022", "circo": "circo-2010" }
     }
   ]
 }

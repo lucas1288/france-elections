@@ -6,7 +6,7 @@ This file gives an AI assistant full technical context for the `france-elections
 
 ## Project summary
 
-A React + MapLibre GL JS interactive choropleth map of French presidential election results (currently: Présidentielle 2022, rounds 1 & 2). Users can view results at commune or circonscription granularity, click geographic units to see detailed results in a sidebar, zoom into overseas territories, and explore Français à l'étranger results on a small world map.
+A React + MapLibre GL JS interactive choropleth map of French election results (currently: Présidentielle 2022 and Législatives 2022, rounds 1 & 2 each). Users can view results at commune or circonscription granularity (per the election's manifest entry), click geographic units to see detailed results in a sidebar, zoom into overseas territories, and explore Français à l'étranger results on a small world map. Long-term goal: all presidential elections since 1965 and all legislatives since 1958 (see "Expansion roadmap" notes in conversation history / README).
 
 **Owner**: lucas (lucas1288 on GitHub, lucas.riveill@gmail.com)
 **Stack**: React 19, TypeScript, Vite 6, Tailwind CSS 3, MapLibre GL JS 5, PMTiles 4, Zustand 5, TanStack Query 5, D3-geo, topojson-client
@@ -14,6 +14,12 @@ A React + MapLibre GL JS interactive choropleth map of French presidential elect
 ---
 
 ## Key architectural decisions
+
+### 0. Manifest-driven elections (`public/data/elections/index.json`)
+Each election declares: `type`, `year`, `rounds`, `label`, `granularities` (which tabs exist — legislatives have no commune data), and `geometry` (version ids `{ admin, circo }` resolved to PMTiles URLs via `TILE_SOURCES` in `FranceMap.tsx`). Granularity availability comes from the manifest, NOT from 404 sniffing. When the selected election lacks the active granularity, an App effect switches to the first available one. A geometry-version change triggers `map.setStyle(makeStyle(geom))` + re-sync (path exists but is dormant while all elections share `admin-2022`/`circo-2010`).
+
+### 0b. Palette-in-data (`palette.json` per election)
+Each election ships a small `palette.json`: `byName` (candidate → hex, presidentials) and/or `parties` (party/nuance code → `{label, color, alliance?, members?}`, legislatives). `getCandidateColor(name, index, party, palette)` resolves palette first, then the legacy built-in 2022 tables, then a categorical fallback. For legislatives, the "candidates" of dept-level data and choropleth leaders are NUANCE labels (the ministry's 2022 nuance codes already encode pre-electoral alliances: NUP, ENS); per-circo full data keeps real candidate names with nuance as `party` (+ `elected: true` for seat winners — feeds a future hemicycle view).
 
 ### 1. Feature state coloring (not data-driven styling)
 Map colors are applied via `map.setFeatureState(...)` after data loads, not via MapLibre data-driven paint expressions reading from tile properties. This avoids re-building the style on data change and enables instant re-coloring when the election/round changes.
@@ -59,20 +65,26 @@ Zustand store. Fields:
 - `focusedTerritory: string | null` — overseas territory dept code (e.g. '971')
 - `flyTarget: { lng, lat, zoom } | null` — consumed by FranceMap, cleared after use
 
+Also exports `useIsOverview()` — derived selector, true when showing the full-France overview (no selection except the '99' aggregate, no focused territory). Drives the fade-out of OverseasInsets (FranceMap), the AbroadMap panel (App), and the `← Vue générale` button.
+
 ### `src/hooks/useElectionData.ts`
-TanStack Query hooks:
+TanStack Query hooks. All "optional" files (may 404 for a given round) go through a shared `useOptionalJson` helper (null on 404, `retry: false`, `staleTime: Infinity`):
 - `useElectionData(type, year, round)` — dept-level `round{N}.json` (always enabled)
-- `useChoroplethData(type, year, round)` — commune choropleth (always enabled, returns null if 404)
-- `useCircoChoroplethData(type, year, round)` — circo choropleth (always enabled)
+- `useElectionIndex()` — the manifest (typed `ElectionRef[]`)
+- `usePalette(type, year)` — per-election `palette.json` (null when absent)
+- `useChoroplethData(type, year, round, enabled)` — commune choropleth (enabled per manifest)
+- `useCircoChoroplethData(type, year, round, enabled)` — circo choropleth (enabled per manifest)
 - `useFullCommuneData(type, year, round, enabled)` — full commune JSON (~34 MB), only when commune tab active
 - `useFullCircoData(type, year, round, enabled)` — full circo JSON, only when circo tab active
 
 ### `src/components/FranceMap.tsx`
 The most complex component. Key responsibilities:
 - Initialises MapLibre map once (cleanup on unmount)
-- `makeStyle()` — builds the full MapLibre style spec: sources + all layers. Called once; style never rebuilt.
+- `makeStyle()` — builds the full MapLibre style spec: sources + all layers. Called once; style never rebuilt. Préfecture/sous-préfecture label layers come from the `adminLabelLayer()` factory.
+- `syncMapData()` — single source of truth for data → map sync (feature-state colors + layer visibility). Called from both the `map.on('load')` handler and the data-change effect, so the two can't drift.
 - `applyChoroplethColors()` — iterates choropleth communes, calls `setFeatureState`. Handles Z-code translation for circos.
-- `applyDeptColors()` — applies dept-level colors from `electionData`
+- `applyDeptColors()` — applies dept-level colors from `electionData` and mirrors them onto the `overseas` GeoJSON source
+- `applyCityDotColors()` — colors the top-30 city dots from the commune choropleth
 - Hover handlers — per layer, track `prevHoveredRef` to clear previous hover
 - Click handlers — per layer, translate Z-codes, call `setClickedCommune`. `overseas-fill` handler guards against overwriting circo/commune clicks.
 - `getFeatureBounds()` — extracts `LngLatBoundsLike` from a GeoJSON Polygon/MultiPolygon for zoom-to-feature
@@ -83,7 +95,7 @@ The most complex component. Key responsibilities:
   - `[flyTarget, setFlyTarget]` — handles programmatic fly-to from city list clicks
   - `[clickedCommune]` — syncs selected feature highlight; translates INSEE→Zcode for circos
 
-**Layer visibility management**: commune/circo layers are toggled via `setLayoutProperty` in the choropleth effect. `city-dots`, `prefecture-labels`, `sous-prefecture-labels` are also toggled there (commune mode only). The `← Vue générale` button shows when `focusedTerritory || (clickedCommune && clickedCommune !== '99')` and calls `setFocusedTerritory(null)` + `setClickedCommune(null)` + `fitBounds(METRO_BOUNDS)`.
+**Layer visibility management**: all granularity-dependent layers (commune/circo fills+outlines, `city-dots`, `prefecture-labels`, `sous-prefecture-labels`) are toggled via `setLayoutProperty` inside `syncMapData()`. The `← Vue générale` button shows when `!useIsOverview()` and calls `setFocusedTerritory(null)` + `setClickedCommune(null)` + `fitBounds(METRO_BOUNDS)`.
 
 ### `src/components/ResultsPanel.tsx`
 Sidebar. Three states:
@@ -92,6 +104,9 @@ Sidebar. Three states:
 3. **Active** — full results for `clickedCommune ?? hoveredCommune`
 
 Overseas fallback: `overseasDeptCode(code)` detects 5-digit overseas codes (starting with '97'/'98'), looks up the 3-digit département code in `electionData`, and shows an amber notice banner.
+
+### `src/components/CommuneSearch.tsx`
+Search field shown in the commune-tab idle sidebar (under the hint text, above the city list). Debounced (250 ms) search-as-you-type against `https://geo.api.gouv.fr/communes?nom=…&boost=population` (no local commune index shipped). Selecting a hit calls `setClickedCommune(code)` + `setFlyTarget({ lng, lat, zoom: 11 })` — same mechanism as the top-30 city list. Zoom 11 is past `COMMUNE_MIN_ZOOM` so the commune polygon is rendered and highlighted.
 
 ### `src/components/AbroadMap.tsx`
 D3 Natural Earth 1 world map (210×107px SVG). Fetches `land-110m.json` on mount and renders continent outlines via topojson. Shows 11 circo dots colored by leading candidate (always visible, all tabs). Click behavior differs by granularity:
@@ -150,7 +165,7 @@ Note: `round2.json` is missing the `'99'` (Français à l'étranger) entry.
   communes: [{ inseeCode: string, leadingCandidate: string }]   // ~35,000 entries
 }
 ```
-Only metropolitan France + Corsica. Overseas communes absent.
+All of France: metropolitan + Corsica + overseas communes (INSEE codes `971xx`–`988xx`, converted from the ministry's Z-codes by `scripts/fix-overseas-codes.mjs`) + consular "communes" of Français à l'étranger (`99001`–`99210`). Overseas communes have no polygons in the tiles, so their entries only serve sidebar lookups (e.g. via CommuneSearch), not map coloring.
 
 ### `round1-circ-choropleth.json` (circo choropleth)
 ```typescript
@@ -200,7 +215,8 @@ Français à l'étranger circos: `9901`–`9911` (INSEE codes used throughout; n
 2. **`promoteId` keeps the property** — for vector tile sources with `promoteId`, the promoted property stays accessible via `['get', 'code']` in filter/paint expressions AND becomes the feature ID.
 3. **`communes-fill` minzoom is 7** — below zoom 7, tippecanoe has dropped most commune features. The dept fill provides color continuity. Don't rely on commune features being present below zoom 7.
 4. **`setClickedCommune` toggles** — calling it with the same code that's already set will clear it (null), because the store uses `s.clickedCommune === inseeCode ? null : inseeCode`.
-5. **Overseas commune data is absent** — `round1-communes.json` has zero overseas entries. The `overseasDeptCode()` function in `ResultsPanel.tsx` handles the fallback.
+5. **Overseas communes have data but no tile polygons** — `round1-communes.json` includes DOM/COM communes (converted from ministry Z-codes), but `france-admin.pmtiles` has no commune polygons for them, so they can't be clicked on the map (the `overseas-fill` dept layer handles clicks there). The `overseasDeptCode()` fallback in `ResultsPanel.tsx` covers any code that still misses.
+6. **Tile geometry predates some commune mergers** — ~406 obsolete commune polygons in the tiles map to their absorbing commune via `src/utils/mergedCommunes.ts` (generated by `scripts/build-merged-communes.mjs`). Coloring, hover, click, and selection all translate through it. The destroyed WWI villages of the Meuse (55039 etc.) are intentionally unmapped — they genuinely have no election data.
 6. **`flyTarget` is consumed once** — FranceMap sets it to null after use. Don't depend on it persisting.
 7. **AbroadMap is always shown** — it fades out visually when zoomed in but stays mounted. The `opacity` + `pointer-events-none` approach avoids remounting the D3 map.
 8. **`circoQuery` is always loaded** — `useCircoChoroplethData` has no `enabled` guard. It always fetches, so the abroad circo results are always available regardless of active tab.

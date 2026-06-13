@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ElectionType } from '../types/election'
+import type { ElectionType, Granularity } from '../types/election'
 
 interface SelectedElection {
   type: ElectionType
@@ -7,7 +7,7 @@ interface SelectedElection {
   round: number
 }
 
-export type Granularity = 'commune' | 'circonscription'
+export type { Granularity }
 
 interface FlyTarget {
   lng: number
@@ -49,3 +49,14 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   setFocusedTerritory: (focusedTerritory) => set({ focusedTerritory }),
   setFlyTarget: (flyTarget) => set({ flyTarget }),
 }))
+
+/**
+ * True when the map shows the full-France overview (nothing selected except
+ * possibly the Français à l'étranger aggregate, no overseas territory focused).
+ * Drives the fade-out of the overseas insets and the abroad panel.
+ */
+export function useIsOverview(): boolean {
+  return useElectionStore(
+    (s) => (!s.clickedCommune || s.clickedCommune === '99') && !s.focusedTerritory,
+  )
+}
