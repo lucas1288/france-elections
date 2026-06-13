@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react'
 import * as d3geo from 'd3-geo'
 import * as topojson from 'topojson-client'
 import type { ChoroplethData } from '../hooks/useElectionData'
-import type { RoundData } from '../types/election'
+import type { Palette, RoundData } from '../types/election'
 import type { Granularity } from '../store/electionStore'
 import { useElectionStore } from '../store/electionStore'
-import { getCandidateColor } from '../utils/partyColors'
+import { getCandidateColor, partyByName } from '../utils/partyColors'
 
 interface Props {
   electionData: RoundData | undefined
   circoChoro: ChoroplethData | null
   granularity: Granularity
+  palette: Palette | null
 }
 
 const W = 220
@@ -40,7 +41,7 @@ const CIRCO_CENTERS: Record<string, [number, number]> = {
   '9911': [ 120,  15],  // Asie + Pacifique
 }
 
-export function AbroadMap({ electionData, circoChoro, granularity }: Props) {
+export function AbroadMap({ electionData, circoChoro, granularity, palette }: Props) {
   const { clickedCommune, setClickedCommune } = useElectionStore()
   const [landPath, setLandPath] = useState<string>('')
 
@@ -56,7 +57,7 @@ export function AbroadMap({ electionData, circoChoro, granularity }: Props) {
   }, [])
 
   const candidates = circoChoro?.candidates ?? electionData?.candidates ?? []
-  const partyByName = new Map(candidates.map(c => [c.name, c.party]))
+  const parties = partyByName(candidates)
   const abroadEntries = (circoChoro?.communes ?? []).filter(c => c.inseeCode.startsWith('99'))
 
   // Overall abroad winner: prefer '99' aggregate; fall back to modal leader
@@ -107,7 +108,7 @@ export function AbroadMap({ electionData, circoChoro, granularity }: Props) {
           const projected = projection(center)
           if (!projected) return null
           const [x, y] = projected
-          const color = getCandidateColor(c.leadingCandidate, 0, partyByName.get(c.leadingCandidate))
+          const color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
           const isSelected = clickedCommune === c.inseeCode
 
           return (
@@ -135,7 +136,7 @@ export function AbroadMap({ electionData, circoChoro, granularity }: Props) {
           En tête :{' '}
           <span
             className="font-semibold"
-            style={{ color: getCandidateColor(overallWinner, 0, partyByName.get(overallWinner)) }}
+            style={{ color: getCandidateColor(overallWinner, 0, parties.get(overallWinner), palette) }}
           >
             {overallWinner}
           </span>
@@ -147,8 +148,11 @@ export function AbroadMap({ electionData, circoChoro, granularity }: Props) {
         <div className="mt-2 space-y-0.5">
           {abroadEntries.map(c => {
             const num = parseInt(c.inseeCode.replace('99', ''), 10)
-            const color = getCandidateColor(c.leadingCandidate, 0, partyByName.get(c.leadingCandidate))
+            const color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
             const isSelected = clickedCommune === c.inseeCode
+            // Compact display: surname for "Prénom NOM" candidates, full label for nuances
+            const lastWord = c.leadingCandidate.split(' ').pop() ?? c.leadingCandidate
+            const displayName = lastWord === lastWord.toUpperCase() ? lastWord : c.leadingCandidate
             return (
               <button
                 key={c.inseeCode}
@@ -160,8 +164,8 @@ export function AbroadMap({ electionData, circoChoro, granularity }: Props) {
                 <span className={`w-5 text-right shrink-0 ${isSelected ? 'font-semibold text-gray-800' : 'text-gray-400'}`}>
                   {num}e
                 </span>
-                <span className={isSelected ? 'font-semibold text-gray-800' : 'text-gray-600'}>
-                  {c.leadingCandidate.split(' ').pop()}
+                <span className={`min-w-0 truncate ${isSelected ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>
+                  {displayName}
                 </span>
               </button>
             )

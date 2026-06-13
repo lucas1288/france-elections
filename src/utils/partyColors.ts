@@ -47,16 +47,27 @@ const FALLBACK_COLORS = [
   '#84cc16', '#a855f7', '#f97316', '#06b6d4',
 ]
 
+import type { Palette } from '../types/election'
+
+/** Builds a candidate-name → party-code lookup from an election's candidate list. */
+export function partyByName(candidates: Array<{ name: string; party: string }>): Map<string, string> {
+  return new Map(candidates.map((c) => [c.name, c.party]))
+}
+
 /**
- * Returns the hex color for a candidate.
- * Checks name first, then party code, then falls back to a stable palette entry.
+ * Returns the hex color for a candidate (or nuance/list for legislatives).
+ * Resolution order: election palette by name → palette by party/nuance code →
+ * built-in 2022 tables (legacy fallback) → stable categorical palette entry.
  */
 export function getCandidateColor(
   candidateName: string,
   index = 0,
   party?: string,
+  palette?: Palette | null,
 ): string {
   return (
+    palette?.byName?.[candidateName] ??
+    (party ? palette?.parties?.[party]?.color : undefined) ??
     BY_NAME[candidateName] ??
     (party ? BY_PARTY[party] : undefined) ??
     FALLBACK_COLORS[index % FALLBACK_COLORS.length]

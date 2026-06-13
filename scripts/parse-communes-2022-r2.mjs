@@ -23,6 +23,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'fs'
+import { inseeFromMinistry } from './fix-overseas-codes.mjs'
 
 const CAND_START = 19
 const CAND_STRIDE = 7
@@ -45,7 +46,7 @@ for (const line of lines.slice(1)) {
 
   const deptCode    = cols[0].trim()
   const communeCode = cols[2].trim().padStart(3, '0')
-  const inseeCode   = deptCode + communeCode
+  const inseeCode   = inseeFromMinistry(deptCode + communeCode)
   const name        = cols[3].trim()
   const inscrits    = parseNum(cols[5])
   const votants     = parseNum(cols[8])

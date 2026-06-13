@@ -28,7 +28,7 @@ An interactive map of French election results, built with React, MapLibre GL JS,
 ### Français à l'étranger
 - A small world map (D3 Natural Earth projection, continent outlines from Natural Earth 110m) is shown below the candidate legend.
 - **Commune/circo tabs**: shows colored dots for all 11 overseas French circonscriptions (coded `9901`–`9911`), always visible. In commune tab, clicking the globe shows the aggregate abroad result (`inseeCode: '99'`). In circo tab, each dot is individually clickable.
-- Results for overseas communes fall back to département-level data with a notice explaining that commune-level data for DOM-TOM has not been made available by the ministry.
+- Commune-level results exist for all DOM/COM communes (searchable via the sidebar search field), though the map tiles have no commune polygons for them — clicks on overseas territories resolve at département level, with a notice in the sidebar when commune data is unavailable.
 
 ---
 
@@ -147,7 +147,7 @@ All election data from the **French Ministry of the Interior** (`data.interieur.
 | `SUBCOM*.txt` | Fixed-width, 1 row/commune | Metropolitan France + Corsica only | Commune-level sidebar and choropleth |
 | `CIRLG*.txt` | Fixed-width, 1 row/circonscription | All 577 circos + 11 abroad (`ZZ01`–`ZZ11` → `9901`–`9911`) | Circonscription sidebar and choropleth |
 
-**Known data gap**: The ministry's SUBCOM files only cover metropolitan France and Corsica. No commune-level results exist for DOM-TOM (Guadeloupe, Martinique, Guyane, La Réunion, Mayotte). Clicking overseas communes falls back to département-level data with a notice in the sidebar.
+**Code conventions**: The ministry's SUBCOM files use Z-prefixed dept codes for overseas communes (`ZA101` = Les Abymes); `scripts/fix-overseas-codes.mjs` converts them to INSEE codes (`97101`). The commune tile geometry predates some "communes nouvelles" mergers; `scripts/build-merged-communes.mjs` generates `src/utils/mergedCommunes.ts` mapping ~406 obsolete polygon codes to their absorbing commune so they color and resolve correctly.
 
 **Round 2 gap**: `round2.json` is missing the `'99'` aggregate entry for Français à l'étranger (present in round 1). The circo-level data (`round2-circ.json`) does include `9901`–`9911`.
 
@@ -181,10 +181,19 @@ The dev server runs at `http://localhost:5173`. All data files are served static
 To rebuild the election data from ministry source files, run the parse scripts in `scripts/` with Node.js (ESM):
 
 ```bash
-node scripts/parse-round1-2022.mjs   # Département level
-node scripts/parse-communes-2022.mjs  # Commune level round 1
-node scripts/parse-communes-2022-r2.mjs  # Commune level round 2
-node scripts/parse-cirlg-2022.mjs    # Circonscription level (both rounds)
+node scripts/parse-round1-2022.mjs        # Présidentielle — département level
+node scripts/parse-communes-2022.mjs      # Présidentielle — commune level round 1
+node scripts/parse-communes-2022-r2.mjs   # Présidentielle — commune level round 2
+node scripts/parse-cirlg-2022.mjs         # Présidentielle — circonscription level (both rounds)
+node scripts/parse-legislatives-2022.mjs  # Législatives — circo + département levels (both rounds)
+```
+
+Raw ministry source files for the legislatives live in `data-sources/` (checked in so the
+pipeline is reproducible). Each election also has a hand-curated `palette.json`
+(party/nuance → color, alliance flags) next to its data files, and is declared in
+`public/data/elections/index.json` (rounds, available granularities, geometry version).
+
+```bash
 ```
 
 To rebuild the PMTiles from GeoJSON sources, install [tippecanoe](https://github.com/felt/tippecanoe):
@@ -206,7 +215,7 @@ tippecanoe -o public/data/tiles/circonscriptions.pmtiles \
 
 ## Known limitations & future work
 
-- **Overseas commune-level data** — the ministry's SUBCOM files cover only metropolitan France and Corsica. DOM commune data is published separately per territory and has not been integrated.
+- **Overseas commune polygons** — commune-level results exist for DOM/COM communes, but `france-admin.pmtiles` contains no commune geometry for them, so they can't be displayed or clicked on the map (results are reachable via the sidebar search).
 - **Round 2 abroad aggregate** — `round2.json` is missing the `'99'` entry for Français à l'étranger. The circo-level abroad data for round 2 is complete.
 - **Single election** — only Présidentielle 2022 is loaded. The data pipeline and UI are designed to support multiple elections.
 - **No collectivités circos** — Wallis-et-Futuna, Polynésie française, Nouvelle-Calédonie, and Saint-Martin/Saint-Barth have no circo boundary polygons in any public dataset.

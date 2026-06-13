@@ -1,6 +1,7 @@
-import { useElectionStore } from './store/electionStore'
+import { useEffect } from 'react'
+import { useElectionStore, useIsOverview } from './store/electionStore'
 import type { Granularity } from './store/electionStore'
-import { useElectionData, useChoroplethData, useCircoChoroplethData, useFullCommuneData, useFullCircoData } from './hooks/useElectionData'
+import { useElectionData, useChoroplethData, useCircoChoroplethData, useFullCommuneData, useFullCircoData, useElectionIndex, usePalette } from './hooks/useElectionData'
 import { FranceMap } from './components/FranceMap'
 import { ElectionSelector } from './components/ElectionSelector'
 import { ResultsPanel } from './components/ResultsPanel'
@@ -43,21 +44,38 @@ function GranularityToggle({
 }
 
 export default function App() {
-  const { selected, granularity, setGranularity, clickedCommune, focusedTerritory } = useElectionStore()
+  const { selected, granularity, setGranularity } = useElectionStore()
+  const isOverview = useIsOverview()
+  const indexQuery = useElectionIndex()
+  const electionRef = indexQuery.data?.elections.find(
+    (e) => e.type === selected.type && e.year === selected.year,
+  )
+  // Availability comes from the manifest; while it loads, assume available so
+  // the initial (presidential 2022) queries start without waiting.
+  const communeAvailable = electionRef?.granularities.includes('commune') ?? true
+  const circoAvailable = electionRef?.granularities.includes('circonscription') ?? true
+
+  // If the selected election doesn't offer the active granularity, switch.
+  useEffect(() => {
+    if (!electionRef) return
+    if (!electionRef.granularities.includes(granularity)) {
+      setGranularity(electionRef.granularities[0])
+    }
+  }, [electionRef, granularity, setGranularity])
+
   const electionQuery = useElectionData(selected.type, selected.year, selected.round)
-  const choroplethQuery = useChoroplethData(selected.type, selected.year, selected.round)
-  const circoQuery = useCircoChoroplethData(selected.type, selected.year, selected.round)
+  const paletteQuery = usePalette(selected.type, selected.year)
+  const choroplethQuery = useChoroplethData(selected.type, selected.year, selected.round, communeAvailable)
+  const circoQuery = useCircoChoroplethData(selected.type, selected.year, selected.round, circoAvailable)
   const fullCommuneQuery = useFullCommuneData(
     selected.type, selected.year, selected.round,
-    granularity === 'commune',
+    communeAvailable && granularity === 'commune',
   )
   const fullCircoQuery = useFullCircoData(
     selected.type, selected.year, selected.round,
-    granularity === 'circonscription',
+    circoAvailable && granularity === 'circonscription',
   )
-
-  const communeAvailable = !!choroplethQuery.data
-  const circoAvailable = !!circoQuery.data
+  const palette = paletteQuery.data ?? null
 
   const effectiveChoropleth =
     granularity === 'commune' ? (choroplethQuery.data ?? null) : (circoQuery.data ?? null)
@@ -108,21 +126,27 @@ export default function App() {
             </div>
           )}
 
-          <FranceMap electionData={electionQuery.data} choroplethData={effectiveChoropleth} />
+          <FranceMap
+            electionData={electionQuery.data}
+            choroplethData={effectiveChoropleth}
+            palette={palette}
+            geometry={electionRef?.geometry}
+          />
           {/* Top-right overlay: legend + abroad panel stacked */}
           <div className="absolute top-4 right-14 z-10 flex flex-col gap-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
-            <Legend electionData={electionQuery.data} />
+            <Legend electionData={electionQuery.data} palette={palette} />
             <div
               className="transition-opacity duration-300"
               style={{
-                opacity: (!clickedCommune || clickedCommune === '99') && !focusedTerritory ? 1 : 0,
-                pointerEvents: (!clickedCommune || clickedCommune === '99') && !focusedTerritory ? 'auto' : 'none',
+                opacity: isOverview ? 1 : 0,
+                pointerEvents: isOverview ? 'auto' : 'none',
               }}
             >
               <AbroadMap
                 electionData={electionQuery.data}
                 circoChoro={circoQuery.data ?? null}
                 granularity={granularity}
+                palette={palette}
               />
             </div>
           </div>
@@ -136,7 +160,7 @@ export default function App() {
           circoData={fullCircoQuery.data ?? null}
           circoChoro={circoQuery.data ?? null}
           granularity={granularity}
-          circoAvailable={circoAvailable}
+          palette={palette}
         />
       </div>
     </div>
