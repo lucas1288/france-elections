@@ -11,8 +11,9 @@ import * as d3geo from 'd3-geo'
 import type { Feature, MultiPolygon, Polygon } from 'geojson'
 import type { Palette, RoundData } from '../types/election'
 import { useElectionStore } from '../store/electionStore'
+import { partyByName } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
-import { territoryColor } from '../utils/territoryColor'
+import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 
 interface CommuneProperties {
   code: string
@@ -54,12 +55,13 @@ interface InsetProps extends InsetDef {
   fillColor: string
   isHovered: boolean
   isClicked: boolean
+  isWon: boolean
   onEnter: () => void
   onLeave: () => void
   onClick: () => void
 }
 
-function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, onEnter, onLeave, onClick }: InsetProps) {
+function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, isWon, onEnter, onLeave, onClick }: InsetProps) {
   const fc = useMemo(
     () => feature ? { type: 'FeatureCollection' as const, features: [feature] } : null,
     [feature],
@@ -85,8 +87,8 @@ function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, on
           <path
             d={d}
             fill={fillColor}
-            stroke={isClicked ? '#0f172a' : isHovered ? '#334155' : '#94a3b8'}
-            strokeWidth={isClicked ? 1.5 : isHovered ? 1 : 0.5}
+            stroke={isClicked ? '#0f172a' : isWon ? '#ffffff' : isHovered ? '#334155' : '#94a3b8'}
+            strokeWidth={isClicked ? 1.5 : isWon ? 2 : isHovered ? 1 : 0.5}
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
             onClick={onClick}
@@ -140,6 +142,18 @@ export function OverseasInsets({ electionData, palette }: Props) {
 
   const getFill = (code: string) => fillByCode.get(code) ?? '#e2e8f0'
 
+  // Territories the selected force came 1st in (single-party view) — get a highlight border.
+  const wonByCode = useMemo(() => {
+    const s = new Set<string>()
+    if (!electionData || colorMode.kind !== 'party') return s
+    const parties = partyByName(electionData.candidates)
+    const codes = partyCodeSet(colorMode.party, palette)
+    for (const c of electionData.communes) {
+      if (codes.has(parties.get(c.leadingCandidate) ?? '')) s.add(c.inseeCode)
+    }
+    return s
+  }, [electionData, palette, colorMode])
+
   if (focusedTerritory) return null
 
   return (
@@ -156,6 +170,7 @@ export function OverseasInsets({ electionData, palette }: Props) {
             fillColor={getFill(inset.code)}
             isHovered={hoveredCommune === inset.code}
             isClicked={clickedCommune === inset.code}
+            isWon={wonByCode.has(inset.code)}
             onEnter={() => setHoveredCommune(inset.code)}
             onLeave={() => setHoveredCommune(null)}
             onClick={() => { setClickedCommune(inset.code); setFocusedTerritory(inset.code) }}

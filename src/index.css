@@ -1,8 +1,10 @@
+/* Must precede other rules: a CSS @import placed after @tailwind is dropped,
+   which would leave MapLibre's popup/control styles unapplied. */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import 'maplibre-gl/dist/maplibre-gl.css';
 
 * {
   box-sizing: border-box;
@@ -14,4 +16,14 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+/* Hover tooltip: don't let it intercept pointer events (would flicker the hover). */
+.hover-tip {
+  pointer-events: none;
+}
+.hover-tip .maplibregl-popup-content {
+  padding: 7px 9px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
 }

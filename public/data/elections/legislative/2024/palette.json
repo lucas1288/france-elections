@@ -1,0 +1,26 @@
+{
+  "parties": {
+    "EXG": { "label": "Extrême gauche", "color": "#8B0000" },
+    "FI":  { "label": "La France insoumise", "color": "#CC2443" },
+    "COM": { "label": "Parti communiste", "color": "#DC2626" },
+    "SOC": { "label": "Parti socialiste", "color": "#F06292" },
+    "RDG": { "label": "Parti radical de gauche", "color": "#E8A33D" },
+    "VEC": { "label": "Les Écologistes", "color": "#2ECC71" },
+    "ECO": { "label": "Divers écologiste", "color": "#66BB6A" },
+    "UG":  { "label": "Nouveau Front populaire", "color": "#C4022E", "alliance": true, "members": ["FI", "SOC", "COM", "VEC", "RDG", "DVG"] },
+    "DVG": { "label": "Divers gauche", "color": "#F08080" },
+    "REG": { "label": "Régionalistes", "color": "#8D6E63" },
+    "DIV": { "label": "Divers", "color": "#9CA3AF" },
+    "ENS": { "label": "Ensemble", "color": "#FF8C00", "alliance": true, "members": ["RE", "MODEM", "HOR"] },
+    "DVC": { "label": "Divers centre", "color": "#FFB347" },
+    "HOR": { "label": "Horizons", "color": "#41B6E6" },
+    "UDI": { "label": "UDI", "color": "#4FC3F7" },
+    "LR":  { "label": "Les Républicains", "color": "#0066CC" },
+    "DVD": { "label": "Divers droite", "color": "#6699CC" },
+    "DSV": { "label": "Droite souverainiste", "color": "#26466D" },
+    "UXD": { "label": "Union de l'extrême droite", "color": "#1F3A66" },
+    "RN":  { "label": "Rassemblement national", "color": "#003189" },
+    "REC": { "label": "Reconquête", "color": "#1D1D1B" },
+    "EXD": { "label": "Extrême droite", "color": "#3D2B1F" }
+  }
+}
