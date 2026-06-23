@@ -1,6 +1,6 @@
 export type ElectionType = 'presidential' | 'legislative' | 'european'
 
-export type Granularity = 'commune' | 'circonscription'
+export type Granularity = 'commune' | 'circonscription' | 'hemicycle'
 
 /** One election in the manifest (public/data/elections/index.json). */
 export interface ElectionRef {

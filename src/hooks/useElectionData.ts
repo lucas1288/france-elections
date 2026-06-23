@@ -16,7 +16,8 @@ export interface ChoroplethData {
   year: number
   round: number
   candidates: Array<{ name: string; party: string }>
-  communes: Array<{ inseeCode: string; leadingCandidate: string }>
+  /** `abstention` (percent) is added by scripts/add-choropleth-abstention.mjs. */
+  communes: Array<{ inseeCode: string; leadingCandidate: string; abstention?: number }>
 }
 
 /**

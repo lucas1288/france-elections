@@ -199,10 +199,16 @@ pipeline is reproducible). Each election also has a hand-curated `palette.json`
 To rebuild the PMTiles from GeoJSON sources, install [tippecanoe](https://github.com/felt/tippecanoe):
 
 ```bash
-# Communes + départements
-tippecanoe -o public/data/tiles/france-admin.pmtiles \
-  --layer=communes --use-attribute-for-id=code communes.geojson \
-  --layer=departements --use-attribute-for-id=code departements.geojson
+# Communes + départements (france-admin.pmtiles) — single canonical build.
+# Fetches all metro + overseas commune contours from geo.api.gouv.fr, tiles them
+# as the `communes` layer, AND dissolves them by département into the
+# `departements` layer (so dept boundaries trace commune edges exactly — no
+# slivers), then tile-joins the Paris/Lyon/Marseille arrondissements back in.
+# Requires tippecanoe + tile-join on PATH and npx mapshaper. Keeps a .bak.
+node scripts/build-departements.mjs
+# After rebuilding, bump the `?v=N` query on the admin pmtiles URL in
+# src/components/FranceMap.tsx (TILE_SOURCES) so browsers don't read stale
+# byte offsets from the previous archive (see CLAUDE.md gotcha #11).
 
 # Circonscriptions
 tippecanoe -o public/data/tiles/circonscriptions.pmtiles \
@@ -211,11 +217,15 @@ tippecanoe -o public/data/tiles/circonscriptions.pmtiles \
   circonscriptions-legislatives-p10.geojson
 ```
 
+> Note: `scripts/build-departements.mjs` supersedes the older two-step flow
+> (`build-overseas-communes.mjs` + manual `tile-join`) — it fetches overseas
+> communes itself as part of the same fetch, so communes and départements always
+> come from one coherent source.
+
 ---
 
 ## Known limitations & future work
 
-- **Overseas commune polygons** — commune-level results exist for DOM/COM communes, but `france-admin.pmtiles` contains no commune geometry for them, so they can't be displayed or clicked on the map (results are reachable via the sidebar search).
 - **Round 2 abroad aggregate** — `round2.json` is missing the `'99'` entry for Français à l'étranger. The circo-level abroad data for round 2 is complete.
 - **Single election** — only Présidentielle 2022 is loaded. The data pipeline and UI are designed to support multiple elections.
 - **No collectivités circos** — Wallis-et-Futuna, Polynésie française, Nouvelle-Calédonie, and Saint-Martin/Saint-Barth have no circo boundary polygons in any public dataset.

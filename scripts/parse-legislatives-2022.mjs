@@ -21,6 +21,7 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { inseeFromMinistry } from './fix-overseas-codes.mjs'
 
 const SRC = 'data-sources/legislatives-2022'
 const OUT = 'public/data/elections/legislative/2022'
@@ -124,6 +125,43 @@ function parseDpt(file) {
   return depts
 }
 
+// ── Commune level ───────────────────────────────────────────────────────────────
+// The subcom file is one row per commune × circonscription, with real candidates.
+// We aggregate to the commune by NUANCE (comparable across circos), summing votes
+// across every circo a commune spans (Paris, Lyon, Marseille, etc.).
+//   19 fixed cols + per candidate ×8: Panneau;Sexe;Nom;Prénom;Nuance;Voix;%Ins;%Exp
+function parseSubcom(file) {
+  const byCommune = new Map()
+  for (const line of readLines(file)) {
+    const cols = line.split(';')
+    if (cols.length < 29) continue
+    const insee = inseeFromMinistry(cols[0].trim() + cols[4].trim().padStart(3, '0'))
+    let e = byCommune.get(insee)
+    if (!e) {
+      e = { inseeCode: insee, name: cols[5].trim(), reg: 0, vot: 0, bl: 0, nul: 0, exp: 0, nuances: new Map() }
+      byCommune.set(insee, e)
+    }
+    e.reg += num(cols[7]); e.vot += num(cols[10]); e.bl += num(cols[12]); e.nul += num(cols[15]); e.exp += num(cols[18])
+    for (let i = 21; i + 5 < cols.length; i += 8) {
+      const nuance = cols[i + 4]?.trim()
+      if (!nuance) continue
+      e.nuances.set(nuance, (e.nuances.get(nuance) ?? 0) + num(cols[i + 5]))
+    }
+  }
+  const communes = []
+  for (const e of byCommune.values()) {
+    const candidates = [...e.nuances.entries()]
+      .map(([nuance, votes]) => ({ name: label(nuance), party: nuance, votes, percentage: pct(votes, e.exp) }))
+      .sort((a, b) => b.votes - a.votes)
+    communes.push({
+      inseeCode: e.inseeCode, name: e.name,
+      registeredVoters: e.reg, turnout: e.vot, blankVotes: e.bl, nullVotes: e.nul, expressedVotes: e.exp,
+      candidates, leadingCandidate: candidates[0]?.name ?? '',
+    })
+  }
+  return communes
+}
+
 // Global nuance list for a round, ordered by national vote total.
 function nuanceList(entries) {
   const totals = new Map()
@@ -163,7 +201,13 @@ for (const [round, circos] of [[1, r1], [2, r2complete]]) {
   })
   write(`round${round}-circ-choropleth.json`, {
     granularity: 'circonscription', year: 2022, round, candidates,
-    communes: circos.map((c) => ({ inseeCode: c.inseeCode, leadingCandidate: label(c.leadingNuance) })),
+    communes: circos.map((c) => ({
+      inseeCode: c.inseeCode,
+      leadingCandidate: label(c.leadingNuance),
+      abstention: c.registeredVoters
+        ? Math.round(((c.registeredVoters - c.turnout) / c.registeredVoters) * 1000) / 10
+        : undefined,
+    })),
   })
 }
 
@@ -173,4 +217,21 @@ for (const [round, file] of [[1, 'resultats-par-niveau-dpt-t1-france-entiere.txt
     year: 2022, round, candidates: nuanceList(depts), communes: depts,
   })
   console.log(`  round ${round}: ${depts.length} départements`)
+}
+
+for (const [round, file] of [[1, 'resultats-par-niveau-subcom-t1-france-entiere.txt'], [2, 'resultats-par-niveau-subcom-t2-france-entiere.txt']]) {
+  const communes = parseSubcom(file)
+  const candidates = nuanceList(communes)
+  write(`round${round}-communes.json`, { year: 2022, round, candidates, communes })
+  write(`round${round}-communes-choropleth.json`, {
+    granularity: 'commune', year: 2022, round, candidates,
+    communes: communes.map((c) => ({
+      inseeCode: c.inseeCode,
+      leadingCandidate: c.leadingCandidate,
+      abstention: c.registeredVoters
+        ? Math.round(((c.registeredVoters - c.turnout) / c.registeredVoters) * 1000) / 10
+        : undefined,
+    })),
+  })
+  console.log(`  round ${round}: ${communes.length} communes`)
 }
