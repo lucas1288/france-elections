@@ -1,10 +1,13 @@
+import { useMemo } from 'react'
 import { useElectionStore } from '../store/electionStore'
 import type { Granularity } from '../store/electionStore'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
+import { computeNationalTotals } from '../utils/nationalResults'
 import { TOP_CITIES } from '../utils/topCities'
 import { CommuneSearch } from './CommuneSearch'
+import { NationalSummary } from './NationalSummary'
 
 interface Props {
   electionData: RoundData | undefined
@@ -70,6 +73,23 @@ function overseasDeptCode(code: string): string | null {
 export function ResultsPanel({ electionData, communeData, communeChoro, circoData, circoChoro, granularity, palette }: Props) {
   const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget } = useElectionStore()
 
+  // National baseline ("reminder" ghost bar). Keyed by display name (presidential
+  // both levels + legislative commune, all by nuance label) and by party/nuance
+  // code (legislative circo, where local rows are persons but the nuance carries
+  // the comparable national figure).
+  const nationalPct = useMemo(() => {
+    if (!electionData) return null
+    const totals = computeNationalTotals(electionData)
+    const byName = new Map<string, number>()
+    const byParty = new Map<string, number>()
+    for (const c of totals.candidates) {
+      byName.set(c.name, c.percentage)
+      if (c.party && !byParty.has(c.party)) byParty.set(c.party, c.percentage)
+    }
+    return (name: string, party?: string): number | null =>
+      byName.get(name) ?? (party ? byParty.get(party) ?? null : null)
+  }, [electionData])
+
   const activeCode = clickedCommune ?? hoveredCommune
 
   const commune = (() => {
@@ -82,7 +102,8 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
       const deptCode = overseasDeptCode(activeCode)
       return deptCode ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null) : null
     }
-    if (granularity === 'circonscription' && circoData) {
+    // circonscription + hemicycle both resolve against full circo data
+    if (granularity !== 'commune' && circoData) {
       return circoData.communes.find((c) => c.inseeCode === activeCode) ?? null
     }
     return electionData?.communes.find((c) => c.inseeCode === activeCode) ?? null
@@ -99,14 +120,16 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
     const hint =
       granularity === 'commune' && !communeData
         ? 'Chargement des données communales…'
-        : granularity === 'circonscription' && !circoData
+        : granularity !== 'commune' && !circoData
         ? 'Chargement des données par circonscription…'
+        : granularity === 'hemicycle'
+        ? 'Cliquez sur un siège pour afficher les résultats de la circonscription'
         : granularity === 'circonscription'
         ? 'Survolez ou cliquez sur une circonscription pour afficher ses résultats'
         : 'Survolez ou cliquez sur une commune pour afficher ses résultats'
 
-    // ── Circo mode: ranked list of candidates by number of circos won ──────────
-    if (granularity === 'circonscription' && circoChoro) {
+    // ── Circo / hemicycle idle: ranked list of candidates by circos won ─────────
+    if (granularity !== 'commune' && circoChoro) {
       const parties = partyByName(circoChoro.candidates)
 
       // First-place counts from lightweight choropleth
@@ -137,6 +160,7 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
 
       return (
         <PanelShell>
+          <NationalSummary electionData={electionData} palette={palette} />
           <p className="px-4 pt-3 pb-1 text-xs text-gray-400 leading-relaxed">{hint}</p>
           <div className="px-4 pt-2 pb-4 space-y-3">
             {/* Column headers */}
@@ -209,6 +233,7 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
 
     return (
       <PanelShell>
+        <NationalSummary electionData={electionData} palette={palette} />
         <p className="px-4 pt-3 pb-2 text-xs text-gray-400 leading-relaxed">{hint}</p>
         <CommuneSearch />
         <div className="border-t border-gray-100 px-3 pt-3 pb-4">
@@ -322,6 +347,7 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
           .sort((a, b) => b.percentage - a.percentage)
           .map((cand, i) => {
             const color = getCandidateColor(cand.name, i, cand.party, palette)
+            const natPct = nationalPct?.(cand.name, cand.party) ?? null
             return (
               <CandidateRow
                 key={cand.name}
@@ -334,14 +360,27 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
                 }
                 bar={
                   <>
+                    {/* Local score bar */}
                     <div className="w-full bg-gray-100 rounded-full h-1.5">
                       <div
-                        className="h-1.5 rounded-full"
+                        className="h-full rounded-full"
                         style={{ width: `${cand.percentage}%`, background: color }}
                       />
                     </div>
+                    {/* National "reminder" bar — same colour, faded, below the local bar */}
+                    {natPct != null && (
+                      <div className="w-full bg-gray-50 rounded-full h-1 mt-0.5">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${Math.min(natPct, 100)}%`, background: color, opacity: 0.35 }}
+                        />
+                      </div>
+                    )}
                     <p className="text-xs text-gray-400 mt-0.5">
                       {fmtInt(cand.votes)} voix
+                      {natPct != null && (
+                        <span className="text-gray-300"> · national {fmt(natPct)}%</span>
+                      )}
                     </p>
                   </>
                 }

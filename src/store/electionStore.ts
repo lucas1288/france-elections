@@ -15,6 +15,19 @@ interface FlyTarget {
   zoom: number
 }
 
+/**
+ * How the choropleth is colored:
+ * - `leader`     — each territory by its winning candidate/nuance (default)
+ * - `party`      — single force; territories shaded by score-vs-national (ratio)
+ * - `abstention` — grey ramp by abstention rate
+ */
+export type ColorMode =
+  | { kind: 'leader' }
+  | { kind: 'party'; party: string }
+  | { kind: 'abstention' }
+
+const LEADER: ColorMode = { kind: 'leader' }
+
 interface ElectionStore {
   selected: SelectedElection
   granularity: Granularity
@@ -22,6 +35,9 @@ interface ElectionStore {
   clickedCommune: string | null
   focusedTerritory: string | null
   flyTarget: FlyTarget | null
+  colorMode: ColorMode
+  /** True once the map is zoomed past the overview (drives auto-hide of overlays). */
+  mapZoomedIn: boolean
 
   setSelected: (sel: SelectedElection) => void
   setGranularity: (g: Granularity) => void
@@ -29,6 +45,11 @@ interface ElectionStore {
   setClickedCommune: (inseeCode: string | null) => void
   setFocusedTerritory: (code: string | null) => void
   setFlyTarget: (target: FlyTarget | null) => void
+  setMapZoomedIn: (zoomedIn: boolean) => void
+  /** Toggle the single-party view for `party`; clicking the active one returns to leader. */
+  togglePartyMode: (party: string) => void
+  /** Toggle the abstention view; calling it while active returns to leader. */
+  toggleAbstentionMode: () => void
 }
 
 export const useElectionStore = create<ElectionStore>((set) => ({
@@ -38,8 +59,17 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   clickedCommune: null,
   focusedTerritory: null,
   flyTarget: null,
+  colorMode: LEADER,
+  mapZoomedIn: false,
 
-  setSelected: (sel) => set({ selected: sel, hoveredCommune: null, clickedCommune: null }),
+  // Election change resets a party view (its candidates differ); abstention persists.
+  setSelected: (sel) =>
+    set((s) => ({
+      selected: sel,
+      hoveredCommune: null,
+      clickedCommune: null,
+      colorMode: s.colorMode.kind === 'party' ? LEADER : s.colorMode,
+    })),
   setGranularity: (granularity) => set({ granularity }),
   setHoveredCommune: (inseeCode) => set({ hoveredCommune: inseeCode }),
   setClickedCommune: (inseeCode) =>
@@ -48,6 +78,13 @@ export const useElectionStore = create<ElectionStore>((set) => ({
     })),
   setFocusedTerritory: (focusedTerritory) => set({ focusedTerritory }),
   setFlyTarget: (flyTarget) => set({ flyTarget }),
+  setMapZoomedIn: (mapZoomedIn) => set({ mapZoomedIn }),
+  togglePartyMode: (party) =>
+    set((s) => ({
+      colorMode: s.colorMode.kind === 'party' && s.colorMode.party === party ? LEADER : { kind: 'party', party },
+    })),
+  toggleAbstentionMode: () =>
+    set((s) => ({ colorMode: s.colorMode.kind === 'abstention' ? LEADER : { kind: 'abstention' } })),
 }))
 
 /**
