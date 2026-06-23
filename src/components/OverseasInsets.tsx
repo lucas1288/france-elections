@@ -14,6 +14,7 @@ import { useElectionStore } from '../store/electionStore'
 import { partyByName } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
+import { dataUrl } from '../utils/dataUrl'
 
 interface CommuneProperties {
   code: string
@@ -117,7 +118,7 @@ export function OverseasInsets({ electionData, palette }: Props) {
 
   // Fetch overseas GeoJSON once
   useEffect(() => {
-    fetch('/data/geo/overseas.geojson')
+    fetch(dataUrl('/data/geo/overseas.geojson'))
       .then((r) => r.json())
       .then((fc) => {
         const map = new Map<string, GeoFeature>()

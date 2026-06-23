@@ -8,6 +8,7 @@ import type { ColorMode } from '../store/electionStore'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
 import type { NationalTotals } from '../utils/nationalResults'
+import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade } from '../utils/gradient'
 import { OverseasInsets } from './OverseasInsets'
@@ -115,8 +116,8 @@ function adminLabelLayer(
 }
 
 function makeStyle(geometry: { admin: string; circo: string }): maplibregl.StyleSpecification {
-  const adminUrl = `pmtiles://${window.location.origin}${TILE_SOURCES[geometry.admin] ?? TILE_SOURCES[DEFAULT_GEOMETRY.admin]}`
-  const circoUrl = `pmtiles://${window.location.origin}${TILE_SOURCES[geometry.circo] ?? TILE_SOURCES[DEFAULT_GEOMETRY.circo]}`
+  const adminUrl = pmtilesUrl(TILE_SOURCES[geometry.admin] ?? TILE_SOURCES[DEFAULT_GEOMETRY.admin])
+  const circoUrl = pmtilesUrl(TILE_SOURCES[geometry.circo] ?? TILE_SOURCES[DEFAULT_GEOMETRY.circo])
 
   // Fills are fully opaque: a translucent overlay (circo/commune) would composite
   // over the colored dept-fill beneath it, so the same winner showed slightly
