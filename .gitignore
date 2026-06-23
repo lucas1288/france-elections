@@ -12,3 +12,13 @@ dist/
 
 # OS
 .DS_Store
+
+# Raw ministry source files — build-time inputs only (consumed by scripts/parse-*.mjs),
+# never served to the browser. Re-downloadable from data.gouv; see data-sources/README.md.
+data-sources/
+
+# Local backups of generated tiles
+*.pmtiles.bak
+
+# Local env overrides (e.g. VITE_DATA_BASE_URL)
+.env.local

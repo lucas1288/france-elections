@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ElectionRef, Palette, RoundData } from '../types/election'
+import { dataUrl } from '../utils/dataUrl'
 
-async function fetchJson<T>(url: string): Promise<T> {
+async function fetchJson<T>(path: string): Promise<T> {
+  const url = dataUrl(path)
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`)
   return res.json() as Promise<T>
@@ -24,11 +26,11 @@ export interface ChoroplethData {
  * Fetches a JSON data file that may legitimately not exist for a given
  * election/round (returns null on 404 instead of erroring). Cached forever.
  */
-function useOptionalJson<T>(queryKey: unknown[], url: string, enabled = true) {
+function useOptionalJson<T>(queryKey: unknown[], path: string, enabled = true) {
   return useQuery<T | null>({
     queryKey,
     queryFn: async () => {
-      const res = await fetch(url)
+      const res = await fetch(dataUrl(path))
       if (!res.ok) return null
       return res.json() as Promise<T>
     },
