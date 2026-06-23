@@ -8,6 +8,7 @@ import { useElectionStore } from '../store/electionStore'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
 import { territoryColor } from '../utils/territoryColor'
+import { dataUrl } from '../utils/dataUrl'
 import { abstentionShade } from '../utils/gradient'
 
 interface Props {
@@ -52,7 +53,7 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
   const [landPath, setLandPath] = useState<string>('')
 
   useEffect(() => {
-    fetch('/data/geo/land-110m.json')
+    fetch(dataUrl('/data/geo/land-110m.json'))
       .then(r => r.json())
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((topo: any) => {
