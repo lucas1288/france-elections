@@ -3,6 +3,7 @@ import { useElectionStore, useIsOverview } from './store/electionStore'
 import type { Granularity } from './store/electionStore'
 import { useElectionData, useChoroplethData, useCircoChoroplethData, useFullCommuneData, useFullCircoData, useElectionIndex, usePalette } from './hooks/useElectionData'
 import { FranceMap } from './components/FranceMap'
+import { Hemicycle } from './components/Hemicycle'
 import { ElectionSelector } from './components/ElectionSelector'
 import { ResultsPanel } from './components/ResultsPanel'
 import { Legend } from './components/Legend'
@@ -11,34 +12,36 @@ import { AbroadMap } from './components/AbroadMap'
 function GranularityToggle({
   value,
   onChange,
-  communeAvailable,
-  circoAvailable,
+  available,
 }: {
   value: Granularity
   onChange: (g: Granularity) => void
-  communeAvailable: boolean
-  circoAvailable: boolean
+  available: Granularity[]
 }) {
   const base = 'px-3 py-1 text-xs font-medium rounded transition-colors'
-  const active = 'bg-blue-600 text-white'
+  const activeCls = 'bg-blue-600 text-white'
   const inactive = 'text-gray-600 hover:bg-gray-100'
   const disabled = 'text-gray-300 cursor-not-allowed'
 
-  const btn = (g: Granularity, label: string, available: boolean) => (
-    <button
-      className={`${base} ${!available ? disabled : value === g ? active : inactive}`}
-      disabled={!available}
-      onClick={() => available && onChange(g)}
-      title={!available ? 'Données non disponibles' : undefined}
-    >
-      {label}
-    </button>
-  )
+  const btn = (g: Granularity, label: string) => {
+    const ok = available.includes(g)
+    return (
+      <button
+        className={`${base} ${!ok ? disabled : value === g ? activeCls : inactive}`}
+        disabled={!ok}
+        onClick={() => ok && onChange(g)}
+        title={!ok ? 'Données non disponibles' : undefined}
+      >
+        {label}
+      </button>
+    )
+  }
 
   return (
     <div className="flex items-center gap-1 border border-gray-200 rounded p-0.5 bg-gray-50">
-      {btn('commune', 'Commune', communeAvailable)}
-      {btn('circonscription', 'Circonscription', circoAvailable)}
+      {btn('commune', 'Commune')}
+      {btn('circonscription', 'Circonscription')}
+      {available.includes('hemicycle') && btn('hemicycle', 'Hémicycle')}
     </div>
   )
 }
@@ -54,6 +57,8 @@ export default function App() {
   // the initial (presidential 2022) queries start without waiting.
   const communeAvailable = electionRef?.granularities.includes('commune') ?? true
   const circoAvailable = electionRef?.granularities.includes('circonscription') ?? true
+  const availableGranularities = electionRef?.granularities ?? ['commune', 'circonscription']
+  const isHemicycle = granularity === 'hemicycle'
 
   // If the selected election doesn't offer the active granularity, switch.
   useEffect(() => {
@@ -73,10 +78,11 @@ export default function App() {
   )
   const fullCircoQuery = useFullCircoData(
     selected.type, selected.year, selected.round,
-    circoAvailable && granularity === 'circonscription',
+    circoAvailable && (granularity === 'circonscription' || granularity === 'hemicycle'),
   )
   const palette = paletteQuery.data ?? null
   const colorMode = useElectionStore((s) => s.colorMode)
+  const mapZoomedIn = useElectionStore((s) => s.mapZoomedIn)
 
   const effectiveChoropleth =
     granularity === 'commune' ? (choroplethQuery.data ?? null) : (circoQuery.data ?? null)
@@ -103,8 +109,7 @@ export default function App() {
         <GranularityToggle
           value={granularity}
           onChange={setGranularity}
-          communeAvailable={communeAvailable}
-          circoAvailable={circoAvailable}
+          available={availableGranularities}
         />
       </header>
 
@@ -137,25 +142,37 @@ export default function App() {
             colorMode={colorMode}
             geometry={electionRef?.geometry}
           />
-          {/* Top-right overlay: legend + abroad panel stacked */}
-          <div className="absolute top-4 right-14 z-10 flex flex-col gap-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
-            <Legend electionData={electionQuery.data} palette={palette} />
+          {/* Hemicycle replaces the map (kept mounted underneath to avoid re-init) */}
+          {isHemicycle && (
+            <Hemicycle circoData={fullCircoQuery.data ?? null} palette={palette} round={selected.round} />
+          )}
+          {/* Top-right overlay: legend + abroad panel stacked (map views only) */}
+          {!isHemicycle && (
             <div
-              className="transition-opacity duration-300"
+              className="absolute top-4 right-14 z-10 flex flex-col gap-2 max-h-[calc(100vh-5rem)] overflow-y-auto transition-opacity duration-300"
               style={{
-                opacity: isOverview ? 1 : 0,
-                pointerEvents: isOverview ? 'auto' : 'none',
+                opacity: mapZoomedIn ? 0 : 1,
+                pointerEvents: mapZoomedIn ? 'none' : 'auto',
               }}
             >
-              <AbroadMap
-                electionData={electionQuery.data}
-                circoChoro={circoQuery.data ?? null}
-                fullData={fullData}
-                granularity={granularity}
-                palette={palette}
-              />
+              <Legend electionData={electionQuery.data} palette={palette} />
+              <div
+                className="transition-opacity duration-300"
+                style={{
+                  opacity: isOverview ? 1 : 0,
+                  pointerEvents: isOverview ? 'auto' : 'none',
+                }}
+              >
+                <AbroadMap
+                  electionData={electionQuery.data}
+                  circoChoro={circoQuery.data ?? null}
+                  fullData={fullData}
+                  granularity={granularity}
+                  palette={palette}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Sidebar */}

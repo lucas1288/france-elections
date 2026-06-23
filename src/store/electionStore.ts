@@ -36,6 +36,8 @@ interface ElectionStore {
   focusedTerritory: string | null
   flyTarget: FlyTarget | null
   colorMode: ColorMode
+  /** True once the map is zoomed past the overview (drives auto-hide of overlays). */
+  mapZoomedIn: boolean
 
   setSelected: (sel: SelectedElection) => void
   setGranularity: (g: Granularity) => void
@@ -43,6 +45,7 @@ interface ElectionStore {
   setClickedCommune: (inseeCode: string | null) => void
   setFocusedTerritory: (code: string | null) => void
   setFlyTarget: (target: FlyTarget | null) => void
+  setMapZoomedIn: (zoomedIn: boolean) => void
   /** Toggle the single-party view for `party`; clicking the active one returns to leader. */
   togglePartyMode: (party: string) => void
   /** Toggle the abstention view; calling it while active returns to leader. */
@@ -57,6 +60,7 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   focusedTerritory: null,
   flyTarget: null,
   colorMode: LEADER,
+  mapZoomedIn: false,
 
   // Election change resets a party view (its candidates differ); abstention persists.
   setSelected: (sel) =>
@@ -74,6 +78,7 @@ export const useElectionStore = create<ElectionStore>((set) => ({
     })),
   setFocusedTerritory: (focusedTerritory) => set({ focusedTerritory }),
   setFlyTarget: (flyTarget) => set({ flyTarget }),
+  setMapZoomedIn: (mapZoomedIn) => set({ mapZoomedIn }),
   togglePartyMode: (party) =>
     set((s) => ({
       colorMode: s.colorMode.kind === 'party' && s.colorMode.party === party ? LEADER : { kind: 'party', party },
