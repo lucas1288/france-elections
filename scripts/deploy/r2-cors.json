@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": [
+          "http://localhost:5173",
+          "http://localhost:4173",
+          "https://france-elections.pages.dev"
+        ],
+        "methods": ["GET", "HEAD"],
+        "headers": ["Range", "If-Match", "If-None-Match"]
+      },
+      "exposeHeaders": ["Content-Length", "Content-Range", "Accept-Ranges", "ETag"],
+      "maxAgeSeconds": 86400
+    }
+  ]
+}

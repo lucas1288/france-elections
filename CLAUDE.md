@@ -2,6 +2,13 @@
 
 This file gives an AI assistant full technical context for the `france-elections` project so it can contribute effectively from the first message of any session.
 
+**Companion docs**: this file is the canonical **technical** reference. Planning,
+strategy, and operational context live in [`documentation/`](documentation/) — start at
+[`documentation/README.md`](documentation/README.md) for the index, plus
+[`hosting-and-deployment.md`](documentation/hosting-and-deployment.md) and
+[`roadmap.md`](documentation/roadmap.md). Keep both in sync: code-level facts here,
+decisions/strategy there.
+
 ---
 
 ## Project summary
