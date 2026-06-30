@@ -2,6 +2,8 @@
 
 An interactive map of French election results, built with React, MapLibre GL JS, and PMTiles. Browse results at commune or circonscription level, zoom into overseas territories, and inspect per-candidate vote shares for any geographic unit.
 
+> 📚 **Full project context lives in [`documentation/`](documentation/)** — hosting & deployment plan, roadmap & vision, and an index of all docs. Deep technical reference is in [`CLAUDE.md`](CLAUDE.md).
+
 ---
 
 ## What it does
