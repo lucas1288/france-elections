@@ -178,7 +178,21 @@ npm install
 npm run dev
 ```
 
-The dev server runs at `http://localhost:5173`. All data files are served statically from `public/`.
+The dev server runs at `http://localhost:5173`.
+
+**Data is not in the repo.** The election JSON and vector tiles (~230 MB) live in
+Cloudflare R2, not git (see [documentation/hosting-and-deployment.md](documentation/hosting-and-deployment.md)).
+A fresh clone has an empty `public/data/`, so the map will be blank until you point the
+app at the data. Two options:
+
+```bash
+# Option 1 (easiest) — fetch data from the live R2 bucket (CORS already allows localhost):
+echo "VITE_DATA_BASE_URL=https://pub-dc194401b9554e44a944ff785d4ced48.r2.dev" > .env.local
+npm run dev
+
+# Option 2 — regenerate the data locally from ministry source files (see below),
+# then run `npm run dev` with no VITE_DATA_BASE_URL (served from public/).
+```
 
 To rebuild the election data from ministry source files, run the parse scripts in `scripts/` with Node.js (ESM):
 
@@ -190,8 +204,9 @@ node scripts/parse-cirlg-2022.mjs         # Présidentielle — circonscription 
 node scripts/parse-legislatives-2022.mjs  # Législatives — circo + département levels (both rounds)
 ```
 
-Raw ministry source files for the legislatives live in `data-sources/` (checked in so the
-pipeline is reproducible). Each election also has a hand-curated `palette.json`
+Raw ministry source files live in `data-sources/` (git-ignored — re-downloadable from
+data.gouv; see [data-sources/README.md](data-sources/README.md) for provenance). Each
+election also has a hand-curated `palette.json`
 (party/nuance → color, alliance flags) next to its data files, and is declared in
 `public/data/elections/index.json` (rounds, available granularities, geometry version).
 

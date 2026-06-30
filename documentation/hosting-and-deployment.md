@@ -70,11 +70,10 @@ See [`roadmap.md`](roadmap.md) for the future-feature thinking.
 ## Outstanding before/at deploy
 
 - **Pick a starting path** (just-ship vs Pages+R2) and a domain.
-- **Move `public/data` tiles+JSON to R2** when doing it right — this is what finally
-  clears GitHub's 82 MB-file warning, which persists only because those files are still
-  tracked in git. (Headroom note: GitHub *blocks* pushes over 100 MB/file — the 82 MB
-  tileset is ~18 MB from that ceiling as more elections are added, so this isn't purely
-  cosmetic long-term.)
+- ~~**Move `public/data` tiles+JSON to R2** and untrack from git~~ DONE June 2026 — data
+  lives in R2; `public/data/` is git-ignored and was purged from history (`.git` shrunk
+  again). This cleared GitHub's 82 MB-file warning and removed the 100 MB/file push
+  ceiling. Local dev now needs `VITE_DATA_BASE_URL` → R2 or regenerated data (see README).
 - PMTiles requires the host to honour **range requests** (R2/S3/B2 do; GitHub Pages is
   unreliable for this on large files — avoid it for the data).
 

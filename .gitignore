@@ -17,6 +17,11 @@ dist/
 # never served to the browser. Re-downloadable from data.gouv; see data-sources/README.md.
 data-sources/
 
+# Generated election data + tiles — served from R2 in production, not tracked in git.
+# Kept on disk locally (regenerate via scripts/, or point VITE_DATA_BASE_URL at R2).
+# See documentation/hosting-and-deployment.md.
+public/data/
+
 # Local backups of generated tiles
 *.pmtiles.bak
 
