@@ -27,6 +27,9 @@ interface Props {
   colorMode: ColorMode
   /** Geometry version ids from the election manifest. */
   geometry?: { admin: string; circo: string }
+  /** Mobile shell: portrait fit + suppress the desktop-only overseas insets
+   *  column and "Vue générale" button (mobile provides its own chrome). */
+  mobile?: boolean
 }
 
 // Geometry version id → PMTiles file. New entries appear here as historical
@@ -51,6 +54,12 @@ const METRO_BOUNDS: maplibregl.LngLatBoundsLike = [[-5.5, 41.2], [9.7, 51.2]]
 // Extra padding on the right shifts the metropolitan view left so Corsica (far
 // south-east) isn't hidden behind the Legend / Français-à-l'étranger overlays.
 const METRO_FIT: maplibregl.FitBoundsOptions = { padding: { top: 40, bottom: 40, left: 50, right: 270 } }
+// Mobile portrait: the view is width-constrained (France's ~1.4:1 box in a tall
+// phone viewport), so minimal horizontal padding lets France grow as large as
+// possible — cutting the inherent vertical whitespace. The floating chrome (top
+// bar, bottom switcher, corner buttons) is translucent, so France may sit under
+// it like the desktop overlays; only a little top/bottom breathing room is kept.
+const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = { padding: { top: 48, bottom: 56, left: 8, right: 8 } }
 
 // Bounding boxes for overseas territories (used for flyTo on inset click)
 const OVERSEAS_BOUNDS: Record<string, maplibregl.LngLatBoundsLike> = {
@@ -154,7 +163,10 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
 
   return {
     version: 8,
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    // Self-hosted glyphs (public/fonts/Open Sans Bold/*.pbf) — the old
+    // demotiles.maplibre.org endpoint 404s now, which killed all map labels.
+    // Shipped with the static build (not R2), so no external runtime dependency.
+    glyphs: `${import.meta.env.BASE_URL}fonts/{fontstack}/{range}.pbf`,
     sources: {
       admin: {
         type: 'vector',
@@ -489,7 +501,8 @@ type SourceLayer = 'communes' | 'departements' | 'circonscriptions'
 interface HoverTarget { id: string; sourceLayer: SourceLayer; source: 'admin' | 'circo' }
 
 // ── Component ──────────────────────────────────────────────────────────────────
-export function FranceMap({ electionData, choroplethData, fullData, palette, colorMode, geometry }: Props) {
+export function FranceMap({ electionData, choroplethData, fullData, palette, colorMode, geometry, mobile = false }: Props) {
+  const metroFit = mobile ? METRO_FIT_MOBILE : METRO_FIT
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const electionDataRef = useRef(electionData)
@@ -536,11 +549,13 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       container: containerRef.current,
       style: makeStyle(geometryRef.current),
       bounds: METRO_BOUNDS,
-      fitBoundsOptions: METRO_FIT,
+      fitBoundsOptions: metroFit,
       attributionControl: false,
     })
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    // Desktop only: on mobile the top bar occupies the top-right and pinch-zoom
+    // replaces the +/- buttons.
+    if (!mobile) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
 
     // Auto-hide the floating overlays once zoomed in (only fire on threshold crossing).
     let wasZoomedIn = false
@@ -681,7 +696,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     })
 
     return () => { tipPopup.remove(); tipPopupRef.current = null; map.remove(); mapRef.current = null }
-  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn])
+  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, metroFit, mobile])
 
   // ── Geometry version change (era switch) → rebuild style, then re-sync ─────
   useEffect(() => {
@@ -723,9 +738,9 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     if (focusedTerritory && OVERSEAS_BOUNDS[focusedTerritory]) {
       map.fitBounds(OVERSEAS_BOUNDS[focusedTerritory], { padding: 40, duration: 800 })
     } else if (!focusedTerritory) {
-      map.fitBounds(METRO_BOUNDS, { ...METRO_FIT, duration: 800 })
+      map.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
     }
-  }, [focusedTerritory])
+  }, [focusedTerritory, metroFit])
 
   // ── Fly to programmatic target (e.g. city list click) ────────────────────
   useEffect(() => {
@@ -771,19 +786,21 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
   return (
     <div className="h-full w-full relative">
       <div ref={containerRef} className="h-full w-full" />
-      <div
-        className="transition-opacity duration-300"
-        style={{ opacity: showInsets ? 1 : 0, pointerEvents: showInsets ? 'auto' : 'none' }}
-      >
-        <OverseasInsets electionData={electionData} palette={palette} />
-      </div>
-      {!isOverview && (
+      {!mobile && (
+        <div
+          className="transition-opacity duration-300"
+          style={{ opacity: showInsets ? 1 : 0, pointerEvents: showInsets ? 'auto' : 'none' }}
+        >
+          <OverseasInsets electionData={electionData} palette={palette} />
+        </div>
+      )}
+      {!mobile && !isOverview && (
         <button
           className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded px-2 py-1 shadow-sm"
           onClick={() => {
             setFocusedTerritory(null)
             setClickedCommune(null)
-            mapRef.current?.fitBounds(METRO_BOUNDS, { ...METRO_FIT, duration: 800 })
+            mapRef.current?.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
           }}
         >
           ← Vue générale

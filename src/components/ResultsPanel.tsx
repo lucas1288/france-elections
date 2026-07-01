@@ -4,7 +4,7 @@ import type { Granularity } from '../store/electionStore'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
-import { computeNationalTotals } from '../utils/nationalResults'
+import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetail'
 import { TOP_CITIES } from '../utils/topCities'
 import { CommuneSearch } from './CommuneSearch'
 import { NationalSummary } from './NationalSummary'
@@ -61,60 +61,17 @@ function fmtInt(n: number) {
   return n.toLocaleString('fr-FR')
 }
 
-// Overseas commune codes: 5 digits starting with 97x or 98x.
-// The corresponding département code is the first 3 digits.
-function overseasDeptCode(code: string): string | null {
-  if (code.length === 5 && (code.startsWith('97') || code.startsWith('98'))) {
-    return code.slice(0, 3)
-  }
-  return null
-}
-
 export function ResultsPanel({ electionData, communeData, communeChoro, circoData, circoChoro, granularity, palette }: Props) {
   const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget } = useElectionStore()
 
-  // National baseline ("reminder" ghost bar). Keyed by display name (presidential
-  // both levels + legislative commune, all by nuance label) and by party/nuance
-  // code (legislative circo, where local rows are persons but the nuance carries
-  // the comparable national figure).
-  const nationalPct = useMemo(() => {
-    if (!electionData) return null
-    const totals = computeNationalTotals(electionData)
-    const byName = new Map<string, number>()
-    const byParty = new Map<string, number>()
-    for (const c of totals.candidates) {
-      byName.set(c.name, c.percentage)
-      if (c.party && !byParty.has(c.party)) byParty.set(c.party, c.percentage)
-    }
-    return (name: string, party?: string): number | null =>
-      byName.get(name) ?? (party ? byParty.get(party) ?? null : null)
-  }, [electionData])
+  const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
 
   const activeCode = clickedCommune ?? hoveredCommune
-
-  const commune = (() => {
-    if (!activeCode) return null
-    if (granularity === 'commune' && communeData) {
-      const direct = communeData.communes.find((c) => c.inseeCode === activeCode)
-        ?? electionData?.communes.find((c) => c.inseeCode === activeCode)
-      if (direct) return direct
-      // Overseas commune fallback: use département-level data
-      const deptCode = overseasDeptCode(activeCode)
-      return deptCode ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null) : null
-    }
-    // circonscription + hemicycle both resolve against full circo data
-    if (granularity !== 'commune' && circoData) {
-      return circoData.communes.find((c) => c.inseeCode === activeCode) ?? null
-    }
-    return electionData?.communes.find((c) => c.inseeCode === activeCode) ?? null
-  })()
-
-  // True when we're showing département-level data as a fallback for an overseas commune click
-  const isOverseasFallback =
-    commune !== null &&
-    activeCode !== null &&
-    overseasDeptCode(activeCode) !== null &&
-    commune.inseeCode !== activeCode
+  const { commune, isOverseasFallback } = resolveTerritory(activeCode, granularity, {
+    electionData,
+    communeData,
+    circoData,
+  })
 
   if (!commune) {
     const hint =

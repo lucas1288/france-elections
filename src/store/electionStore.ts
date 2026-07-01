@@ -50,6 +50,8 @@ interface ElectionStore {
   togglePartyMode: (party: string) => void
   /** Toggle the abstention view; calling it while active returns to leader. */
   toggleAbstentionMode: () => void
+  /** Reset to the default leader (winner) view. */
+  setLeaderMode: () => void
 }
 
 export const useElectionStore = create<ElectionStore>((set) => ({
@@ -85,6 +87,7 @@ export const useElectionStore = create<ElectionStore>((set) => ({
     })),
   toggleAbstentionMode: () =>
     set((s) => ({ colorMode: s.colorMode.kind === 'abstention' ? LEADER : { kind: 'abstention' } })),
+  setLeaderMode: () => set({ colorMode: LEADER }),
 }))
 
 /**
