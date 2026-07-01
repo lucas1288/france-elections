@@ -246,5 +246,5 @@ Français à l'étranger circos: `9901`–`9911` (INSEE codes used throughout; n
 
 - `npm run dev` — starts Vite dev server at `http://localhost:5173`
 - `npx tsc --noEmit` — type-check without building (zero errors expected)
-- Map glyph source: `https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf` (used for all text labels; font: `Open Sans Bold`)
+- Map glyph source: **self-hosted** at `public/fonts/Open Sans Bold/{range}.pbf` (referenced as `${import.meta.env.BASE_URL}fonts/{fontstack}/{range}.pbf` in `FranceMap.tsx` `makeStyle()`; font: `Open Sans Bold`; Latin + punctuation ranges 0-255, 256-511, 512-767, 768-1023, 8192-8447 downloaded from fonts.openmaptiles.org). Ships with the static build, NOT R2. Replaced the old `demotiles.maplibre.org/font/...` endpoint which started 404-ing and silently killed all map labels. To add glyph ranges: download more `{range}.pbf` into that dir.
 - World land data: `public/data/geo/land-110m.json` (copied from `node_modules/world-atlas/land-110m.json` at setup time)

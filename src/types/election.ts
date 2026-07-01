@@ -12,6 +12,8 @@ export interface ElectionRef {
   granularities: Granularity[]
   /** Geometry version ids, resolved to tile URLs in FranceMap. */
   geometry: { admin: string; circo: string }
+  /** National winner (leading force) — shown as a dot + label in the picker. */
+  winner?: { name: string; color: string }
 }
 
 /**
