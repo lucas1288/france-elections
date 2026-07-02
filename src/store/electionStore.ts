@@ -38,6 +38,9 @@ interface ElectionStore {
   colorMode: ColorMode
   /** True once the map is zoomed past the overview (drives auto-hide of overlays). */
   mapZoomedIn: boolean
+  /** True whenever the map is zoomed in past the overview baseline by any amount
+   * (finer than `mapZoomedIn`); drives the mobile back button + national snippet hide. */
+  zoomedAway: boolean
 
   setSelected: (sel: SelectedElection) => void
   setGranularity: (g: Granularity) => void
@@ -46,6 +49,7 @@ interface ElectionStore {
   setFocusedTerritory: (code: string | null) => void
   setFlyTarget: (target: FlyTarget | null) => void
   setMapZoomedIn: (zoomedIn: boolean) => void
+  setZoomedAway: (away: boolean) => void
   /** Toggle the single-party view for `party`; clicking the active one returns to leader. */
   togglePartyMode: (party: string) => void
   /** Toggle the abstention view; calling it while active returns to leader. */
@@ -63,6 +67,7 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   flyTarget: null,
   colorMode: LEADER,
   mapZoomedIn: false,
+  zoomedAway: false,
 
   // Election change resets a party view (its candidates differ); abstention persists.
   setSelected: (sel) =>
@@ -81,6 +86,7 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   setFocusedTerritory: (focusedTerritory) => set({ focusedTerritory }),
   setFlyTarget: (flyTarget) => set({ flyTarget }),
   setMapZoomedIn: (mapZoomedIn) => set({ mapZoomedIn }),
+  setZoomedAway: (zoomedAway) => set({ zoomedAway }),
   togglePartyMode: (party) =>
     set((s) => ({
       colorMode: s.colorMode.kind === 'party' && s.colorMode.party === party ? LEADER : { kind: 'party', party },

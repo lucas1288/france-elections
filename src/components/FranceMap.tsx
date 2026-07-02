@@ -59,7 +59,7 @@ const METRO_FIT: maplibregl.FitBoundsOptions = { padding: { top: 40, bottom: 40,
 // possible — cutting the inherent vertical whitespace. The floating chrome (top
 // bar, bottom switcher, corner buttons) is translucent, so France may sit under
 // it like the desktop overlays; only a little top/bottom breathing room is kept.
-const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = { padding: { top: 48, bottom: 56, left: 8, right: 8 } }
+const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = { padding: { top: 40, bottom: 380, left: 8, right: 8 } }
 
 // Bounding boxes for overseas territories (used for flyTo on inset click)
 const OVERSEAS_BOUNDS: Record<string, maplibregl.LngLatBoundsLike> = {
@@ -527,10 +527,16 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     sourceLayer: 'departements', source: 'admin',
   })
 
-  const { setHoveredCommune, setClickedCommune, clickedCommune, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget, setMapZoomedIn, mapZoomedIn } = useElectionStore()
+  const { setHoveredCommune, setClickedCommune, clickedCommune, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget, setMapZoomedIn, mapZoomedIn, zoomedAway, setZoomedAway } = useElectionStore()
   const isOverview = useIsOverview()
   // Overseas insets share the overlay auto-hide: visible only at the overview AND not zoomed in.
   const showInsets = isOverview && !mapZoomedIn
+  // `zoomedAway` (store) — whether the map is zoomed in past the overview baseline
+  // (any amount). Drives the mobile "back to overview" button AND the national
+  // snippet's auto-hide, so both react even to a mild dept-level zoom, unlike the
+  // coarser `mapZoomedIn` (fixed z8 threshold, tuned for overlay hiding).
+  // `overviewZoomRef` caches the overview's own zoom for the comparison.
+  const overviewZoomRef = useRef(0)
 
   // Fast lookup for the hover tooltip: département entries + full per-territory data.
   useEffect(() => {
@@ -559,9 +565,17 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
 
     // Auto-hide the floating overlays once zoomed in (only fire on threshold crossing).
     let wasZoomedIn = false
+    let wasAway = false
     map.on('zoom', () => {
       const zoomedIn = map.getZoom() >= ZOOM_HIDE_OVERLAYS
       if (zoomedIn !== wasZoomedIn) { wasZoomedIn = zoomedIn; setMapZoomedIn(zoomedIn) }
+      // "Away from overview" = zoomed in beyond the overview's own zoom (+ a small
+      // margin so a settle wobble doesn't flicker the back button).
+      if (!overviewZoomRef.current) {
+        overviewZoomRef.current = map.cameraForBounds(METRO_BOUNDS, metroFit)?.zoom ?? map.getZoom()
+      }
+      const away = map.getZoom() > overviewZoomRef.current + 0.3
+      if (away !== wasAway) { wasAway = away; setZoomedAway(away) }
     })
     mapRef.current = map
 
@@ -696,7 +710,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     })
 
     return () => { tipPopup.remove(); tipPopupRef.current = null; map.remove(); mapRef.current = null }
-  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, metroFit, mobile])
+  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, setZoomedAway, metroFit, mobile])
 
   // ── Geometry version change (era switch) → rebuild style, then re-sync ─────
   useEffect(() => {
@@ -804,6 +818,26 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
           }}
         >
           ← Vue générale
+        </button>
+      )}
+      {/* Mobile: icon-only "back to overview" — shown whenever the map is away from
+          the overview (a selection/focus is active OR the user has zoomed in, by
+          click or pinch). Lives here (not MobileLayout) so it can fitBounds the map.
+          `pointer-events-auto` keeps it tappable even if a sheet locks the body. */}
+      {mobile && (zoomedAway || !isOverview) && (
+        <button
+          type="button"
+          aria-label="Revenir à la vue d'ensemble"
+          className="pointer-events-auto absolute left-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5"
+          onClick={() => {
+            setFocusedTerritory(null)
+            setClickedCommune(null)
+            mapRef.current?.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
       )}
     </div>

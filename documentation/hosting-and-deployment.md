@@ -91,6 +91,36 @@ See [`roadmap.md`](roadmap.md) for the future-feature thinking.
   the app shell but fail to fetch data. Use the apex prod URL. Widen CORS (wildcard
   `https://*.france-elections.pages.dev`) when enabling the preview workflow.
 
+## Cost model & scaling — R2 free-tier watch (revisit later)
+
+Noted so it isn't a surprise: R2 has **zero egress cost**, so traffic *volume* is never the
+bill. What R2 meters is **operations**, and the one that matters for a tile-heavy map is
+**Class B (reads)**:
+
+| Dimension | Free tier (always-free)¹ | Our exposure |
+|---|---|---|
+| Storage | 10 GB-month | ~230 MB (tiles + JSON) → far under |
+| Egress | unlimited / $0 | popularity spikes cost nothing in bytes-out |
+| Class B ops (reads: GET) | 10 M / month | ⚠️ **the variable to watch** |
+| Class A ops (writes: PUT/list) | 1 M / month | only on data re-uploads → negligible |
+
+¹ Stable but confirm on Cloudflare's current pricing page before relying on exact numbers.
+
+**Why reads are the risk:** PMTiles is read via **HTTP range requests** — one map session
+fires *many* small range GETs into the `.pmtiles` archive as the user pans/zooms, plus one
+GET per JSON file. **Each = one Class B op.** Rough order-of-magnitude: if a visit ≈ ~200
+ops, 10 M/month ≈ ~50k visits/month before approaching the free ceiling. Generous for a
+personal site, but it **scales with usage** — hence the flag.
+
+**The mitigation when we get there (don't leave R2 — cache in front of it):** we're
+currently on the raw `pub-…r2.dev` URL, which caches weakly. Putting R2 behind a
+**Cloudflare custom domain / Worker / Pages binding** lets the edge CDN cache tile+JSON
+responses. **Cache hits are served by the CDN and do NOT count as R2 Class B ops.** Data is
+static and cache-bustable (tiles already use `?v=N`), so hit-rate would be very high → R2
+reads drop to just cache misses, and the map gets faster too. Bonus: that same custom-domain
+step is also what fixes the preview-URL CORS limitation above. **Not needed at current
+traffic; revisit when usage grows or when a custom domain is set up.**
+
 ## Deploy runbook (Cloudflare Pages + R2)
 
 Defaults: R2 bucket `france-elections-data`, Pages project `france-elections`

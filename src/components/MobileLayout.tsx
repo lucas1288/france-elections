@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useElectionStore, useIsOverview } from '../store/electionStore'
+import { useElectionStore } from '../store/electionStore'
 import type { Granularity } from '../store/electionStore'
 import { FranceMap } from './FranceMap'
 import { Hemicycle } from './Hemicycle'
 import { MobileDetailSheet } from './MobileDetailSheet'
 import { AffichageSheet } from './AffichageSheet'
 import { MobileOverseasCluster } from './MobileOverseasCluster'
+import { HemicycleSheet } from './HemicycleSheet'
 import { ElectionPicker } from './ElectionPicker'
 import { SearchSheet } from './SearchSheet'
 import type { LayoutProps } from './layoutProps'
@@ -41,9 +42,6 @@ function SearchIcon() {
 export function MobileLayout(props: LayoutProps) {
   const { selected, setSelected, granularity, setGranularity } = useElectionStore()
   const colorMode = useElectionStore((s) => s.colorMode)
-  const setFocusedTerritory = useElectionStore((s) => s.setFocusedTerritory)
-  const setClickedCommune = useElectionStore((s) => s.setClickedCommune)
-  const isOverview = useIsOverview()
   const isHemicycle = granularity === 'hemicycle'
   const [pickerOpen, setPickerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -138,21 +136,22 @@ export function MobileLayout(props: LayoutProps) {
         </div>
       </div>
 
-      {!isHemicycle && <AffichageSheet electionData={props.electionData} palette={props.palette} />}
+      {!isHemicycle && (
+        <AffichageSheet
+          electionData={props.electionData}
+          palette={props.palette}
+          electionLabel={props.electionLabel}
+          round={selected.round}
+        />
+      )}
       {!isHemicycle && <MobileOverseasCluster electionData={props.electionData} palette={props.palette} />}
-
-      {/* Back to the mainland overview — mobile replacement for the desktop "Vue générale". */}
-      {!isOverview && !isHemicycle && (
-        <button
-          type="button"
-          onClick={() => { setFocusedTerritory(null); setClickedCommune(null) }}
-          className="absolute left-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-20 flex items-center gap-1.5 rounded-full bg-white/90 py-1.5 pl-2 pr-3 text-sm font-medium text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          France
-        </button>
+      {isHemicycle && (
+        <HemicycleSheet
+          circoData={props.circoData}
+          palette={props.palette}
+          electionLabel={props.electionLabel}
+          round={selected.round}
+        />
       )}
 
       <MobileDetailSheet
