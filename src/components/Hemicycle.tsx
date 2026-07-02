@@ -104,7 +104,9 @@ export function Hemicycle({ circoData, palette, round }: Props) {
         </p>
       </div>
 
-      <div className="relative flex-1 min-h-0 px-4 pb-4">
+      {/* Bottom padding reserves the space the mobile seats snippet overlays, so the
+          arch centres in the region ABOVE it (balanced, using the vertical space). */}
+      <div className="relative flex-1 min-h-0 px-4 pb-[calc(15rem+env(safe-area-inset-bottom))] md:pb-4">
         <svg viewBox={`0 0 ${VBW} ${VBH}`} className="w-full h-full" style={{ maxHeight: '100%' }}>
           {seats.map((s, i) => {
             const color = s.mp ? getCandidateColor(s.mp.name, 0, s.mp.party, palette) : EMPTY
