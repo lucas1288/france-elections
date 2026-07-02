@@ -57,7 +57,12 @@ const circoCode = (dept, code) => {
   return `${dept.padStart(2, '0')}${circo}` // métropole incl. Corse 2A/2B
 }
 // commune code already embeds the dept; 1-digit-dept rows come 4-wide → pad to INSEE 5.
-const communeInsee = (code) => (/^\d{4}$/.test(code) ? `0${code}` : code)
+// Letter-coded rows follow the 2022 convention: ZX### (St-Barth/St-Martin) → 97###
+// (ZX701→97701, ZX801→97801) and ZZ### (consular "communes" abroad) → 99###.
+const communeInsee = (code) =>
+  code.startsWith('ZX') ? `97${code.slice(2)}`
+  : code.startsWith('ZZ') ? `99${code.slice(2)}`
+  : /^\d{4}$/.test(code) ? `0${code}` : code
 
 // ── generic candidate-block reader ──────────────────────────────────────────────
 // fixed = number of leading columns; offs = {reg,vot,exp,bl,nul} fixed-col indices.
@@ -150,7 +155,7 @@ function parseDpt(file) {
     candidates.sort((a, b) => b.votes - a.votes)
     const dept = c[0].trim()
     return {
-      inseeCode: dept === 'ZZ' ? '99' : /^\d$/.test(dept) ? dept.padStart(2, '0') : dept,
+      inseeCode: dept === 'ZZ' ? '99' : dept === 'ZX' ? '977' : /^\d$/.test(dept) ? dept.padStart(2, '0') : dept,
       name: c[1].trim(),
       registeredVoters: num(c[2]), turnout: num(c[3]),
       blankVotes: num(c[10]), nullVotes: num(c[13]), expressedVotes: expressed,

@@ -35,19 +35,20 @@ const ABROAD_CODE = '99'
 const DOT_CODES = [...TERRITORIES.map((t) => t.code), ABROAD_CODE]
 
 /**
- * Mobile overseas entry (Phase 5, reworked). NOT a nav control — a small
- * schematic inset anchored in the map's lower-left sea margin (≈ Corsica's
- * latitude), the way printed French maps tuck the DOM-TOM into the margins. A
- * grid of winner-colored dots (one per territory + Français à l'étranger) reads
- * as part of the map; tapping it opens a sheet listing the territories. Tapping
- * a row focuses that territory's real map (`setFocusedTerritory` → FranceMap
- * flyTo). Dots follow the active `colorMode` via the shared `territoryColor`.
+ * Mobile overseas entry (Phase 5, reworked twice). NOT a nav control — a small
+ * schematic inset GEO-ANCHORED on the map: FranceMap portals this component into
+ * a MapLibre Marker fixed at OVERSEAS_INSET_LNGLAT (sea south-west of France, the
+ * way printed French maps tuck the DOM-TOM into the margins), so it pans and
+ * zooms WITH the terrain and simply slides out of view when the user zooms into
+ * the mainland — no visibility toggling needed. A grid of winner-colored dots
+ * (one per territory + Français à l'étranger) reads as part of the map; tapping
+ * it opens a sheet listing the territories. Tapping a row focuses that
+ * territory's real map (`setFocusedTerritory` → FranceMap flyTo). Dots follow
+ * the active `colorMode` via the shared `territoryColor`.
  */
 export function MobileOverseasCluster({ electionData, palette }: Props) {
   const [open, setOpen] = useState(false)
   const colorMode = useElectionStore((s) => s.colorMode)
-  const focusedTerritory = useElectionStore((s) => s.focusedTerritory)
-  const mapZoomedIn = useElectionStore((s) => s.mapZoomedIn)
   const setClickedCommune = useElectionStore((s) => s.setClickedCommune)
   const setFocusedTerritory = useElectionStore((s) => s.setFocusedTerritory)
 
@@ -63,9 +64,8 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
 
   const getFill = (code: string) => fillByCode.get(code) ?? '#e2e8f0'
 
-  // Hidden while a territory is focused, or once zoomed in (like the desktop
-  // insets) so the inset never floats over the communes being inspected.
-  if (!electionData || focusedTerritory || mapZoomedIn) return null
+  // No zoom/focus hide conditions: the geo anchor slides out of view naturally.
+  if (!electionData) return null
 
   const focus = (code: string) => {
     setClickedCommune(code)
@@ -77,13 +77,12 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
 
   return (
     <>
-      {/* Schematic inset in the map's lower-left margin (≈ Corsica's latitude) —
-          reads as part of the map, not a floating nav control. */}
+      {/* Schematic inset — positioned by the geo-anchored Marker, not by CSS. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Outre-mer et Français de l'étranger"
-        className="absolute left-2 top-[42%] z-20 flex flex-col items-center gap-1 rounded-md border border-slate-300/70 bg-white/65 px-2 py-1.5 backdrop-blur-[2px]"
+        className="flex flex-col items-center gap-1 rounded-md border border-slate-300/70 bg-white/65 px-2 py-1.5 backdrop-blur-[2px]"
       >
         <span className="grid grid-cols-6 gap-[3px]">
           {DOT_CODES.map((code) => (

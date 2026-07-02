@@ -5,7 +5,6 @@ import { FranceMap } from './FranceMap'
 import { Hemicycle } from './Hemicycle'
 import { MobileDetailSheet } from './MobileDetailSheet'
 import { AffichageSheet } from './AffichageSheet'
-import { MobileOverseasCluster } from './MobileOverseasCluster'
 import { HemicycleSheet } from './HemicycleSheet'
 import { ElectionPicker } from './ElectionPicker'
 import { SearchSheet } from './SearchSheet'
@@ -144,7 +143,7 @@ export function MobileLayout(props: LayoutProps) {
           round={selected.round}
         />
       )}
-      {!isHemicycle && <MobileOverseasCluster electionData={props.electionData} palette={props.palette} />}
+      {/* Overseas inset now lives inside FranceMap (geo-anchored MapLibre marker). */}
       {isHemicycle && (
         <HemicycleSheet
           circoData={props.circoData}
