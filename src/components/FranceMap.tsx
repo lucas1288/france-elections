@@ -1,4 +1,5 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import maplibregl from 'maplibre-gl'
 import { Protocol } from 'pmtiles'
 import type { CommuneResult, Palette, RoundData } from '../types/election'
@@ -12,6 +13,7 @@ import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade } from '../utils/gradient'
 import { OverseasInsets } from './OverseasInsets'
+import { MobileOverseasCluster } from './MobileOverseasCluster'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
 import { MERGED_COMMUNE_TO_CURRENT } from '../utils/mergedCommunes'
@@ -60,6 +62,11 @@ const METRO_FIT: maplibregl.FitBoundsOptions = { padding: { top: 40, bottom: 40,
 // bar, bottom switcher, corner buttons) is translucent, so France may sit under
 // it like the desktop overlays; only a little top/bottom breathing room is kept.
 const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = { padding: { top: 40, bottom: 380, left: 8, right: 8 } }
+// Geo anchor for the mobile overseas inset (MapLibre Marker): the Bay of Biscay,
+// south-west of France's coast (≈ Corsica's latitude, left side — lucas's spot).
+// Open sea on this map, so the inset reads as part of the map, pans/zooms with
+// the terrain, and slides out of view naturally when zooming into the mainland.
+const OVERSEAS_INSET_LNGLAT: [number, number] = [-3.4, 42.5]
 
 // Bounding boxes for overseas territories (used for flyTo on inset click)
 const OVERSEAS_BOUNDS: Record<string, maplibregl.LngLatBoundsLike> = {
@@ -537,6 +544,11 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
   // coarser `mapZoomedIn` (fixed z8 threshold, tuned for overlay hiding).
   // `overviewZoomRef` caches the overview's own zoom for the comparison.
   const overviewZoomRef = useRef(0)
+  // Portal container for the mobile overseas inset — handed to a MapLibre Marker
+  // (geo-anchored at OVERSEAS_INSET_LNGLAT) so the inset moves with the map.
+  // Created once per mount via the lazy initializer (detached until the marker
+  // adopts it); React renders into it through createPortal below.
+  const [overseasInsetEl] = useState(() => document.createElement('div'))
 
   // Fast lookup for the hover tooltip: département entries + full per-territory data.
   useEffect(() => {
@@ -562,6 +574,14 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     // Desktop only: on mobile the top bar occupies the top-right and pinch-zoom
     // replaces the +/- buttons.
     if (!mobile) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+
+    // Mobile: geo-anchor the overseas inset in the sea below France, printed-map
+    // style — it pans/zooms with the terrain instead of floating over it.
+    if (mobile) {
+      new maplibregl.Marker({ element: overseasInsetEl, anchor: 'center' })
+        .setLngLat(OVERSEAS_INSET_LNGLAT)
+        .addTo(map)
+    }
 
     // Auto-hide the floating overlays once zoomed in (only fire on threshold crossing).
     let wasZoomedIn = false
@@ -710,7 +730,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     })
 
     return () => { tipPopup.remove(); tipPopupRef.current = null; map.remove(); mapRef.current = null }
-  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, setZoomedAway, metroFit, mobile])
+  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, setZoomedAway, metroFit, mobile, overseasInsetEl])
 
   // ── Geometry version change (era switch) → rebuild style, then re-sync ─────
   useEffect(() => {
@@ -839,6 +859,12 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
+      )}
+      {/* Mobile overseas inset — rendered into the geo-anchored Marker's element,
+          so it lives ON the map (pans/zooms with it) rather than floating above. */}
+      {mobile && createPortal(
+        <MobileOverseasCluster electionData={electionData} palette={palette} />,
+        overseasInsetEl,
       )}
     </div>
   )
