@@ -26,4 +26,16 @@ body,
   padding: 7px 9px;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
+  color: #1e293b; /* tip text color lives here (not inline) so .dark can override */
+}
+
+/* Dark theme for the MapLibre hover tooltip (content + arrow). */
+.dark .hover-tip .maplibregl-popup-content {
+  background: #1e293b;
+  color: #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.dark .hover-tip .maplibregl-popup-tip {
+  border-top-color: #1e293b;
+  border-bottom-color: #1e293b;
 }

@@ -51,6 +51,7 @@ function seatLayout(n: number): Array<{ x: number; y: number }> {
 
 export function Hemicycle({ circoData, palette, round }: Props) {
   const { clickedCommune, setClickedCommune } = useElectionStore()
+  const isDark = useElectionStore((s) => s.isDark)
   const [hovered, setHovered] = useState<number | null>(null)
 
   const seats = useMemo<Seat[]>(() => {
@@ -83,8 +84,8 @@ export function Hemicycle({ circoData, palette, round }: Props) {
 
   if (!circoData) {
     return (
-      <div className="absolute inset-0 z-20 bg-white flex items-center justify-center">
-        <p className="text-sm text-gray-500">Chargement de l'Assemblée…</p>
+      <div className="absolute inset-0 z-20 bg-white dark:bg-slate-900 flex items-center justify-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400">Chargement de l'Assemblée…</p>
       </div>
     )
   }
@@ -92,12 +93,14 @@ export function Hemicycle({ circoData, palette, round }: Props) {
   const attributed = seats.filter((s) => s.mp).length
   const hov = hovered != null ? seats[hovered] : null
   const dotR = 5.5
+  const emptySeat = isDark ? '#475569' : EMPTY
+  const seatRing = isDark ? '#0f172a' : '#ffffff' // blends with the panel bg
 
   return (
-    <div className="absolute inset-0 z-20 bg-white flex flex-col">
+    <div className="absolute inset-0 z-20 bg-white dark:bg-slate-900 flex flex-col">
       <div className="px-6 pt-4 shrink-0">
-        <h2 className="text-base font-bold text-gray-900">Assemblée nationale</h2>
-        <p className="text-xs text-gray-500">
+        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">Assemblée nationale</h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {round === 1
             ? `${attributed} / 577 sièges attribués au 1ᵉʳ tour`
             : `577 sièges — composition après le 2ᵈ tour`}
@@ -109,7 +112,7 @@ export function Hemicycle({ circoData, palette, round }: Props) {
       <div className="relative flex-1 min-h-0 px-4 pb-[calc(15rem+env(safe-area-inset-bottom))] md:pb-4">
         <svg viewBox={`0 0 ${VBW} ${VBH}`} className="w-full h-full" style={{ maxHeight: '100%' }}>
           {seats.map((s, i) => {
-            const color = s.mp ? getCandidateColor(s.mp.name, 0, s.mp.party, palette) : EMPTY
+            const color = s.mp ? getCandidateColor(s.mp.name, 0, s.mp.party, palette) : emptySeat
             const selected = clickedCommune === s.code
             return (
               <circle
@@ -118,7 +121,7 @@ export function Hemicycle({ circoData, palette, round }: Props) {
                 cy={s.sy}
                 r={selected ? dotR + 2.5 : dotR}
                 fill={color}
-                stroke={selected ? '#0f172a' : hovered === i ? '#334155' : '#ffffff'}
+                stroke={selected ? (isDark ? '#f8fafc' : '#0f172a') : hovered === i ? (isDark ? '#cbd5e1' : '#334155') : seatRing}
                 strokeWidth={selected ? 2 : 1}
                 style={{ cursor: 'pointer' }}
                 onMouseEnter={() => setHovered(i)}
@@ -132,7 +135,7 @@ export function Hemicycle({ circoData, palette, round }: Props) {
         {/* Hover tooltip — anchored to the dot via its viewBox fractional position */}
         {hov && (
           <div
-            className="absolute pointer-events-none z-10 bg-white border border-gray-200 rounded-lg shadow-md px-2.5 py-1.5 text-xs"
+            className="absolute pointer-events-none z-10 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-md px-2.5 py-1.5 text-xs"
             style={{
               left: `${(hov.sx / VBW) * 100}%`,
               top: `${(hov.sy / VBH) * 100}%`,
@@ -141,22 +144,22 @@ export function Hemicycle({ circoData, palette, round }: Props) {
               maxWidth: 240,
             }}
           >
-            <p className="font-semibold text-gray-900 truncate">{hov.circoName}</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{hov.circoName}</p>
             {hov.mp ? (
               <>
-                <p className="text-gray-800 truncate">{hov.mp.name}</p>
+                <p className="text-gray-800 dark:text-gray-200 truncate">{hov.mp.name}</p>
                 <p className="flex items-center gap-1.5 mt-0.5">
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ background: getCandidateColor(hov.mp.name, 0, hov.mp.party, palette) }}
                   />
-                  <span className="text-gray-600 truncate">
+                  <span className="text-gray-600 dark:text-gray-300 truncate">
                     {palette?.parties?.[hov.mp.party]?.label ?? hov.mp.party}
                   </span>
                 </p>
               </>
             ) : (
-              <p className="text-gray-400">Siège non attribué au 1ᵉʳ tour</p>
+              <p className="text-gray-400 dark:text-gray-500">Siège non attribué au 1ᵉʳ tour</p>
             )}
           </div>
         )}

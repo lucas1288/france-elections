@@ -68,14 +68,14 @@ export function CommuneSearch() {
         value={term}
         onChange={(e) => setTerm(e.target.value)}
         placeholder="Rechercher une commune…"
-        className="w-full text-sm border border-gray-300 rounded px-2.5 py-1.5 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+        className="w-full text-sm border border-gray-300 dark:border-slate-600 rounded px-2.5 py-1.5 bg-white dark:bg-slate-900 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
       />
       {term.trim().length >= 2 && (
-        <div className="mt-1 border border-gray-200 rounded bg-white shadow-sm overflow-hidden">
+        <div className="mt-1 border border-gray-200 dark:border-slate-700 rounded bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
           {resultsFor !== term.trim() && hits.length === 0 ? (
-            <p className="px-2.5 py-1.5 text-xs text-gray-400">Recherche…</p>
+            <p className="px-2.5 py-1.5 text-xs text-gray-400 dark:text-gray-500">Recherche…</p>
           ) : hits.length === 0 ? (
-            <p className="px-2.5 py-1.5 text-xs text-gray-400">Aucune commune trouvée</p>
+            <p className="px-2.5 py-1.5 text-xs text-gray-400 dark:text-gray-500">Aucune commune trouvée</p>
           ) : (
             hits.map((c) => (
               <button
@@ -83,8 +83,8 @@ export function CommuneSearch() {
                 className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-left hover:bg-blue-50 transition-colors"
                 onClick={() => select(c)}
               >
-                <span className="text-sm text-gray-700 truncate">{c.nom}</span>
-                <span className="text-xs text-gray-400 shrink-0">{c.codeDepartement}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{c.nom}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{c.codeDepartement}</span>
               </button>
             ))
           )}

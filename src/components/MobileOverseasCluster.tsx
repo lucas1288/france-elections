@@ -82,7 +82,7 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Outre-mer et Français de l'étranger"
-        className="flex flex-col items-center gap-1 rounded-md border border-slate-300/70 bg-white/65 px-2 py-1.5 backdrop-blur-[2px]"
+        className="flex flex-col items-center gap-1 rounded-md border border-slate-300/70 dark:border-slate-600/70 bg-white/65 dark:bg-slate-900/65 px-2 py-1.5 backdrop-blur-[2px]"
       >
         <span className="grid grid-cols-6 gap-[3px]">
           {DOT_CODES.map((code) => (
@@ -93,7 +93,7 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
             />
           ))}
         </span>
-        <span className="max-w-[76px] text-center text-[8.5px] font-medium leading-tight text-slate-500">
+        <span className="max-w-[76px] text-center text-[8.5px] font-medium leading-tight text-slate-500 dark:text-slate-400">
           Outre-mer et Français de l'étranger
         </span>
       </button>
@@ -102,18 +102,18 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-40 bg-black/30" />
           <Drawer.Content
-            className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80%] flex-col rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.16)] outline-none"
+            className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80%] flex-col rounded-t-2xl bg-white dark:bg-slate-900 shadow-[0_-4px_24px_rgba(0,0,0,0.16)] outline-none"
             aria-describedby={undefined}
           >
-            <div className="mx-auto mt-2.5 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-gray-300" />
+            <div className="mx-auto mt-2.5 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-gray-300 dark:bg-slate-600" />
 
             <div className="flex items-center px-4 pb-2 pt-1">
-              <Drawer.Title className="text-base font-bold text-gray-900">Outre-mer et Français de l'étranger</Drawer.Title>
+              <Drawer.Title className="text-base font-bold text-gray-900 dark:text-gray-100">Outre-mer et Français de l'étranger</Drawer.Title>
               <button
                 type="button"
                 aria-label="Fermer"
                 onClick={() => setOpen(false)}
-                className="ml-auto rounded-full p-1.5 text-gray-400 hover:bg-gray-100"
+                className="ml-auto rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M18 6L6 18M6 6l12 12" />
@@ -127,11 +127,11 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
                   key={t.code}
                   type="button"
                   onClick={() => focus(t.code)}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors active:bg-gray-100"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors active:bg-gray-100 dark:active:bg-slate-800"
                 >
                   <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: getFill(t.code) }} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-gray-800">{t.label}</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300" aria-hidden="true">
+                  <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{t.label}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300 dark:text-gray-600" aria-hidden="true">
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                 </button>
@@ -142,11 +142,11 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
                 <button
                   type="button"
                   onClick={() => { setClickedCommune(ABROAD_CODE); setOpen(false) }}
-                  className="mt-1 flex w-full items-center gap-3 rounded-lg border-t border-gray-100 px-3 py-3 pt-4 text-left transition-colors active:bg-gray-100"
+                  className="mt-1 flex w-full items-center gap-3 rounded-lg border-t border-gray-100 dark:border-slate-800 px-3 py-3 pt-4 text-left transition-colors active:bg-gray-100 dark:active:bg-slate-800"
                 >
                   <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: getFill(ABROAD_CODE) }} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-gray-500">Français à l'étranger</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300" aria-hidden="true">
+                  <span className="min-w-0 flex-1 truncate text-sm text-gray-500 dark:text-gray-400">Français à l'étranger</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300 dark:text-gray-600" aria-hidden="true">
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                 </button>

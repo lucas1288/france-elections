@@ -83,23 +83,23 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Voir les résultats nationaux"
-          className="absolute inset-x-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 rounded-2xl bg-white/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 backdrop-blur-sm"
+          className="absolute inset-x-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-sm"
         >
-          {title && <p className="truncate text-sm font-bold text-gray-900">{title}</p>}
+          {title && <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{title}</p>}
 
           {/* Participation — mirrors the full sheet's block (big %, inscrits, bar, Blancs/Nuls). */}
           <div className="mt-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Participation</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Participation</p>
             <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-gray-900">{fmtPct(turnoutPct)}%</span>
-              <span className="text-xs text-gray-500">
+              <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{fmtPct(turnoutPct)}%</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 ({fmtInt(totals.turnout)} / {fmtInt(totals.registeredVoters)} inscrits)
               </span>
             </div>
-            <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-100">
+            <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
               <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${turnoutPct}%` }} />
             </div>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
               Blancs&nbsp;: {fmtPct(blankPct)}% — Nuls&nbsp;: {fmtPct(nullPct)}%
             </p>
           </div>
@@ -112,13 +112,13 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
                 <div key={c.name}>
                   <div className="flex items-center gap-2.5">
                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color }} />
-                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800">{c.name}</span>
-                    <span className="shrink-0 text-xs text-gray-400">{c.party}</span>
-                    <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900">
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{c.name}</span>
+                    <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{c.party}</span>
+                    <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {fmtPct(c.percentage)}%
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100">
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
                     <div className="h-full rounded-full" style={{ width: `${c.percentage}%`, background: color }} />
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
             })}
           </div>
 
-          <div className="mt-2.5 flex items-center justify-end gap-1 text-xs font-medium text-blue-600">
+          <div className="mt-2.5 flex items-center justify-end gap-1 text-xs font-medium text-blue-600 dark:text-blue-400">
             <span>Détails</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M9 18l6-6-6-6" />
@@ -139,7 +139,7 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Résultats nationaux"
-        className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 text-gray-600 shadow-lg backdrop-blur-sm ring-1 ring-black/5"
+        className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 dark:bg-slate-900/90 text-gray-600 dark:text-gray-300 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:ring-white/10"
       >
         {abstentionActive ? (
           <span className="h-4 w-4 shrink-0 rounded-sm" style={{ background: ABSTENTION_GRADIENT }} />
@@ -154,18 +154,18 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-40 bg-black/30" />
           <Drawer.Content
-            className="fixed inset-x-0 bottom-0 z-40 flex max-h-[82%] flex-col rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.16)] outline-none"
+            className="fixed inset-x-0 bottom-0 z-40 flex max-h-[82%] flex-col rounded-t-2xl bg-white dark:bg-slate-900 shadow-[0_-4px_24px_rgba(0,0,0,0.16)] outline-none"
             aria-describedby={undefined}
           >
-            <div className="mx-auto mt-2.5 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-gray-300" />
+            <div className="mx-auto mt-2.5 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-gray-300 dark:bg-slate-600" />
 
             <div className="flex items-center px-4 pb-1 pt-1">
-              <Drawer.Title className="text-base font-bold text-gray-900">Résultats nationaux</Drawer.Title>
+              <Drawer.Title className="text-base font-bold text-gray-900 dark:text-gray-100">Résultats nationaux</Drawer.Title>
               <button
                 type="button"
                 aria-label="Fermer"
                 onClick={() => setOpen(false)}
-                className="ml-auto rounded-full p-1.5 text-gray-400 hover:bg-gray-100"
+                className="ml-auto rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M18 6L6 18M6 6l12 12" />
@@ -173,7 +173,7 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
               </button>
             </div>
 
-            <p className="mt-1 border-t border-gray-100 px-4 pt-2.5 text-xs leading-relaxed text-gray-500">
+            <p className="mt-1 border-t border-gray-100 dark:border-slate-800 px-4 pt-2.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
               Cliquez sur la participation, un candidat ou un parti/alliance pour voir le détail de
               ses résultats sur la carte interactive.
             </p>
@@ -185,20 +185,20 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
                 type="button"
                 onClick={pickAbstention}
                 className={`mb-1 w-full rounded-lg px-2 py-2.5 text-left transition-colors ${
-                  abstentionActive ? 'bg-blue-50 ring-1 ring-blue-200' : 'active:bg-gray-100'
+                  abstentionActive ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:ring-blue-800' : 'active:bg-gray-100 dark:active:bg-slate-800'
                 }`}
               >
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Participation</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Participation</p>
                 <div className="mt-0.5 flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-gray-900">{fmtPct(turnoutPct)}%</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{fmtPct(turnoutPct)}%</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     ({fmtInt(totals.turnout)} / {fmtInt(totals.registeredVoters)} inscrits)
                   </span>
                 </div>
-                <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-100">
+                <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
                   <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${turnoutPct}%` }} />
                 </div>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   Blancs&nbsp;: {fmtPct(blankPct)}% — Nuls&nbsp;: {fmtPct(nullPct)}%
                 </p>
               </button>
@@ -212,18 +212,18 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
                     type="button"
                     onClick={() => pickParty(c.party)}
                     className={`w-full rounded-lg px-2 py-2 text-left transition-colors ${
-                      active ? 'bg-blue-50 ring-1 ring-blue-200' : 'active:bg-gray-100'
+                      active ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:ring-blue-800' : 'active:bg-gray-100 dark:active:bg-slate-800'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color }} />
-                      <span className="min-w-0 flex-1 truncate text-sm text-gray-800">{c.name}</span>
-                      <span className="shrink-0 text-xs text-gray-400">{c.party}</span>
-                      <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900">
+                      <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{c.name}</span>
+                      <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{c.party}</span>
+                      <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {fmtPct(c.percentage)}%
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100">
+                    <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
                       <div className="h-full rounded-full" style={{ width: `${c.percentage}%`, background: color }} />
                     </div>
                   </button>

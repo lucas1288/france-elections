@@ -18,7 +18,12 @@ import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
 import { MERGED_COMMUNE_TO_CURRENT } from '../utils/mergedCommunes'
 
-const DEFAULT_COLOR = '#e2e8f0'
+// Fallback fill for territories without data. Theme-dependent: applyMapTheme
+// keeps this module value in sync with the active theme, and the feature-state
+// sync paths re-run after a theme flip so already-set defaults update too.
+let DEFAULT_COLOR = '#e2e8f0'
+const DEFAULT_COLOR_LIGHT = '#e2e8f0'
+const DEFAULT_COLOR_DARK = '#334155'
 
 interface Props {
   electionData: RoundData | undefined
@@ -332,6 +337,59 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+/**
+ * Re-paints the theme-dependent parts of the style at runtime (the style is
+ * built once — gotcha #1 — so dark mode is a setPaintProperty pass, not a style
+ * rebuild). Data colors (party palettes, gradients) are theme-invariant; only
+ * the canvas changes: sea/background, uncolored-territory fallback, boundary
+ * and selection strokes, label ink/halo. Also updates the module DEFAULT_COLOR
+ * so feature-state defaults follow (callers re-run syncMapData after flipping).
+ */
+function applyMapTheme(map: maplibregl.Map, isDark: boolean) {
+  DEFAULT_COLOR = isDark ? DEFAULT_COLOR_DARK : DEFAULT_COLOR_LIGHT
+
+  map.setPaintProperty('background', 'background-color', isDark ? '#0f172a' : '#f1f5f9')
+
+  // Fallback fill for territories with no feature-state color yet.
+  for (const id of ['overseas-fill', 'dept-fill', 'communes-fill', 'circo-fill']) {
+    map.setPaintProperty(id, 'fill-color', ['coalesce', ['feature-state', 'color'], DEFAULT_COLOR])
+  }
+  map.setPaintProperty('city-dots', 'circle-color', ['coalesce', ['feature-state', 'color'], DEFAULT_COLOR])
+
+  // Selection/hover strokes must invert (near-black is invisible on a dark sea).
+  const outlineCase = isDark
+    ? ['case',
+        ['boolean', ['feature-state', 'selected'], false], '#f8fafc',
+        ['boolean', ['feature-state', 'hover'], false], '#cbd5e1',
+        '#64748b']
+    : ['case',
+        ['boolean', ['feature-state', 'selected'], false], '#0f172a',
+        ['boolean', ['feature-state', 'hover'], false], '#334155',
+        '#64748b']
+  for (const id of ['overseas-outline', 'dept-outline', 'circo-outline']) {
+    map.setPaintProperty(id, 'line-color', outlineCase)
+  }
+  map.setPaintProperty('communes-outline', 'line-color', isDark
+    ? ['case',
+        ['boolean', ['feature-state', 'selected'], false], '#f8fafc',
+        ['boolean', ['feature-state', 'hover'], false], '#e2e8f0',
+        '#000000']
+    : ['case',
+        ['boolean', ['feature-state', 'selected'], false], '#0f172a',
+        ['boolean', ['feature-state', 'hover'], false], '#1e293b',
+        '#000000'])
+
+  // Labels: invert ink and halo.
+  const ink = isDark ? '#e2e8f0' : '#1e293b'
+  const halo = isDark ? '#0f172a' : '#ffffff'
+  for (const id of ['prefecture-labels', 'sous-prefecture-labels']) {
+    map.setPaintProperty(id, 'text-color', ink)
+    map.setPaintProperty(id, 'text-halo-color', halo)
+  }
+  map.setPaintProperty('top-cities-labels', 'text-color', isDark ? '#f1f5f9' : '#0f172a')
+  map.setPaintProperty('top-cities-labels', 'text-halo-color', halo)
+}
+
 // Colors départements and mirrors the same colors onto the overseas GeoJSON source.
 function applyDeptColors(
   map: maplibregl.Map,
@@ -482,7 +540,7 @@ function hoverTipHTML(entry: CommuneResult, palette: Palette | null): string {
     </div>`
   }).join('')
   const turnout = entry.registeredVoters ? (entry.turnout / entry.registeredVoters) * 100 : 0
-  return `<div style="font-size:12px;color:#1e293b;min-width:148px;max-width:200px;">
+  return `<div style="font-size:12px;min-width:148px;max-width:200px;">
     <div style="font-weight:700;margin-bottom:3px;">${escapeHTML(entry.name)}</div>
     ${rows}
     <div style="color:#94a3b8;margin-top:3px;">Participation&nbsp;${pct(turnout)}%</div>
@@ -534,7 +592,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     sourceLayer: 'departements', source: 'admin',
   })
 
-  const { setHoveredCommune, setClickedCommune, clickedCommune, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget, setMapZoomedIn, mapZoomedIn, zoomedAway, setZoomedAway } = useElectionStore()
+  const { setHoveredCommune, setClickedCommune, clickedCommune, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget, setMapZoomedIn, mapZoomedIn, zoomedAway, setZoomedAway, isDark } = useElectionStore()
   const isOverview = useIsOverview()
   // Overseas insets share the overlay auto-hide: visible only at the overview AND not zoomed in.
   const showInsets = isOverview && !mapZoomedIn
@@ -544,6 +602,8 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
   // coarser `mapZoomedIn` (fixed z8 threshold, tuned for overlay hiding).
   // `overviewZoomRef` caches the overview's own zoom for the comparison.
   const overviewZoomRef = useRef(0)
+  // Mirrors `isDark` for callbacks that outlive renders (geometry-change re-theme).
+  const isDarkRef = useRef(false)
   // Portal container for the mobile overseas inset — handed to a MapLibre Marker
   // (geo-anchored at OVERSEAS_INSET_LNGLAT) so the inset moves with the map.
   // Created once per mount via the lazy initializer (detached until the marker
@@ -742,6 +802,8 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     appliedGeometryRef.current = geom
     map.setStyle(makeStyle(geom))
     map.once('styledata', () => {
+      // A style rebuild resets paint props to their light defaults — re-theme first.
+      applyMapTheme(map, isDarkRef.current)
       syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
     })
   }, [geom])
@@ -764,6 +826,25 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     }
     syncMapData(map, electionData, choroplethData, palette, fullData, colorMode)
   }, [choroplethData, electionData, fullData, palette, colorMode])
+
+  // ── Theme (dark mode) ──────────────────────────────────────────────────────
+  // Re-paints the theme-dependent style props, then re-runs the data sync so
+  // feature-state defaults (uncolored territories, city dots) pick up the new
+  // DEFAULT_COLOR. Handles the cold path via `once('idle')` like the data sync.
+  useEffect(() => {
+    isDarkRef.current = isDark
+    const map = mapRef.current
+    if (!map) return
+    const apply = () => {
+      applyMapTheme(map, isDark)
+      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
+    }
+    if (!map.isStyleLoaded()) {
+      map.once('idle', apply)
+      return () => { map.off('idle', apply) }
+    }
+    apply()
+  }, [isDark])
 
   // ── Fly to focused overseas territory ─────────────────────────────────────
   useEffect(() => {
@@ -830,7 +911,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       )}
       {!mobile && !isOverview && (
         <button
-          className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded px-2 py-1 shadow-sm"
+          className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white dark:bg-slate-900 dark:text-gray-300 dark:hover:text-gray-100 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 shadow-sm"
           onClick={() => {
             setFocusedTerritory(null)
             setClickedCommune(null)
@@ -848,7 +929,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
         <button
           type="button"
           aria-label="Revenir à la vue d'ensemble"
-          className="pointer-events-auto absolute left-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5"
+          className="pointer-events-auto absolute left-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
           onClick={() => {
             setFocusedTerritory(null)
             setClickedCommune(null)

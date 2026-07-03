@@ -63,6 +63,7 @@ interface InsetProps extends InsetDef {
 }
 
 function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, isWon, onEnter, onLeave, onClick }: InsetProps) {
+  const isDark = useElectionStore((s) => s.isDark)
   const fc = useMemo(
     () => feature ? { type: 'FeatureCollection' as const, features: [feature] } : null,
     [feature],
@@ -82,13 +83,13 @@ function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, is
       <svg width={w} height={h} style={{ display: 'block', cursor: 'pointer' }}>
         <rect
           width={w} height={h}
-          fill="#f8fafc" stroke="#cbd5e1" strokeWidth={0.5} rx={2}
+          fill={isDark ? '#1e293b' : '#f8fafc'} stroke={isDark ? '#475569' : '#cbd5e1'} strokeWidth={0.5} rx={2}
         />
         {d && (
           <path
             d={d}
             fill={fillColor}
-            stroke={isClicked ? '#0f172a' : isWon ? '#ffffff' : isHovered ? '#334155' : '#94a3b8'}
+            stroke={isClicked ? (isDark ? '#f8fafc' : '#0f172a') : isWon ? '#ffffff' : isHovered ? (isDark ? '#cbd5e1' : '#334155') : (isDark ? '#64748b' : '#94a3b8')}
             strokeWidth={isClicked ? 1.5 : isWon ? 2 : isHovered ? 1 : 0.5}
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
@@ -99,7 +100,7 @@ function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, is
           </path>
         )}
       </svg>
-      <div style={{ fontSize: 9, textAlign: 'center', color: '#64748b', marginTop: 2 }}>
+      <div style={{ fontSize: 9, textAlign: 'center', color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
         {label}
       </div>
     </div>
@@ -141,7 +142,8 @@ export function OverseasInsets({ electionData, palette }: Props) {
     return m
   }, [electionData, palette, colorMode])
 
-  const getFill = (code: string) => fillByCode.get(code) ?? '#e2e8f0'
+  const isDark = useElectionStore((s) => s.isDark)
+  const getFill = (code: string) => fillByCode.get(code) ?? (isDark ? '#334155' : '#e2e8f0')
 
   // Territories the selected force came 1st in (single-party view) — get a highlight border.
   const wonByCode = useMemo(() => {
