@@ -6,6 +6,7 @@ import { Hemicycle } from './Hemicycle'
 import { MobileDetailSheet } from './MobileDetailSheet'
 import { AffichageSheet } from './AffichageSheet'
 import { HemicycleSheet } from './HemicycleSheet'
+import { ThemeToggle } from './ThemeToggle'
 import { ElectionPicker } from './ElectionPicker'
 import { SearchSheet } from './SearchSheet'
 import type { LayoutProps } from './layoutProps'
@@ -63,26 +64,26 @@ export function MobileLayout(props: LayoutProps) {
       )}
 
       {props.isLoading && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-50">
-          <p className="text-sm text-gray-500">Chargement des données…</p>
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Chargement des données…</p>
         </div>
       )}
 
       {/* Top bar — data axis: election chip · round toggle · search */}
-      <header className="absolute inset-x-0 top-0 z-20 flex items-center gap-2 px-3 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/90 backdrop-blur-sm border-b border-gray-200/70">
+      <header className="absolute inset-x-0 top-0 z-20 flex items-center gap-2 px-3 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/90 backdrop-blur-sm border-b border-gray-200/70 dark:bg-slate-900/90 dark:border-slate-700/70">
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="flex-1 min-w-0 flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-800"
+          className="flex-1 min-w-0 flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-800 dark:bg-slate-800 dark:text-gray-200"
         >
           <span className="truncate">{props.electionLabel || 'Élection'}</span>
-          <span className="ml-auto text-gray-400 shrink-0">
+          <span className="ml-auto text-gray-400 shrink-0 dark:text-gray-500">
             <ChevronDown />
           </span>
         </button>
 
         {props.rounds > 1 && (
-          <div className="flex shrink-0 rounded-lg bg-gray-100 p-0.5 text-sm">
+          <div className="flex shrink-0 rounded-lg bg-gray-100 p-0.5 text-sm dark:bg-slate-800">
             {rounds.map((r) => {
               const active = selected.round === r
               return (
@@ -91,7 +92,7 @@ export function MobileLayout(props: LayoutProps) {
                   type="button"
                   onClick={() => setSelected({ ...selected, round: r })}
                   className={`rounded-md px-2.5 py-1.5 font-medium transition-colors ${
-                    active ? 'bg-blue-600 text-white' : 'text-gray-600'
+                    active ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'
                   }`}
                 >
                   T{r}
@@ -105,7 +106,7 @@ export function MobileLayout(props: LayoutProps) {
           type="button"
           aria-label="Rechercher"
           onClick={() => setSearchOpen(true)}
-          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-600"
+          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-300"
         >
           <SearchIcon />
         </button>
@@ -113,18 +114,18 @@ export function MobileLayout(props: LayoutProps) {
 
       {/* Bottom granularity switcher — view axis (manifest-driven) */}
       <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2">
-        <div className="flex items-center gap-0.5 rounded-xl bg-white/90 p-1 shadow-lg backdrop-blur-sm ring-1 ring-black/5">
+        <div className="flex items-center gap-0.5 rounded-xl bg-white/90 p-1 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
           {props.availableGranularities.map((g, i) => {
             const active = granularity === g
             const isHemi = g === 'hemicycle'
             return (
               <div key={g} className="flex items-center">
-                {isHemi && i > 0 && <span className="mx-1 h-5 w-px bg-gray-200" />}
+                {isHemi && i > 0 && <span className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />}
                 <button
                   type="button"
                   onClick={() => setGranularity(g)}
                   className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                    active ? 'bg-blue-600 text-white' : 'text-gray-600'
+                    active ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'
                   }`}
                 >
                   {GRAN_LABEL[g]}
@@ -134,6 +135,10 @@ export function MobileLayout(props: LayoutProps) {
           })}
         </div>
       </div>
+
+      {/* Theme chip — bottom-right corner (bottom-left holds the results chip, the
+          centre the granularity switcher, and the snippet card spans above them). */}
+      <ThemeToggle className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 text-gray-600 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-300 dark:ring-white/10" />
 
       {!isHemicycle && (
         <AffichageSheet

@@ -96,28 +96,28 @@ export function SearchSheet({ open, onClose }: Props) {
 
   return (
     <div
-      className={`fixed inset-0 z-40 flex flex-col bg-white transition-transform duration-300 ${
+      className={`fixed inset-0 z-40 flex flex-col bg-white dark:bg-slate-900 transition-transform duration-300 ${
         open ? 'translate-y-0' : 'pointer-events-none translate-y-full'
       }`}
       aria-hidden={!open}
     >
       {/* Search bar header */}
       <div className="flex items-center gap-2 px-3 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex flex-1 items-center gap-2 rounded-xl bg-gray-100 px-3 py-2.5">
-          <span className="text-gray-400"><SearchIcon /></span>
+        <div className="flex flex-1 items-center gap-2 rounded-xl bg-gray-100 dark:bg-slate-800 px-3 py-2.5">
+          <span className="text-gray-400 dark:text-gray-500"><SearchIcon /></span>
           <input
             ref={inputRef}
             type="search"
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             placeholder="Rechercher un lieu…"
-            className="w-full bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
+            className="w-full bg-transparent text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none"
           />
         </div>
         <button
           type="button"
           onClick={close}
-          className="shrink-0 px-1 text-sm font-medium text-gray-600"
+          className="shrink-0 px-1 text-sm font-medium text-gray-600 dark:text-gray-300"
         >
           Annuler
         </button>
@@ -137,14 +137,14 @@ export function SearchSheet({ open, onClose }: Props) {
             </svg>
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm text-gray-700">Autour de moi</span>
-            <span className="block text-xs text-gray-400">Bientôt disponible</span>
+            <span className="block text-sm text-gray-700 dark:text-gray-300">Autour de moi</span>
+            <span className="block text-xs text-gray-400 dark:text-gray-500">Bientôt disponible</span>
           </span>
         </button>
 
         {!showResults ? (
           <>
-            <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
               Grandes villes
             </p>
             {TOP_CITIES.map((city) => (
@@ -152,28 +152,28 @@ export function SearchSheet({ open, onClose }: Props) {
                 key={city.inseeCode}
                 type="button"
                 onClick={() => selectCommune(city.inseeCode, city.lng, city.lat, city.zoom)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors active:bg-gray-100"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors active:bg-gray-100 dark:active:bg-slate-800"
               >
-                <span className="text-gray-300"><SearchIcon /></span>
-                <span className="min-w-0 flex-1 truncate text-sm text-gray-800">{city.name}</span>
+                <span className="text-gray-300 dark:text-gray-600"><SearchIcon /></span>
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{city.name}</span>
               </button>
             ))}
           </>
         ) : pending ? (
-          <p className="px-4 py-3 text-sm text-gray-400">Recherche…</p>
+          <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">Recherche…</p>
         ) : hits.length === 0 ? (
-          <p className="px-4 py-3 text-sm text-gray-400">Aucun lieu trouvé</p>
+          <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">Aucun lieu trouvé</p>
         ) : (
           hits.map((c) => (
             <button
               key={c.code}
               type="button"
               onClick={() => c.centre && selectCommune(c.code, c.centre.coordinates[0], c.centre.coordinates[1])}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-gray-100"
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-gray-100 dark:active:bg-slate-800"
             >
-              <span className="text-gray-300"><SearchIcon /></span>
-              <span className="min-w-0 flex-1 truncate text-sm text-gray-800">{c.nom}</span>
-              <span className="shrink-0 text-xs text-gray-400">{c.codeDepartement}</span>
+              <span className="text-gray-300 dark:text-gray-600"><SearchIcon /></span>
+              <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{c.nom}</span>
+              <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{c.codeDepartement}</span>
             </button>
           ))
         )}

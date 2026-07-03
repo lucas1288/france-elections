@@ -28,6 +28,27 @@ export type ColorMode =
 
 const LEADER: ColorMode = { kind: 'leader' }
 
+/**
+ * Color theme. `system` follows the OS/browser preference (and tracks live
+ * changes); `light`/`dark` are explicit user overrides. Persisted to
+ * localStorage; the resolved boolean drives both the Tailwind `dark` class on
+ * <html> (chrome) and the MapLibre/D3 surfaces (via `isDark`).
+ */
+export type Theme = 'system' | 'light' | 'dark'
+
+const THEME_KEY = 'fe-theme'
+const systemDark = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+const resolveDark = (theme: Theme) => (theme === 'system' ? systemDark() : theme === 'dark')
+const storedTheme = (): Theme => {
+  if (typeof window === 'undefined') return 'system'
+  const t = window.localStorage.getItem(THEME_KEY)
+  return t === 'light' || t === 'dark' ? t : 'system'
+}
+const applyThemeClass = (dark: boolean) => {
+  if (typeof document !== 'undefined') document.documentElement.classList.toggle('dark', dark)
+}
+
 interface ElectionStore {
   selected: SelectedElection
   granularity: Granularity
@@ -41,6 +62,10 @@ interface ElectionStore {
   /** True whenever the map is zoomed in past the overview baseline by any amount
    * (finer than `mapZoomedIn`); drives the mobile back button + national snippet hide. */
   zoomedAway: boolean
+  /** User theme preference (persisted; `system` follows the OS). */
+  theme: Theme
+  /** Resolved dark flag — drives MapLibre/D3 colors (chrome uses the `dark` class). */
+  isDark: boolean
 
   setSelected: (sel: SelectedElection) => void
   setGranularity: (g: Granularity) => void
@@ -50,6 +75,7 @@ interface ElectionStore {
   setFlyTarget: (target: FlyTarget | null) => void
   setMapZoomedIn: (zoomedIn: boolean) => void
   setZoomedAway: (away: boolean) => void
+  setTheme: (theme: Theme) => void
   /** Toggle the single-party view for `party`; clicking the active one returns to leader. */
   togglePartyMode: (party: string) => void
   /** Toggle the abstention view; calling it while active returns to leader. */
@@ -68,6 +94,8 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   colorMode: LEADER,
   mapZoomedIn: false,
   zoomedAway: false,
+  theme: storedTheme(),
+  isDark: resolveDark(storedTheme()),
 
   // Election change resets a party view (its candidates differ); abstention persists.
   setSelected: (sel) =>
@@ -87,6 +115,12 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   setFlyTarget: (flyTarget) => set({ flyTarget }),
   setMapZoomedIn: (mapZoomedIn) => set({ mapZoomedIn }),
   setZoomedAway: (zoomedAway) => set({ zoomedAway }),
+  setTheme: (theme) => {
+    if (typeof window !== 'undefined') window.localStorage.setItem(THEME_KEY, theme)
+    const isDark = resolveDark(theme)
+    applyThemeClass(isDark)
+    set({ theme, isDark })
+  },
   togglePartyMode: (party) =>
     set((s) => ({
       colorMode: s.colorMode.kind === 'party' && s.colorMode.party === party ? LEADER : { kind: 'party', party },
@@ -95,6 +129,18 @@ export const useElectionStore = create<ElectionStore>((set) => ({
     set((s) => ({ colorMode: s.colorMode.kind === 'abstention' ? LEADER : { kind: 'abstention' } })),
   setLeaderMode: () => set({ colorMode: LEADER }),
 }))
+
+// Apply the initial theme class and track live OS preference changes while in
+// `system` mode. Module-level (not a React effect): runs once, no component owns
+// the document class, and the listener updates the store like any event handler.
+if (typeof window !== 'undefined') {
+  applyThemeClass(useElectionStore.getState().isDark)
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (useElectionStore.getState().theme !== 'system') return
+    applyThemeClass(e.matches)
+    useElectionStore.setState({ isDark: e.matches })
+  })
+}
 
 /**
  * True when the map shows the full-France overview (nothing selected except

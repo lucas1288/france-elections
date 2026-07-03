@@ -50,6 +50,7 @@ const CIRCO_CENTERS: Record<string, [number, number]> = {
 export function AbroadMap({ electionData, circoChoro, fullData, granularity, palette }: Props) {
   const { clickedCommune, setClickedCommune } = useElectionStore()
   const colorMode = useElectionStore((s) => s.colorMode)
+  const isDark = useElectionStore((s) => s.isDark)
   const [landPath, setLandPath] = useState<string>('')
 
   useEffect(() => {
@@ -72,11 +73,12 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
   // falls back to neutral when absent).
   const national = electionData ? computeNationalTotals(electionData) : null
   const fullByCode = new Map((fullData?.communes ?? []).map((e) => [e.inseeCode, e]))
+  const neutral = isDark ? '#334155' : '#e2e8f0'
   const dotColor = (c: { inseeCode: string; leadingCandidate: string; abstention?: number }) => {
     if (colorMode.kind === 'leader') return getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
-    if (colorMode.kind === 'abstention') return c.abstention != null ? abstentionShade(c.abstention) : '#e2e8f0'
+    if (colorMode.kind === 'abstention') return c.abstention != null ? abstentionShade(c.abstention) : neutral
     const entry = fullByCode.get(c.inseeCode)
-    return entry ? territoryColor(entry, colorMode, palette, national) : '#e2e8f0'
+    return entry ? territoryColor(entry, colorMode, palette, national) : neutral
   }
 
   // Overall abroad winner: prefer '99' aggregate; fall back to modal leader
@@ -94,8 +96,8 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
   const aggregateSelected = clickedCommune === '99'
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-sm p-3">
-      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm p-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
         Français à l'étranger
       </p>
 
@@ -107,18 +109,18 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
           display: 'block',
           cursor: isCirco ? 'default' : 'pointer',
           borderRadius: 4,
-          outline: aggregateSelected && !isCirco ? '2px solid #0f172a' : 'none',
+          outline: aggregateSelected && !isCirco ? `2px solid ${isDark ? '#f8fafc' : '#0f172a'}` : 'none',
         }}
         onClick={isCirco ? undefined : () => setClickedCommune('99')}
       >
         {/* Ocean */}
-        <path d={SPHERE_PATH} fill="#dbeafe" />
+        <path d={SPHERE_PATH} fill={isDark ? '#172554' : '#dbeafe'} />
 
         {/* Land masses */}
-        {landPath && <path d={landPath} fill="#e2e8f0" stroke="#94a3b8" strokeWidth={0.4} />}
+        {landPath && <path d={landPath} fill={isDark ? '#334155' : '#e2e8f0'} stroke={isDark ? '#64748b' : '#94a3b8'} strokeWidth={0.4} />}
 
         {/* Graticule */}
-        <path d={GRATICULE_PATH} fill="none" stroke="#bfdbfe" strokeWidth={0.3} />
+        <path d={GRATICULE_PATH} fill="none" stroke={isDark ? '#1e3a8a' : '#bfdbfe'} strokeWidth={0.3} />
 
         {/* Circo dots — visible in all tabs */}
         {abroadEntries.map(c => {
@@ -137,7 +139,7 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
               r={isSelected ? 7 : 5}
               fill={color}
               fillOpacity={0.92}
-              stroke="white"
+              stroke={isDark ? '#0f172a' : 'white'}
               strokeWidth={isSelected ? 2.5 : 1.5}
               style={{ cursor: isCirco ? 'pointer' : 'default' }}
               onClick={isCirco ? (e) => { e.stopPropagation(); setClickedCommune(c.inseeCode) } : undefined}
@@ -146,12 +148,12 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
         })}
 
         {/* Sphere outline */}
-        <path d={SPHERE_PATH} fill="none" stroke="#94a3b8" strokeWidth={0.8} />
+        <path d={SPHERE_PATH} fill="none" stroke={isDark ? '#475569' : '#94a3b8'} strokeWidth={0.8} />
       </svg>
 
       {/* Dept/Commune mode: aggregate winner label (leader view only) */}
       {!isCirco && colorMode.kind === 'leader' && overallWinner && (
-        <p className="mt-1.5 text-xs text-gray-600">
+        <p className="mt-1.5 text-xs text-gray-600 dark:text-gray-300">
           En tête :{' '}
           <span
             className="font-semibold"
@@ -176,14 +178,14 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
               <button
                 key={c.inseeCode}
                 className={`w-full flex items-center gap-1.5 text-xs px-1 py-0.5 rounded text-left transition-colors
-                  ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                  ${isSelected ? 'bg-gray-100 dark:bg-slate-800' : 'hover:bg-gray-50 dark:bg-slate-800/60'}`}
                 onClick={() => setClickedCommune(c.inseeCode)}
               >
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                <span className={`w-5 text-right shrink-0 ${isSelected ? 'font-semibold text-gray-800' : 'text-gray-400'}`}>
+                <span className={`w-5 text-right shrink-0 ${isSelected ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}>
                   {num}e
                 </span>
-                <span className={`min-w-0 truncate ${isSelected ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>
+                <span className={`min-w-0 truncate ${isSelected ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-600 dark:text-gray-300'}`}>
                   {displayName}
                 </span>
               </button>
