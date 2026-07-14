@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Drawer } from 'vaul'
 import type { Palette, RoundData } from '../types/election'
+import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
+import { computeCircoCounts } from '../utils/circoCounts'
 import { useElectionStore } from '../store/electionStore'
 
 interface Props {
@@ -10,6 +12,10 @@ interface Props {
   palette: Palette | null
   electionLabel?: string
   round?: number
+  /** Circo choropleth + full data — feed the per-force 1st/2nd circo counts
+   *  shown in the sheet when the circonscriptions tab is active. */
+  circoChoro?: ChoroplethData | null
+  circoData?: RoundData | null
 }
 
 function roundLabel(round: number | undefined) {
@@ -36,8 +42,11 @@ const ABSTENTION_GRADIENT = 'linear-gradient(90deg, #e5e7eb, #111827)'
  * returns to the default winner view. Replaces the old Vainqueur/Un parti/
  * Abstention segment — the mode is implied by which result you tap.
  */
-export function AffichageSheet({ electionData, palette, electionLabel, round }: Props) {
+export function AffichageSheet({ electionData, palette, electionLabel, round, circoChoro, circoData }: Props) {
   const colorMode = useElectionStore((s) => s.colorMode)
+  // '%' = national vote share; 'circos' = seats won / arrived 1st / arrived 2nd
+  // across circonscriptions (a switch in the sheet toggles the two).
+  const [viewMode, setViewMode] = useState<'pct' | 'circos'>('pct')
   const togglePartyMode = useElectionStore((s) => s.togglePartyMode)
   const toggleAbstentionMode = useElectionStore((s) => s.toggleAbstentionMode)
   const clickedCommune = useElectionStore((s) => s.clickedCommune)
@@ -49,6 +58,20 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
     () => (electionData ? computeNationalTotals(electionData) : null),
     [electionData],
   )
+
+  // Per-force won/1st/2nd circo counts — feeds the "Sièges"/"Circos" view of the
+  // sheet (any tab; the full circo file is small and always loaded).
+  const circoCounts = useMemo(
+    () => (circoChoro && circoData ? computeCircoCounts(circoChoro, circoData) : null),
+    [circoChoro, circoData],
+  )
+  // "En tête (pas encore gagné)" bucket exists only when some lead isn't a win
+  // (round 1 of legislatives; always for presidentials). At T2 every lead IS the
+  // seat winner, so the bucket would be 0 for everyone — hide it.
+  const showLeadBucket =
+    !!circoCounts &&
+    [...circoCounts.counts1st].some(([name, n]) => n > (circoCounts.countsWon.get(name) ?? 0))
+  const hasSeats = !!circoCounts && circoCounts.countsWon.size > 0
 
   if (!electionData || !totals || !totals.registeredVoters) return null
 
@@ -203,9 +226,59 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
                 </p>
               </button>
 
-              {totals.candidates.map((c, i) => {
+              {/* View switch: national vote share vs circo counts (seats won /
+                  arrived 1st / arrived 2nd). Only when circo data is available. */}
+              {circoCounts && (
+                <div className="px-2 pb-1 pt-1.5">
+                  <div className="flex w-full rounded-lg bg-gray-100 p-0.5 text-sm dark:bg-slate-800">
+                    {([
+                      ['pct', 'Pourcentages'],
+                      ['circos', hasSeats ? 'Sièges' : 'Circonscriptions'],
+                    ] as const).map(([mode, label]) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setViewMode(mode)}
+                        className={`flex-1 rounded-md px-2 py-1.5 font-medium transition-colors ${
+                          viewMode === mode ? 'bg-white text-gray-900 shadow-sm dark:bg-slate-600 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {viewMode === 'circos' && (
+                    <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                      Sur {fmtInt(circoCounts.total)} circonscriptions —{' '}
+                      {[
+                        hasSeats && 'sièges remportés',
+                        showLeadBucket && 'en tête',
+                        '2e position',
+                      ].filter(Boolean).join(' | ')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(viewMode === 'circos' && circoCounts
+                ? [...totals.candidates].sort((a, b) => {
+                    const k = (n: string) => {
+                      const won = circoCounts.countsWon.get(n) ?? 0
+                      const lead = (circoCounts.counts1st.get(n) ?? 0) - won
+                      return won * 1e6 + lead * 1e3 + (circoCounts.counts2nd.get(n) ?? 0)
+                    }
+                    return k(b.name) - k(a.name)
+                  })
+                : totals.candidates
+              ).map((c, i) => {
                 const color = getCandidateColor(c.name, i, c.party, palette)
                 const active = activeParty === c.party
+                // Exclusive buckets: seats won are excluded from "en tête".
+                const won = circoCounts?.countsWon.get(c.name) ?? 0
+                const lead1st = Math.max(0, (circoCounts?.counts1st.get(c.name) ?? 0) - won)
+                const n2 = circoCounts?.counts2nd.get(c.name) ?? 0
+                const pctOf = (n: number) => (circoCounts ? (n / circoCounts.total) * 100 : 0)
+                const showCircos = viewMode === 'circos' && !!circoCounts
                 return (
                   <button
                     key={c.name}
@@ -219,13 +292,29 @@ export function AffichageSheet({ electionData, palette, electionLabel, round }: 
                       <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color }} />
                       <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{c.name}</span>
                       <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{c.party}</span>
-                      <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {fmtPct(c.percentage)}%
+                      <span className="shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {showCircos
+                          ? [
+                              hasSeats ? fmtInt(won) : null,
+                              showLeadBucket ? fmtInt(lead1st) : null,
+                              fmtInt(n2),
+                            ].filter((v) => v !== null).join(' | ')
+                          : `${fmtPct(c.percentage)}%`}
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
-                      <div className="h-full rounded-full" style={{ width: `${c.percentage}%`, background: color }} />
-                    </div>
+                    {showCircos ? (
+                      /* Stacked circo bar — seats won (full colour), arrived 1st
+                         (medium), arrived 2nd (faint), scaled to all circos */
+                      <div className="mt-1 flex h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800">
+                        {won > 0 && <div className="h-full" style={{ width: `${pctOf(won)}%`, background: color }} />}
+                        {lead1st > 0 && <div className="h-full" style={{ width: `${pctOf(lead1st)}%`, background: color, opacity: 0.55 }} />}
+                        {n2 > 0 && <div className="h-full" style={{ width: `${pctOf(n2)}%`, background: color, opacity: 0.25 }} />}
+                      </div>
+                    ) : (
+                      <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
+                        <div className="h-full rounded-full" style={{ width: `${c.percentage}%`, background: color }} />
+                      </div>
+                    )}
                   </button>
                 )
               })}

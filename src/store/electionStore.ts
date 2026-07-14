@@ -98,11 +98,12 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   isDark: resolveDark(storedTheme()),
 
   // Election change resets a party view (its candidates differ); abstention persists.
+  // The territory selection (clickedCommune) survives round/election switches —
+  // it's an INSEE code, valid across datasets, so the panel re-resolves it.
   setSelected: (sel) =>
     set((s) => ({
       selected: sel,
       hoveredCommune: null,
-      clickedCommune: null,
       colorMode: s.colorMode.kind === 'party' ? LEADER : s.colorMode,
     })),
   setGranularity: (granularity) => set({ granularity }),

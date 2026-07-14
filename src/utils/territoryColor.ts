@@ -39,6 +39,8 @@ export function territoryColor(
     const nationalPct = national?.candidates.find((c) => c.party === mode.party)?.percentage ?? 0
     return partyRatioShade(localPct, nationalPct, base)
   }
+  // Empty leader = annulled ballots → neutral (matches the map's no-data grey).
+  if (!entry.leadingCandidate) return '#cbd5e1'
   const lead = entry.candidates.find((c) => c.name === entry.leadingCandidate)
   return getCandidateColor(entry.leadingCandidate, 0, lead?.party, palette)
 }

@@ -46,8 +46,10 @@ export interface CommuneResult {
   nullVotes: number
   expressedVotes: number
   candidates: CandidateResult[]
-  /** Candidate name with the highest vote share */
+  /** Candidate name with the highest vote share ('' when annulled) */
   leadingCandidate: string
+  /** All ballots annulled (Conseil constitutionnel) — no expressed votes. */
+  annulled?: boolean
 }
 
 export interface RoundData {

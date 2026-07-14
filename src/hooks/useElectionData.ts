@@ -18,8 +18,9 @@ export interface ChoroplethData {
   year: number
   round: number
   candidates: Array<{ name: string; party: string }>
-  /** `abstention` (percent) is added by scripts/add-choropleth-abstention.mjs. */
-  communes: Array<{ inseeCode: string; leadingCandidate: string; abstention?: number }>
+  /** `abstention` (percent) is added by scripts/add-choropleth-abstention.mjs;
+   *  `annulled` + empty leader by scripts/mark-annulled-communes.mjs. */
+  communes: Array<{ inseeCode: string; leadingCandidate: string; abstention?: number; annulled?: boolean }>
 }
 
 /**
@@ -32,6 +33,9 @@ function useOptionalJson<T>(queryKey: unknown[], path: string, enabled = true) {
     queryFn: async () => {
       const res = await fetch(dataUrl(path))
       if (!res.ok) return null
+      // Dev-server SPA fallback answers missing files with 200 + index.html —
+      // treat any non-JSON response as "file absent" too.
+      if (!(res.headers.get('content-type') ?? '').includes('json')) return null
       return res.json() as Promise<T>
     },
     enabled,

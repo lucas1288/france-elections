@@ -17,6 +17,15 @@ export interface ResolvedTerritory {
   commune: CommuneResult | null
   /** True when département-level data stands in for an overseas commune click. */
   isOverseasFallback: boolean
+  /** True when département-level data stands in because the full commune file
+   *  doesn't exist for this round (e.g. présidentielle 2022 T2). */
+  isRoundFallback: boolean
+}
+
+/** Département code of any 5-char commune code (metro incl. Corsica 2A/2B, overseas). */
+function communeDeptCode(code: string): string | null {
+  if (code.length !== 5) return null
+  return overseasDeptCode(code) ?? code.slice(0, 2)
 }
 
 /**
@@ -27,10 +36,16 @@ export interface ResolvedTerritory {
 export function resolveTerritory(
   activeCode: string | null,
   granularity: Granularity,
-  data: { electionData?: RoundData; communeData: RoundData | null; circoData: RoundData | null },
+  data: {
+    electionData?: RoundData
+    communeData: RoundData | null
+    circoData: RoundData | null
+    /** Full commune file confirmed absent for this round (404), not loading. */
+    communeDataMissing?: boolean
+  },
 ): ResolvedTerritory {
-  const { electionData, communeData, circoData } = data
-  if (!activeCode) return { commune: null, isOverseasFallback: false }
+  const { electionData, communeData, circoData, communeDataMissing } = data
+  if (!activeCode) return { commune: null, isOverseasFallback: false, isRoundFallback: false }
 
   let commune: CommuneResult | null
   if (granularity === 'commune' && communeData) {
@@ -43,6 +58,12 @@ export function resolveTerritory(
       const deptCode = overseasDeptCode(activeCode)
       commune = deptCode ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null) : null
     }
+  } else if (granularity === 'commune' && communeDataMissing) {
+    // No full commune file for this round: stand in the département entry.
+    const deptCode = communeDeptCode(activeCode)
+    const dept = deptCode ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null) : null
+    if (dept) return { commune: dept, isOverseasFallback: false, isRoundFallback: true }
+    commune = electionData?.communes.find((c) => c.inseeCode === activeCode) ?? null
   } else if (granularity !== 'commune' && circoData) {
     // circonscription + hemicycle both resolve against full circo data
     commune = circoData.communes.find((c) => c.inseeCode === activeCode) ?? null
@@ -53,7 +74,7 @@ export function resolveTerritory(
   const isOverseasFallback =
     commune !== null && overseasDeptCode(activeCode) !== null && commune.inseeCode !== activeCode
 
-  return { commune, isOverseasFallback }
+  return { commune, isOverseasFallback, isRoundFallback: false }
 }
 
 export type NationalPctLookup = (name: string, party?: string) => number | null

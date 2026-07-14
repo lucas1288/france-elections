@@ -12,6 +12,7 @@ to the project is reachable from here.
 | **Deep technical reference** — architecture decisions, every component, data formats, gotchas | [`../CLAUDE.md`](../CLAUDE.md) |
 | **Hosting & deployment** — where the app and its heavy data should live, and why | [`hosting-and-deployment.md`](hosting-and-deployment.md) |
 | **Roadmap & vision** — expansion plan, future interactivity, agreed decisions | [`roadmap.md`](roadmap.md) |
+| **Two-axis navigation** — the time × territory UI-rework design (territory chip, dept insights, timeline, history series) | [`two-axis-navigation.md`](two-axis-navigation.md) |
 | **Raw data provenance** — where the ministry source files come from | [`../data-sources/README.md`](../data-sources/README.md) |
 
 ## Conventions
