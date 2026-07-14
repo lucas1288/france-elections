@@ -10,6 +10,8 @@ import type { ChoroplethData } from '../hooks/useElectionData'
 export interface LayoutProps {
   electionData: RoundData | undefined
   communeData: RoundData | null
+  /** Full commune file confirmed absent for this round (404), not just loading. */
+  communeDataMissing: boolean
   communeChoro: ChoroplethData | null
   circoData: RoundData | null
   circoChoro: ChoroplethData | null

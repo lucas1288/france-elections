@@ -7,6 +7,7 @@ import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetai
 interface Props {
   electionData: RoundData | undefined
   communeData: RoundData | null
+  communeDataMissing: boolean
   circoData: RoundData | null
   palette: Palette | null
 }
@@ -27,16 +28,17 @@ function fmtInt(n: number) {
  * interactive (tap the map to reselect, tap the back button to zoom out). Shares
  * selection resolution + national baseline with ResultsPanel via territoryDetail.
  */
-export function MobileDetailSheet({ electionData, communeData, circoData, palette }: Props) {
+export function MobileDetailSheet({ electionData, communeData, communeDataMissing, circoData, palette }: Props) {
   const granularity = useElectionStore((s) => s.granularity)
   const clickedCommune = useElectionStore((s) => s.clickedCommune)
   const setClickedCommune = useElectionStore((s) => s.setClickedCommune)
 
   const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
-  const { commune, isOverseasFallback } = resolveTerritory(clickedCommune, granularity, {
+  const { commune, isOverseasFallback, isRoundFallback } = resolveTerritory(clickedCommune, granularity, {
     electionData,
     communeData,
     circoData,
+    communeDataMissing,
   })
 
   const open = !!clickedCommune
@@ -78,6 +80,15 @@ export function MobileDetailSheet({ electionData, communeData, circoData, palett
             </button>
           </div>
 
+          {isRoundFallback && (
+            <div className="mx-4 mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 px-3 py-2">
+              <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                Données par commune indisponibles pour ce tour (ministère de l'Intérieur).
+                Résultats affichés au niveau du département.
+              </p>
+            </div>
+          )}
+
           {isOverseasFallback && (
             <div className="mx-4 mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 px-3 py-2">
               <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
@@ -104,8 +115,18 @@ export function MobileDetailSheet({ electionData, communeData, circoData, palett
             </p>
           </div>
 
+          {/* Annulled ballots: no expressed votes to show */}
+          {commune.annulled && (
+            <div className="mx-4 mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 px-3 py-2">
+              <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                L'ensemble des suffrages de cette commune a été annulé par le Conseil
+                constitutionnel (irrégularités constatées lors du scrutin). Aucun suffrage exprimé.
+              </p>
+            </div>
+          )}
+
           {/* Candidates */}
-          <div className="space-y-3 px-4 py-3">
+          {!commune.annulled && <div className="space-y-3 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Candidats</p>
             {commune.candidates
               .slice()
@@ -144,7 +165,7 @@ export function MobileDetailSheet({ electionData, communeData, circoData, palett
                   </div>
                 )
               })}
-          </div>
+          </div>}
         </div>
       )}
     </div>

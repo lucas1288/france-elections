@@ -444,7 +444,10 @@ function computeActiveColors(
   for (const c of choropleth.communes) {
     let color: string
     if (mode.kind === 'leader') {
-      color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+      // Empty leader = annulled ballots (Conseil constitutionnel) → neutral.
+      color = c.leadingCandidate
+        ? getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+        : DEFAULT_COLOR
     } else if (mode.kind === 'abstention' && c.abstention != null) {
       // Abstention rides on the lightweight choropleth — no full file needed.
       color = abstentionShade(c.abstention)
@@ -529,8 +532,14 @@ function escapeHTML(s: string): string {
 
 // Compact snippet shown on hover: territory name, top candidates with %, turnout.
 function hoverTipHTML(entry: CommuneResult, palette: Palette | null): string {
-  const sorted = [...entry.candidates].sort((a, b) => b.votes - a.votes).slice(0, 3)
   const pct = (n: number) => n.toFixed(1).replace('.', ',')
+  if (entry.annulled) {
+    return `<div style="font-size:12px;min-width:148px;max-width:200px;">
+      <div style="font-weight:700;margin-bottom:3px;">${escapeHTML(entry.name)}</div>
+      <div style="color:#94a3b8;">Suffrages annulés<br>(Conseil constitutionnel)</div>
+    </div>`
+  }
+  const sorted = [...entry.candidates].sort((a, b) => b.votes - a.votes).slice(0, 3)
   const rows = sorted.map((c) => {
     const color = getCandidateColor(c.name, 0, c.party, palette)
     return `<div style="display:flex;align-items:center;gap:6px;line-height:1.5;">
@@ -940,6 +949,35 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
+      )}
+      {/* Mobile: +/− zoom buttons for users who prefer taps over pinch. Top-right
+          under the header (mirrors the back button top-left; the bottom-right is
+          taken by the theme chip and the national snippet card spans above it);
+          z-10 keeps them under the Hemicycle cover (z-20) so they vanish there. */}
+      {mobile && (
+        <div className="absolute right-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
+          <button
+            type="button"
+            aria-label="Zoomer"
+            className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800"
+            onClick={() => mapRef.current?.zoomIn()}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <span className="mx-2 h-px bg-gray-200 dark:bg-slate-700" />
+          <button
+            type="button"
+            aria-label="Dézoomer"
+            className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800"
+            onClick={() => mapRef.current?.zoomOut()}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M5 12h14" />
+            </svg>
+          </button>
+        </div>
       )}
       {/* Mobile overseas inset — rendered into the geo-anchored Marker's element,
           so it lives ON the map (pans/zooms with it) rather than floating above. */}

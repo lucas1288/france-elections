@@ -181,6 +181,7 @@ export function DesktopLayout(props: LayoutProps) {
         <ResultsPanel
           electionData={props.electionData}
           communeData={props.communeData}
+          communeDataMissing={props.communeDataMissing}
           communeChoro={props.communeChoro}
           circoData={props.circoData}
           circoChoro={props.circoChoro}

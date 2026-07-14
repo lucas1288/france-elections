@@ -46,7 +46,7 @@ The circo PMTiles uses Z-codes for overseas features (`ZA01` = Guadeloupe 1ère)
 - `CIRCO_ZCODE_TO_INSEE` — used in click handlers (so `clickedCommune` holds the INSEE code that `ResultsPanel` can look up)
 
 ### 4. Lazy loading of full data
-The département-level (`round1.json`, ~107 entries) and circo choropleth (`round1-circ-choropleth.json`) load eagerly. Full commune data (~34 MB) and full circo data are loaded on demand via TanStack Query's `enabled` flag when the relevant tab is active.
+The département-level (`round1.json`, ~107 entries) and circo choropleth (`round1-circ-choropleth.json`) load eagerly. Full commune data (~34 MB) is loaded on demand via TanStack Query's `enabled` flag when the commune tab is active. Full circo data (~0.2–0.6 MB) loads whenever the election has the circo granularity, regardless of tab (July 2026 — the national sheet's Sièges/Circonscriptions view needs it everywhere).
 
 ### 5. `clickedCommune` is the universal selection key
 The Zustand store field `clickedCommune` stores the INSEE code of whatever is selected, regardless of granularity. `ResultsPanel` resolves it against the appropriate dataset based on `granularity`. Code `'99'` is reserved for the Français à l'étranger aggregate; codes `'9901'`–`'9911'` are the 11 overseas French circos.
@@ -72,7 +72,7 @@ Zustand store. Fields:
 - `selected: { type, year, round }` — active election
 - `granularity: 'commune' | 'circonscription'`
 - `hoveredCommune: string | null` — hovered feature INSEE code
-- `clickedCommune: string | null` — selected feature INSEE code (toggles to null on re-click)
+- `clickedCommune: string | null` — selected feature INSEE code (toggles to null on re-click). Deliberately SURVIVES `setSelected` (round/election switches) — it's an INSEE code valid across datasets, so the detail panels re-resolve the same territory in the new data (July 2026 fix; only `hoveredCommune` is cleared).
 - `focusedTerritory: string | null` — overseas territory dept code (e.g. '971')
 - `flyTarget: { lng, lat, zoom } | null` — consumed by FranceMap, cleared after use
 - `mapZoomedIn: boolean` — true once the map passes `ZOOM_HIDE_OVERLAYS` (8). FranceMap's `map.on('zoom')` flips it only on threshold crossing (no per-frame store churn). Drives the auto-hide (opacity 0 + `pointer-events:none`) of the top-right overlay (AbroadMap, in DesktopLayout) and the OverseasInsets column (FranceMap), so the floating panels stop intercepting clicks on communes/arrondissements beneath them once the user zooms in to inspect.
@@ -89,7 +89,7 @@ TanStack Query hooks. All "optional" files (may 404 for a given round) go throug
 - `useChoroplethData(type, year, round, enabled)` — commune choropleth (enabled per manifest)
 - `useCircoChoroplethData(type, year, round, enabled)` — circo choropleth (enabled per manifest)
 - `useFullCommuneData(type, year, round, enabled)` — full commune JSON (~34 MB), only when commune tab active
-- `useFullCircoData(type, year, round, enabled)` — full circo JSON, only when circo tab active
+- `useFullCircoData(type, year, round, enabled)` — full circo JSON (small; enabled whenever the election has circos, any tab)
 
 ### `src/components/FranceMap.tsx`
 The most complex component. Key responsibilities:
@@ -118,6 +118,8 @@ Sidebar. Three states:
 3. **Active** — full results for `clickedCommune ?? hoveredCommune`
 
 Overseas fallback: `overseasDeptCode(code)` detects 5-digit overseas codes (starting with '97'/'98'), looks up the 3-digit département code in `electionData`, and shows an amber notice banner.
+
+Round fallback (`isRoundFallback` from `resolveTerritory`): when the full commune file is confirmed absent for a round (404 → `communeDataMissing` in LayoutProps, e.g. présidentielle 2022 T2 which the ministry never published), a selected commune resolves to its DÉPARTEMENT entry (`2A065`→`2A`, `75056`→`75`) with an amber "données par commune indisponibles pour ce tour" notice — in both ResultsPanel and MobileDetailSheet. Related gotcha: `useOptionalJson` treats a non-JSON content-type as "file absent" too, because the Vite dev server answers missing `public/` files with the SPA fallback (200 + index.html), which otherwise left the query in error state and the panel on "Chargement…" forever.
 
 ### `src/components/CommuneSearch.tsx`
 Search field shown in the commune-tab idle sidebar (under the hint text, above the city list). Debounced (250 ms) search-as-you-type against `https://geo.api.gouv.fr/communes?nom=…&boost=population` (no local commune index shipped). Selecting a hit calls `setClickedCommune(code)` + `setFlyTarget({ lng, lat, zoom: 11 })` — same mechanism as the top-30 city list. Zoom 11 is past `COMMUNE_MIN_ZOOM` so the commune polygon is rendered and highlighted.
@@ -171,7 +173,7 @@ Notable: includes Saint-Denis La Réunion (`97411`) and Saint-Denis Seine-Saint-
   }]
 }
 ```
-Note: `round2.json` is missing the `'99'` (Français à l'étranger) entry.
+Note: presidential 2022 `round2.json` was REBUILT July 2026 by `scripts/rebuild-dept-from-circ.mjs` (aggregates `round2-circ.json` circos → départements). The original file was corrupt — 101 scrambled entries, 22.7M of 48.7M inscrits, national Macron 71.7% vs official 58.55% — which silently skewed the T2 national summary + dept-level map colors. The rebuilt file matches official totals exactly and includes the previously missing `'99'` (Français à l'étranger) entry. The circo file is the trusted source for that round; re-run the script if it ever regenerates.
 
 ### `round1-communes-choropleth.json` (commune choropleth)
 ```typescript
@@ -252,4 +254,4 @@ Français à l'étranger circos: `9901`–`9911` (INSEE codes used throughout; n
 - `npx tsc --noEmit` — type-check without building (zero errors expected)
 - Map glyph source: **self-hosted** at `public/fonts/Open Sans Bold/{range}.pbf` (referenced as `${import.meta.env.BASE_URL}fonts/{fontstack}/{range}.pbf` in `FranceMap.tsx` `makeStyle()`; font: `Open Sans Bold`; Latin + punctuation ranges 0-255, 256-511, 512-767, 768-1023, 8192-8447 downloaded from fonts.openmaptiles.org). Ships with the static build, NOT R2. Replaced the old `demotiles.maplibre.org/font/...` endpoint which started 404-ing and silently killed all map labels. To add glyph ranges: download more `{range}.pbf` into that dir.
 - World land data: `public/data/geo/land-110m.json` (copied from `node_modules/world-atlas/land-110m.json` at setup time)
-- **Legislative data pipeline order**: `parse-legislatives-{2022,2024}.mjs` (+ for 2022: `build-plm-arrondissements.mjs`) → `carry-r1-into-round2.mjs` (carries R1 results into round-2 files for territories with no T2 vote — circos decided at R1; e.g. Saint-Denis 93066, all of Wallis 986 in 2024) → `inject-merged-commune-results.mjs` (COG-drift fixes, see gotcha 6). Both post-steps are idempotent. After any data regen, re-upload to R2 (`scripts/deploy/sync-r2.sh`).
+- **Legislative data pipeline order**: `parse-legislatives-{2022,2024}.mjs` (+ for 2022: `build-plm-arrondissements.mjs`) → `carry-r1-into-round2.mjs` (carries R1 results into round-2 files for territories with no T2 vote — circos decided at R1; e.g. Saint-Denis 93066, all of Wallis 986 in 2024) → `inject-merged-commune-results.mjs` (COG-drift fixes, see gotcha 6) → `mark-annulled-communes.mjs` (flags communes whose ballots were entirely annulled by the Conseil constitutionnel — turnout > 0 but expressedVotes = 0; sets `annulled: true` + `leadingCandidate: ''` in full + choropleth files so the map colors them neutral and the detail panels show a notice instead of a bogus 0%-leader; applies to ALL elections, not just legislatives — 14 communes in présidentielle 2022 R1 incl. Dénipaire 88128/Cargèse 2A065, 1 in légis 2024 R1 Saint-Cyr-la-Lande 79244). All post-steps are idempotent. After any data regen, re-upload to R2 (`scripts/deploy/sync-r2.sh`).

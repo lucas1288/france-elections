@@ -35,10 +35,9 @@ export default function App() {
     selected.type, selected.year, selected.round,
     communeAvailable && granularity === 'commune',
   )
-  const fullCircoQuery = useFullCircoData(
-    selected.type, selected.year, selected.round,
-    circoAvailable && (granularity === 'circonscription' || granularity === 'hemicycle'),
-  )
+  // Full circo files are small (~0.2–0.6 MB), so they load whenever available —
+  // the national sheet's seats/circo-counts view needs them on every tab.
+  const fullCircoQuery = useFullCircoData(selected.type, selected.year, selected.round, circoAvailable)
   const palette = paletteQuery.data ?? null
 
   const effectiveChoropleth =
@@ -49,6 +48,9 @@ export default function App() {
   const layoutProps: LayoutProps = {
     electionData: electionQuery.data,
     communeData: fullCommuneQuery.data ?? null,
+    // Resolved-but-absent (404 → null), as opposed to still loading — drives
+    // the département fallback for rounds with no full commune file (prés T2).
+    communeDataMissing: fullCommuneQuery.isSuccess && fullCommuneQuery.data === null,
     communeChoro: choroplethQuery.data ?? null,
     circoData: fullCircoQuery.data ?? null,
     circoChoro: circoQuery.data ?? null,

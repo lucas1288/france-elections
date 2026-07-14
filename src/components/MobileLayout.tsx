@@ -146,6 +146,8 @@ export function MobileLayout(props: LayoutProps) {
           palette={props.palette}
           electionLabel={props.electionLabel}
           round={selected.round}
+          circoChoro={props.circoChoro}
+          circoData={props.circoData}
         />
       )}
       {/* Overseas inset now lives inside FranceMap (geo-anchored MapLibre marker). */}
@@ -161,6 +163,7 @@ export function MobileLayout(props: LayoutProps) {
       <MobileDetailSheet
         electionData={props.electionData}
         communeData={props.communeData}
+        communeDataMissing={props.communeDataMissing}
         circoData={props.circoData}
         palette={props.palette}
       />

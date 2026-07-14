@@ -5,6 +5,7 @@ import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetail'
+import { computeCircoCounts } from '../utils/circoCounts'
 import { TOP_CITIES } from '../utils/topCities'
 import { CommuneSearch } from './CommuneSearch'
 import { NationalSummary } from './NationalSummary'
@@ -12,6 +13,7 @@ import { NationalSummary } from './NationalSummary'
 interface Props {
   electionData: RoundData | undefined
   communeData: RoundData | null
+  communeDataMissing: boolean
   communeChoro: ChoroplethData | null
   circoData: RoundData | null
   circoChoro: ChoroplethData | null
@@ -61,16 +63,17 @@ function fmtInt(n: number) {
   return n.toLocaleString('fr-FR')
 }
 
-export function ResultsPanel({ electionData, communeData, communeChoro, circoData, circoChoro, granularity, palette }: Props) {
+export function ResultsPanel({ electionData, communeData, communeDataMissing, communeChoro, circoData, circoChoro, granularity, palette }: Props) {
   const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget } = useElectionStore()
 
   const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
 
   const activeCode = clickedCommune ?? hoveredCommune
-  const { commune, isOverseasFallback } = resolveTerritory(activeCode, granularity, {
+  const { commune, isOverseasFallback, isRoundFallback } = resolveTerritory(activeCode, granularity, {
     electionData,
     communeData,
     circoData,
+    communeDataMissing,
   })
 
   if (!commune) {
@@ -86,34 +89,15 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
         : 'Survolez ou cliquez sur une commune pour afficher ses résultats'
 
     // ── Circo / hemicycle idle: ranked list of candidates by circos won ─────────
+    // (1st from the lightweight choropleth, 2nd from full circo data — shared
+    // with the mobile national sheet via computeCircoCounts.)
     if (granularity !== 'commune' && circoChoro) {
       const parties = partyByName(circoChoro.candidates)
-
-      // First-place counts from lightweight choropleth
-      const counts1st = new Map<string, number>()
-      for (const c of circoChoro.communes) {
-        counts1st.set(c.leadingCandidate, (counts1st.get(c.leadingCandidate) ?? 0) + 1)
-      }
-
-      // Second-place counts from full circo data (loaded on demand).
-      // Key by the choropleth's display name: the candidate's own name for
-      // presidentials, the nuance label for legislatives (where full-data
-      // candidates are persons but the ranking is by nuance).
-      const displayNameByParty = new Map(circoChoro.candidates.map((c) => [c.party, c.name]))
-      const counts2nd = new Map<string, number>()
-      if (circoData) {
-        for (const circo of circoData.communes) {
-          const second = [...circo.candidates].sort((a, b) => b.votes - a.votes)[1]
-          if (!second) continue
-          const key = displayNameByParty.get(second.party) ?? second.name
-          counts2nd.set(key, (counts2nd.get(key) ?? 0) + 1)
-        }
-      }
+      const { counts1st, counts2nd, total } = computeCircoCounts(circoChoro, circoData)
 
       const ranked = [...counts1st.entries()]
         .sort((a, b) => b[1] - a[1])
         .filter(([, n]) => n > 0)
-      const total = circoChoro.communes.length
 
       return (
         <PanelShell>
@@ -202,7 +186,7 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
             const full = fullCityMap.get(city.inseeCode)
             let dot1: string | null = null
             let dot2: string | null = null
-            if (full) {
+            if (full && !full.annulled) {
               const sorted = [...full.candidates].sort((a, b) => b.votes - a.votes)
               if (sorted[0]) dot1 = getCandidateColor(sorted[0].name, 0, sorted[0].party, palette)
               if (sorted[1]) dot2 = getCandidateColor(sorted[1].name, 0, sorted[1].party, palette)
@@ -258,6 +242,16 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
         </>
       }
     >
+      {/* Round fallback notice: no full commune file for this round */}
+      {isRoundFallback && (
+        <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/50 border-b border-amber-100">
+          <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+            Les données par commune n'ont pas été rendues disponibles par le ministère de
+            l'Intérieur pour ce tour. Résultats affichés au niveau du département.
+          </p>
+        </div>
+      )}
+
       {/* Overseas fallback notice */}
       {isOverseasFallback && (
         <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/50 border-b border-amber-100">
@@ -294,8 +288,18 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
         </p>
       </div>
 
+      {/* Annulled ballots: no expressed votes to show */}
+      {commune.annulled && (
+        <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-950/50 border-b border-amber-100">
+          <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+            L'ensemble des suffrages de cette commune a été annulé par le Conseil
+            constitutionnel (irrégularités constatées lors du scrutin). Aucun suffrage exprimé.
+          </p>
+        </div>
+      )}
+
       {/* Candidate results */}
-      <div className="p-4 space-y-3">
+      {!commune.annulled && <div className="p-4 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
           Candidats
         </p>
@@ -344,7 +348,7 @@ export function ResultsPanel({ electionData, communeData, communeChoro, circoDat
               />
             )
           })}
-      </div>
+      </div>}
     </PanelShell>
   )
 }
