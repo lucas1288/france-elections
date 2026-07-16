@@ -5,10 +5,11 @@ import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetail'
+import { isDeptCode, parentDeptCode } from '../utils/deptInsight'
 import { computeCircoCounts } from '../utils/circoCounts'
 import { TOP_CITIES } from '../utils/topCities'
-import { CommuneSearch } from './CommuneSearch'
 import { NationalSummary } from './NationalSummary'
+import { DeptInsight } from './DeptInsight'
 
 interface Props {
   electionData: RoundData | undefined
@@ -64,7 +65,7 @@ function fmtInt(n: number) {
 }
 
 export function ResultsPanel({ electionData, communeData, communeDataMissing, communeChoro, circoData, circoChoro, granularity, palette }: Props) {
-  const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget } = useElectionStore()
+  const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget, settleDept } = useElectionStore()
 
   const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
 
@@ -176,7 +177,6 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
       <PanelShell>
         <NationalSummary electionData={electionData} palette={palette} />
         <p className="px-4 pt-3 pb-2 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">{hint}</p>
-        <CommuneSearch />
         <div className="border-t border-gray-100 dark:border-slate-800 px-3 pt-3 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2 mb-1">
             30 plus grandes villes
@@ -233,12 +233,30 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
   const turnoutPct = (commune.turnout / commune.registeredVoters) * 100
   const blankPct = (commune.blankVotes / commune.registeredVoters) * 100
 
+  // Département insight (two-axis P2): only for a SETTLED dept selection —
+  // hover previews and dept-fallback resolutions stay on the plain detail view.
+  const isDeptSelection = !!clickedCommune && isDeptCode(clickedCommune) && commune.inseeCode === clickedCommune
+  // Hierarchy breadcrumb: one click up from a commune/circo to its département.
+  const parentCode = activeCode ? parentDeptCode(activeCode) : null
+  const parentDept =
+    parentCode && parentCode !== commune.inseeCode
+      ? electionData?.communes.find((c) => c.inseeCode === parentCode) ?? null
+      : null
+
   return (
     <PanelShell
       header={
         <>
           <p className="mt-0.5 text-base font-bold text-gray-900 dark:text-gray-100">{commune.name}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">INSEE {commune.inseeCode}</p>
+          {parentDept && (
+            <button
+              className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              onClick={() => settleDept(parentDept.inseeCode)}
+            >
+              ↑ {parentDept.name}
+            </button>
+          )}
         </>
       }
     >
@@ -349,6 +367,18 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
             )
           })}
       </div>}
+
+      {/* Département insight sections (two-axis P2) */}
+      {isDeptSelection && (
+        <DeptInsight
+          deptCode={commune.inseeCode}
+          circoChoro={circoChoro}
+          circoData={circoData}
+          communeChoro={communeChoro}
+          communeData={communeData}
+          palette={palette}
+        />
+      )}
     </PanelShell>
   )
 }

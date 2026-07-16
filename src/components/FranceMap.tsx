@@ -5,7 +5,8 @@ import { Protocol } from 'pmtiles'
 import type { CommuneResult, Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { useElectionStore, useIsOverview } from '../store/electionStore'
-import type { ColorMode } from '../store/electionStore'
+import type { ColorMode, Granularity } from '../store/electionStore'
+import { isDeptCode } from '../utils/deptInsight'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
 import type { NationalTotals } from '../utils/nationalResults'
@@ -408,6 +409,36 @@ function applyDeptColors(
   }
 }
 
+// ── Département focus mode (two-axis P2) ──────────────────────────────────────
+// When a département is the settled selection, everything outside it dims.
+// Paint-expression based (fill-opacity keyed on the code property) rather than
+// feature-state: one setPaintProperty per layer beats iterating ~35k communes,
+// and MapLibre's default 300ms opacity transition gives the crossfade for free.
+const FOCUS_DIM_OPACITY = 0.35
+const DEPT_TO_CIRCO_ZPREFIX: Record<string, string> = {
+  '971': 'ZA', '972': 'ZB', '973': 'ZC', '974': 'ZD', '975': 'ZS', '976': 'ZM',
+}
+
+function applyDeptFocus(map: maplibregl.Map, deptCode: string | null) {
+  if (!deptCode) {
+    for (const id of ['dept-fill', 'overseas-fill', 'communes-fill', 'circo-fill']) {
+      map.setPaintProperty(id, 'fill-opacity', 1)
+    }
+    return
+  }
+  const focus = (test: maplibregl.ExpressionSpecification): maplibregl.ExpressionSpecification =>
+    ['case', test, 1, FOCUS_DIM_OPACITY]
+  // Dept layers match on the full code; communes/circos on their dept prefix
+  // (overseas circos via their Z-code prefix — the tiles never saw INSEE codes).
+  map.setPaintProperty('dept-fill', 'fill-opacity', focus(['==', ['get', 'code'], deptCode]))
+  map.setPaintProperty('overseas-fill', 'fill-opacity', focus(['==', ['get', 'code'], deptCode]))
+  map.setPaintProperty('communes-fill', 'fill-opacity',
+    focus(['==', ['slice', ['get', 'code'], 0, deptCode.length], deptCode]))
+  const zprefix = DEPT_TO_CIRCO_ZPREFIX[deptCode] ?? deptCode
+  map.setPaintProperty('circo-fill', 'fill-opacity',
+    focus(['==', ['slice', ['get', 'codeCirconscription'], 0, zprefix.length], zprefix]))
+}
+
 // Our CIRLG parser produces INSEE-derived codes (e.g. '97101') but the circo PMTiles
 // uses the original Z-codes from the data.gouv.fr GeoJSON (e.g. 'ZA01'). We need
 // both directions: INSEE→Zcode for setFeatureState (coloring), Zcode→INSEE for clicks
@@ -574,6 +605,17 @@ function getFeatureBounds(geometry: GeoJSON.Geometry): maplibregl.LngLatBoundsLi
 type SourceLayer = 'communes' | 'departements' | 'circonscriptions'
 interface HoverTarget { id: string; sourceLayer: SourceLayer; source: 'admin' | 'circo' }
 
+// Layer of a selection that did NOT come from a map click (navigator,
+// breadcrumb, dept-insight rows): derived from the code shape. 5-char codes
+// are ambiguous (overseas commune vs overseas circo) — the granularity decides.
+function inferSelectionTarget(code: string, granularity: Granularity): { source: 'admin' | 'circo'; sourceLayer: SourceLayer } {
+  if (isDeptCode(code)) return { source: 'admin', sourceLayer: 'departements' }
+  if (code.length === 4 || (granularity !== 'commune' && code.length === 5)) {
+    return { source: 'circo', sourceLayer: 'circonscriptions' }
+  }
+  return { source: 'admin', sourceLayer: 'communes' }
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 export function FranceMap({ electionData, choroplethData, fullData, palette, colorMode, geometry, mobile = false }: Props) {
   const metroFit = mobile ? METRO_FIT_MOBILE : METRO_FIT
@@ -601,7 +643,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     sourceLayer: 'departements', source: 'admin',
   })
 
-  const { setHoveredCommune, setClickedCommune, clickedCommune, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget, setMapZoomedIn, mapZoomedIn, zoomedAway, setZoomedAway, isDark } = useElectionStore()
+  const { setHoveredCommune, setClickedCommune, clickedCommune, granularity, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget, flyBounds, setFlyBounds, setMapZoomedIn, mapZoomedIn, zoomedAway, setZoomedAway, isDark } = useElectionStore()
   const isOverview = useIsOverview()
   // Overseas insets share the overlay auto-hide: visible only at the overview AND not zoomed in.
   const showInsets = isOverview && !mapZoomedIn
@@ -814,6 +856,9 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       // A style rebuild resets paint props to their light defaults — re-theme first.
       applyMapTheme(map, isDarkRef.current)
       syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
+      // Re-apply the dept-focus dimming (fill-opacity was reset to 1 too).
+      const cc = useElectionStore.getState().clickedCommune
+      applyDeptFocus(map, cc && isDeptCode(cc) ? cc : null)
     })
   }, [geom])
 
@@ -874,6 +919,33 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     setFlyTarget(null)
   }, [flyTarget, setFlyTarget])
 
+  // ── Fly to programmatic bounds (territory navigator: dept/circo bbox, or
+  //    'overview' to re-fit metropolitan France with layout-aware padding) ───
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !flyBounds) return
+    if (flyBounds === 'overview') {
+      map.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
+    } else {
+      const [w, s, e, n] = flyBounds
+      map.fitBounds([[w, s], [e, n]], { padding: 60, duration: 800, maxZoom: 12 })
+    }
+    setFlyBounds(null)
+  }, [flyBounds, setFlyBounds, metroFit])
+
+  // ── Département focus: dim the map outside the settled dept (two-axis P2) ──
+  const focusedDept = clickedCommune && isDeptCode(clickedCommune) ? clickedCommune : null
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const apply = () => applyDeptFocus(map, focusedDept)
+    if (!map.isStyleLoaded()) {
+      map.once('idle', apply)
+      return () => { map.off('idle', apply) }
+    }
+    apply()
+  }, [focusedDept])
+
   // ── Sync Zustand selected → MapLibre feature state ─────────────────────────
   useEffect(() => {
     const map = mapRef.current
@@ -886,15 +958,20 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       )
     }
     if (clickedCommune) {
-      const { sourceLayer, source, featureId } = clickedSourceLayerRef.current
+      const { sourceLayer: clickLayer, source: clickSource, featureId } = clickedSourceLayerRef.current
       // clickedCommune holds an INSEE code; the PMTiles circo layer uses Z-codes and
       // merged-commune polygons carry obsolete codes. Prefer the raw feature id of the
-      // click when it still resolves to clickedCommune, else translate.
+      // click when it still resolves to clickedCommune; otherwise the selection came
+      // from elsewhere (navigator, breadcrumb, insight rows) and the click ref may
+      // point at the wrong layer — infer the target from the code shape instead.
       const clickedFeatureMatches =
         featureId !== undefined &&
-        (source === 'circo'
+        (clickSource === 'circo'
           ? (CIRCO_ZCODE_TO_INSEE[featureId] ?? featureId)
           : (MERGED_COMMUNE_TO_CURRENT[featureId] ?? featureId)) === clickedCommune
+      const { source, sourceLayer } = clickedFeatureMatches
+        ? { source: clickSource, sourceLayer: clickLayer }
+        : inferSelectionTarget(clickedCommune, granularity)
       const mapId = clickedFeatureMatches
         ? (featureId as string)
         : source === 'circo'
@@ -905,7 +982,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     } else {
       prevSelectedRef.current = null
     }
-  }, [clickedCommune])
+  }, [clickedCommune, granularity])
 
   return (
     <div className="h-full w-full relative">
@@ -938,7 +1015,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
         <button
           type="button"
           aria-label="Revenir à la vue d'ensemble"
-          className="pointer-events-auto absolute left-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
+          className="pointer-events-auto absolute left-3 top-[calc(6.5rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
           onClick={() => {
             setFocusedTerritory(null)
             setClickedCommune(null)
@@ -955,7 +1032,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
           taken by the theme chip and the national snippet card spans above it);
           z-10 keeps them under the Hemicycle cover (z-20) so they vanish there. */}
       {mobile && (
-        <div className="absolute right-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
+        <div className="absolute right-3 top-[calc(6.5rem+env(safe-area-inset-top))] z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
           <button
             type="button"
             aria-label="Zoomer"

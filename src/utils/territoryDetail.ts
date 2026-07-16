@@ -65,8 +65,13 @@ export function resolveTerritory(
     if (dept) return { commune: dept, isOverseasFallback: false, isRoundFallback: true }
     commune = electionData?.communes.find((c) => c.inseeCode === activeCode) ?? null
   } else if (granularity !== 'commune' && circoData) {
-    // circonscription + hemicycle both resolve against full circo data
-    commune = circoData.communes.find((c) => c.inseeCode === activeCode) ?? null
+    // circonscription + hemicycle both resolve against full circo data;
+    // département codes (selected via the territory navigator) fall back to
+    // the dept-level entry so a dept selection shows results on any tab.
+    commune =
+      circoData.communes.find((c) => c.inseeCode === activeCode) ??
+      electionData?.communes.find((c) => c.inseeCode === activeCode) ??
+      null
   } else {
     commune = electionData?.communes.find((c) => c.inseeCode === activeCode) ?? null
   }

@@ -1,14 +1,19 @@
 import { useMemo } from 'react'
 import { useElectionStore } from '../store/electionStore'
 import type { RoundData, Palette } from '../types/election'
+import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor } from '../utils/partyColors'
 import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetail'
+import { isDeptCode, parentDeptCode } from '../utils/deptInsight'
+import { DeptInsight } from './DeptInsight'
 
 interface Props {
   electionData: RoundData | undefined
   communeData: RoundData | null
   communeDataMissing: boolean
+  communeChoro: ChoroplethData | null
   circoData: RoundData | null
+  circoChoro: ChoroplethData | null
   palette: Palette | null
 }
 
@@ -28,10 +33,11 @@ function fmtInt(n: number) {
  * interactive (tap the map to reselect, tap the back button to zoom out). Shares
  * selection resolution + national baseline with ResultsPanel via territoryDetail.
  */
-export function MobileDetailSheet({ electionData, communeData, communeDataMissing, circoData, palette }: Props) {
+export function MobileDetailSheet({ electionData, communeData, communeDataMissing, communeChoro, circoData, circoChoro, palette }: Props) {
   const granularity = useElectionStore((s) => s.granularity)
   const clickedCommune = useElectionStore((s) => s.clickedCommune)
   const setClickedCommune = useElectionStore((s) => s.setClickedCommune)
+  const settleDept = useElectionStore((s) => s.settleDept)
 
   const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
   const { commune, isOverseasFallback, isRoundFallback } = resolveTerritory(clickedCommune, granularity, {
@@ -43,6 +49,15 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
 
   const open = !!clickedCommune
   const close = () => setClickedCommune(null)
+
+  // Département insight (two-axis P2) + hierarchy breadcrumb — mirrors ResultsPanel.
+  const isDeptSelection =
+    !!clickedCommune && isDeptCode(clickedCommune) && commune?.inseeCode === clickedCommune
+  const parentCode = clickedCommune ? parentDeptCode(clickedCommune) : null
+  const parentDept =
+    parentCode && parentCode !== commune?.inseeCode
+      ? electionData?.communes.find((c) => c.inseeCode === parentCode) ?? null
+      : null
 
   const turnoutPct = commune ? (commune.turnout / commune.registeredVoters) * 100 : 0
   const blankPct = commune ? (commune.blankVotes / commune.registeredVoters) * 100 : 0
@@ -67,6 +82,15 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-bold text-gray-900 dark:text-gray-100">{commune.name}</h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">INSEE {commune.inseeCode}</p>
+              {parentDept && (
+                <button
+                  type="button"
+                  className="mt-0.5 text-xs text-blue-600 dark:text-blue-400"
+                  onClick={() => settleDept(parentDept.inseeCode)}
+                >
+                  ↑ {parentDept.name}
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -166,6 +190,18 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
                 )
               })}
           </div>}
+
+          {/* Département insight sections (two-axis P2) */}
+          {isDeptSelection && commune && (
+            <DeptInsight
+              deptCode={commune.inseeCode}
+              circoChoro={circoChoro}
+              circoData={circoData}
+              communeChoro={communeChoro}
+              communeData={communeData}
+              palette={palette}
+            />
+          )}
         </div>
       )}
     </div>
