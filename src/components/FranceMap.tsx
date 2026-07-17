@@ -1015,7 +1015,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
         <button
           type="button"
           aria-label="Revenir à la vue d'ensemble"
-          className="pointer-events-auto absolute left-3 top-[calc(6.5rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
+          className="pointer-events-auto absolute left-3 top-[calc(8.25rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
           onClick={() => {
             setFocusedTerritory(null)
             setClickedCommune(null)
@@ -1032,7 +1032,7 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
           taken by the theme chip and the national snippet card spans above it);
           z-10 keeps them under the Hemicycle cover (z-20) so they vanish there. */}
       {mobile && (
-        <div className="absolute right-3 top-[calc(6.5rem+env(safe-area-inset-top))] z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
+        <div className="absolute right-3 top-[calc(8.25rem+env(safe-area-inset-top))] z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
           <button
             type="button"
             aria-label="Zoomer"

@@ -20,11 +20,31 @@ export interface ElectionRef {
  * Per-election color palette (palette.json next to the data files).
  * `byName` keys candidate names (presidentials); `parties` keys party/nuance
  * codes (legislatives — pre-electoral alliances like NUPES are nuance codes
- * of their own, flagged with `alliance`).
+ * of their own, flagged with `alliance`). `family` links each code to the
+ * cross-election political-family registry (families.json, two-axis P3).
  */
 export interface Palette {
   byName?: Record<string, string>
-  parties?: Record<string, { label: string; color: string; alliance?: boolean; members?: string[] }>
+  parties?: Record<string, { label: string; color: string; alliance?: boolean; members?: string[]; family?: string }>
+}
+
+/**
+ * Cross-election political-family registry (public/data/elections/families.json).
+ * Families are lineages (PS, LR, FN/RN…); blocs are the coarser level whose
+ * series stay continuous across alliance years (NUPES/NFP → bloc `gauche`).
+ * `order` is the left→right spectrum position. Family colors are canonical for
+ * CROSS-ELECTION surfaces only — per-election views keep their palettes.
+ */
+export interface FamilyDef {
+  label: string
+  color: string
+  bloc: string
+  order: number
+}
+
+export interface FamiliesRegistry {
+  blocs: Record<string, { label: string; color: string; order: number }>
+  families: Record<string, FamilyDef>
 }
 
 export interface CandidateResult {

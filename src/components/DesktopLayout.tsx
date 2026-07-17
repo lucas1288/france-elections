@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { ElectionPicker } from './ElectionPicker'
 import { TerritoryNavigator } from './TerritoryNavigator'
 import { TerritorySearchBar } from './TerritorySearchBar'
+import { TimelineStrip } from './TimelineStrip'
 import { ResultsPanel } from './ResultsPanel'
 import { AbroadMap } from './AbroadMap'
 import { ThemeToggle } from './ThemeToggle'
@@ -158,6 +159,14 @@ export function DesktopLayout(props: LayoutProps) {
           {isHemicycle && (
             <Hemicycle circoData={props.circoData} palette={props.palette} round={selected.round} />
           )}
+
+          {/* Timeline scrubber (two-axis P4) — adjacent moves on the time axis;
+              floats bottom-centre, above the hemicycle cover (z-20) so the time
+              axis stays reachable in every view. */}
+          <TimelineStrip
+            onOpenPicker={() => setPickerOpen(true)}
+            className="absolute bottom-4 left-1/2 z-30 w-[24rem] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-xl bg-white/95 px-4 pb-1.5 pt-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-slate-900/95 dark:ring-white/10"
+          />
           {/* Top-right overlay: abroad panel (map views only). The old "En tête"
               legend is gone — force selection lives in the sidebar's national
               results now (mobile model); each row carries its colour key. */}

@@ -3,7 +3,12 @@
 **Status**: direction agreed (July 2026); UI mockups reviewed and approved July 2026 —
 search-bar-as-geo-axis (variant B) chosen. **P1 shipped July 2026** (search pill +
 territory navigator, both platforms). **P2 shipped July 2026** (département insight
-sections + surrounding-dept dimming + `↑ dept` breadcrumb); P3+ not started.
+sections + surrounding-dept dimming + `↑ dept` breadcrumb). **P3 shipped July 2026**
+(families.json registry + palette memberships + validation script).
+**Présidentielle 2017 + Législatives 2017 ingested July 2026** (5 elections live —
+the timeline strip has 2 presidential + 3 legislative stops). **P4 shipped July
+2026** (`TimelineStrip`: desktop bottom-of-map card, mobile top-bar slot replacing
+the chip + T1/T2; tap-only v1). Next: P5 time-series.
 **Owner**: lucas. **Origin**: UI-rework discussion, July 2026.
 **Mockups**: visual UI ideas artifact (top bar variants, navigator, dept mode,
 timeline strip, history screen) — https://claude.ai/code/artifact/e668b182-c326-4772-bdbd-24701fce7214
@@ -174,22 +179,30 @@ Axis moves should feel spatial and continuous:
 |---|---|---|---|
 | P1 | Search-bar-as-geo-axis + navigator (+ absorb search) | — | **SHIPPED July 2026** — `TerritorySearchBar` + `TerritoryNavigator`, bbox index from tiles |
 | P2 | Département insight view | P1 (focus semantics) | **SHIPPED July 2026** — insight sections + dept dimming + breadcrumb |
-| P3 | Political family mapping in palette data | — | data modelling; also a prereq for 2017+ ingestion |
-| P4 | Timeline scrubber | better with 2017+ ingested | interleave the 2017 ingestion before/with this |
+| P3 | Political family mapping in palette data | — | **SHIPPED July 2026** — families.json (14 families / 5 blocs) + palette `family` keys + validate-families.mjs |
+| P4 | Timeline scrubber | better with 2017+ ingested | **SHIPPED July 2026** — `TimelineStrip.tsx`, tap-only v1 (drag-scrub later) |
 | P5 | Territory time-series panel | P3 + precomputed history files | dept first, communes later |
 
 Recommended order: **P1 → P2 → P3 → (2017 ingestion) → P4 → P5.**
 
 ## Open questions (to pressure-test next)
 
-1. **Timeline interaction details** — mockups settled the broad strokes (bottom-of-map
-   strip; winner-coloured dots; T1/T2 as a small sub-toggle; type filtered, not mixed
-   on one lane; 2010 break as a dashed rupture; on mobile the strip replaces the
-   election chip + round toggle). Still open: exact scrub/drag behaviour and how the
-   strip collapses when the detail sheet is open.
-2. **Family mapping authoring** — where it lives (per-election `palette.json` vs a
-   global `families.json`), who the canonical families are, how to handle forces that
-   split/merge asymmetrically (NUPES→NFP easy; UDF diaspora hard).
+1. **Timeline interaction details** — MOSTLY ANSWERED by the P4 build (July 2026):
+   tap-to-switch v1 (stops preserve the round, unlike the picker which resets to T1);
+   desktop = floating bottom-of-map card (top-bar chip + T1/T2 kept, per mockup);
+   mobile = the strip lives in the top-bar slot (second header row), so it never
+   conflicts with the detail sheet — the mockup's "collapse to a mini-chip" was
+   unneeded. Still open: drag-scrub gesture (v2), and colouring stops by the winner
+   IN the settled territory rather than nationally (the mockup's "c'est là que ça
+   devient fort" idea — needs cross-election data for the settled territory, kin
+   to P5's history files).
+2. **Family mapping authoring** — ANSWERED (P3, July 2026): hybrid — a global
+   `families.json` registry (14 families + 5 blocs, colors, left→right order) with
+   `family: <id>` memberships in each election's `palette.json`. Alliances are a
+   family of their own (`union-gauche`) and blocs give continuity across alliance
+   years. Macronisme merged into `centre`; Reconquête its own family (bloc
+   extrême droite); PCF separate. Taxonomy is fixed; memberships grow per
+   ingestion (`scripts/validate-families.mjs` gates them).
 3. **Focus-mode visual language** — ANSWERED for départements (P2): dimming
    (fill-opacity 0.35 outside the settled dept, everything stays interactive).
    Still open for commune/circo-level focus if we ever want it there.
