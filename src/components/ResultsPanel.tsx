@@ -9,6 +9,7 @@ import { isDeptCode, parentDeptCode } from '../utils/deptInsight'
 import { TOP_CITIES } from '../utils/topCities'
 import { NationalSummary } from './NationalSummary'
 import { DeptInsight } from './DeptInsight'
+import { DeptHistory } from './DeptHistory'
 
 interface Props {
   electionData: RoundData | undefined
@@ -100,6 +101,7 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
             circoChoro={circoChoro}
             circoData={circoData}
           />
+          <DeptHistory deptCode="FR" />
           <p className="px-4 pt-3 pb-1 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">{hint}</p>
         </PanelShell>
       )
@@ -119,6 +121,7 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
           circoChoro={circoChoro}
           circoData={circoData}
         />
+        <DeptHistory deptCode="FR" />
         <p className="px-4 pt-3 pb-2 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">{hint}</p>
         <div className="border-t border-gray-100 dark:border-slate-800 px-3 pt-3 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2 mb-1">

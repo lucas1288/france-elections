@@ -47,6 +47,21 @@ export interface FamiliesRegistry {
   families: Record<string, FamilyDef>
 }
 
+/** One election×round point of a territory's history series (P5, generated
+ *  by scripts/build-dept-history.mjs). `fam` = % of expressed votes per
+ *  political-family id; `part` = participation %. */
+export interface DeptHistoryPoint {
+  t: ElectionType
+  y: number
+  r: number
+  part: number
+  fam: Record<string, number>
+}
+
+export interface DeptHistoryFile {
+  depts: Record<string, { name: string; series: DeptHistoryPoint[] }>
+}
+
 export interface CandidateResult {
   name: string
   party: string

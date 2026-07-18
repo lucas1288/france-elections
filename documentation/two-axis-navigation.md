@@ -8,7 +8,12 @@ sections + surrounding-dept dimming + `↑ dept` breadcrumb). **P3 shipped July 
 **Présidentielle 2017 + Législatives 2017 ingested July 2026** (5 elections live —
 the timeline strip has 2 presidential + 3 legislative stops). **P4 shipped July
 2026** (`TimelineStrip`: desktop bottom-of-map card, mobile top-bar slot replacing
-the chip + T1/T2; tap-only v1). Next: P5 time-series.
+the chip + T1/T2; tap-only v1). **P5 v1 shipped July 2026** (dept-level history:
+`build-dept-history.mjs` precompute → `history/depts.json`, per-family sparkline
+"Historique" section in the dept insight panel, both platforms). ALL PHASES
+SHIPPED — remaining follow-ups: drag-scrub, commune-level history, the full
+history screen (proposal D — pending the desktop results-layout rethink), and
+more elections to deepen the series.
 **Owner**: lucas. **Origin**: UI-rework discussion, July 2026.
 **Mockups**: visual UI ideas artifact (top bar variants, navigator, dept mode,
 timeline strip, history screen) — https://claude.ai/code/artifact/e668b182-c326-4772-bdbd-24701fce7214
@@ -181,7 +186,7 @@ Axis moves should feel spatial and continuous:
 | P2 | Département insight view | P1 (focus semantics) | **SHIPPED July 2026** — insight sections + dept dimming + breadcrumb |
 | P3 | Political family mapping in palette data | — | **SHIPPED July 2026** — families.json (14 families / 5 blocs) + palette `family` keys + validate-families.mjs |
 | P4 | Timeline scrubber | better with 2017+ ingested | **SHIPPED July 2026** — `TimelineStrip.tsx`, tap-only v1 (drag-scrub later) |
-| P5 | Territory time-series panel | P3 + precomputed history files | dept first, communes later |
+| P5 | Territory time-series panel | P3 + precomputed history files | **v1 SHIPPED July 2026** — dept level (`DeptHistory.tsx`); communes + full history screen later |
 
 Recommended order: **P1 → P2 → P3 → (2017 ingestion) → P4 → P5.**
 

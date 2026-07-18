@@ -6,6 +6,7 @@ import { getCandidateColor } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
 import { computeCircoCounts } from '../utils/circoCounts'
 import { useElectionStore } from '../store/electionStore'
+import { DeptHistory } from './DeptHistory'
 
 interface Props {
   electionData: RoundData | undefined
@@ -318,6 +319,9 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
                   </button>
                 )
               })}
+
+              {/* National history — bloc series across elections (P5) */}
+              <DeptHistory deptCode="FR" />
             </div>
           </Drawer.Content>
         </Drawer.Portal>

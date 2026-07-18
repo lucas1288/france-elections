@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { ElectionRef, FamiliesRegistry, Palette, RoundData } from '../types/election'
+import type { DeptHistoryFile, ElectionRef, FamiliesRegistry, Palette, RoundData } from '../types/election'
 import { dataUrl } from '../utils/dataUrl'
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -100,6 +100,12 @@ export function useFullCommuneData(type: string, year: number, round: number, en
 /** Cross-election political-family registry (global, cached forever). */
 export function useFamilies() {
   return useOptionalJson<FamiliesRegistry>(['families'], '/data/elections/families.json')
+}
+
+/** Dept-level cross-election history by family (P5, generated file; ~180 KB,
+ *  cached forever). Null until built/synced — the history section just hides. */
+export function useDeptHistory() {
+  return useOptionalJson<DeptHistoryFile>(['dept-history'], '/data/elections/history/depts.json')
 }
 
 /** Fetches the elections index manifest. */

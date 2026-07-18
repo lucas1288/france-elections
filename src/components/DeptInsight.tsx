@@ -4,6 +4,7 @@ import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { circoInDept, communeInDept, isPlmArrondissement, circoNumber } from '../utils/deptInsight'
+import { DeptHistory } from './DeptHistory'
 import { CIRCO_BBOXES } from '../utils/territoryBBoxes'
 import { TOP_CITIES } from '../utils/topCities'
 
@@ -142,6 +143,10 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
 
   return (
     <>
+      {/* Historique — cross-election family series (P5; hidden until the
+          history file + families registry are loaded) */}
+      <DeptHistory deptCode={deptCode} />
+
       {/* Circonscriptions */}
       {circos.length > 0 && (
         <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 space-y-1">
