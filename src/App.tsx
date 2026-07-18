@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useElectionStore } from './store/electionStore'
 import { useElectionData, useChoroplethData, useCircoChoroplethData, useFullCommuneData, useFullCircoData, useElectionIndex, usePalette } from './hooks/useElectionData'
 import { useIsMobile } from './hooks/useIsMobile'
+import { useUrlSync } from './hooks/useUrlSync'
 import { DesktopLayout } from './components/DesktopLayout'
 import { MobileLayout } from './components/MobileLayout'
 import type { LayoutProps } from './components/layoutProps'
@@ -10,6 +11,8 @@ export default function App() {
   const { selected, granularity, setGranularity } = useElectionStore()
   const isMobile = useIsMobile()
   const indexQuery = useElectionIndex()
+  // Deep-linking: URL params → store at load, store → URL afterwards.
+  useUrlSync(indexQuery.data?.elections)
   const electionRef = indexQuery.data?.elections.find(
     (e) => e.type === selected.type && e.year === selected.year,
   )

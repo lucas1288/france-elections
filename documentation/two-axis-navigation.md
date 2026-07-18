@@ -213,6 +213,11 @@ Recommended order: **P1 → P2 → P3 → (2017 ingestion) → P4 → P5.**
    Still open for commune/circo-level focus if we ever want it there.
 4. **Does the geo chip replace `focusedTerritory`** (overseas focus) or generalise it?
    Likely: `focusedTerritory` becomes a special case of the settled geo axis.
-5. **URL/deep-linking** — two settled axes are a natural shareable state
-   (`?election=leg-2024-t2&territory=34`). Worth folding in when the axes become
-   first-class.
+5. **URL/deep-linking** — ANSWERED (July 2026): `src/hooks/useUrlSync.ts`.
+   `?election=leg-2024-t2&territory=34&view=circo&party=RN` / `mode=abstention`.
+   Params → store at load (election held until the manifest validates it;
+   territory restored with the navigator's selection semantics — 5-char
+   circo-vs-commune ambiguity resolved by `view`); store → URL afterwards via
+   `history.replaceState` (no history entries — back leaves the app). Not
+   captured: camera position beyond the territory, overseas focus without a
+   selection.
