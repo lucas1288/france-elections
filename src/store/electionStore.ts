@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ElectionType, Granularity } from '../types/election'
+import { DEPT_BBOXES } from '../utils/territoryBBoxes'
 
 interface SelectedElection {
   type: ElectionType
@@ -14,6 +15,13 @@ interface FlyTarget {
   lat: number
   zoom: number
 }
+
+/**
+ * Bounds fly request, consumed by FranceMap like `flyTarget`:
+ * [west, south, east, north], or 'overview' to re-fit metropolitan France
+ * (with the layout-aware padding only FranceMap knows).
+ */
+export type FlyBounds = [number, number, number, number] | 'overview'
 
 /**
  * How the choropleth is colored:
@@ -56,6 +64,7 @@ interface ElectionStore {
   clickedCommune: string | null
   focusedTerritory: string | null
   flyTarget: FlyTarget | null
+  flyBounds: FlyBounds | null
   colorMode: ColorMode
   /** True once the map is zoomed past the overview (drives auto-hide of overlays). */
   mapZoomedIn: boolean
@@ -71,8 +80,15 @@ interface ElectionStore {
   setGranularity: (g: Granularity) => void
   setHoveredCommune: (inseeCode: string | null) => void
   setClickedCommune: (inseeCode: string | null) => void
+  /** Set the selection WITHOUT the map-click toggle semantics (navigator/search). */
+  selectTerritory: (inseeCode: string) => void
+  /** Settle the geo axis on a département: selection + camera (overseas depts
+   * ride the focus machinery, metro depts fit their bbox). Shared by the
+   * territory navigator and the detail panels' breadcrumb. */
+  settleDept: (deptCode: string) => void
   setFocusedTerritory: (code: string | null) => void
   setFlyTarget: (target: FlyTarget | null) => void
+  setFlyBounds: (bounds: FlyBounds | null) => void
   setMapZoomedIn: (zoomedIn: boolean) => void
   setZoomedAway: (away: boolean) => void
   setTheme: (theme: Theme) => void
@@ -91,6 +107,7 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   clickedCommune: null,
   focusedTerritory: null,
   flyTarget: null,
+  flyBounds: null,
   colorMode: LEADER,
   mapZoomedIn: false,
   zoomedAway: false,
@@ -112,8 +129,21 @@ export const useElectionStore = create<ElectionStore>((set) => ({
     set((s) => ({
       clickedCommune: s.clickedCommune === inseeCode ? null : inseeCode,
     })),
+  selectTerritory: (inseeCode) => set({ clickedCommune: inseeCode }),
+  settleDept: (deptCode) => {
+    if (deptCode.length === 3 && (deptCode.startsWith('97') || deptCode.startsWith('98'))) {
+      set({ clickedCommune: deptCode, focusedTerritory: deptCode })
+    } else {
+      // Clearing a stale overseas focus here would fly to the metro overview and
+      // fight the bbox fit — FranceMap's flyBounds effect runs last, so the bbox
+      // wins, but we still clear the focus so `useIsOverview` stays coherent.
+      const bbox = DEPT_BBOXES[deptCode]
+      set({ clickedCommune: deptCode, focusedTerritory: null, ...(bbox ? { flyBounds: bbox as FlyBounds } : {}) })
+    }
+  },
   setFocusedTerritory: (focusedTerritory) => set({ focusedTerritory }),
   setFlyTarget: (flyTarget) => set({ flyTarget }),
+  setFlyBounds: (flyBounds) => set({ flyBounds }),
   setMapZoomedIn: (mapZoomedIn) => set({ mapZoomedIn }),
   setZoomedAway: (zoomedAway) => set({ zoomedAway }),
   setTheme: (theme) => {

@@ -13,14 +13,17 @@
 // (the whole-city 75056/69123/13055 entries are kept; FranceMap hides their
 // polygons so the arrondissements replace them on the map).
 //
-// Usage: node scripts/build-plm-arrondissements.mjs
+// Usage: node scripts/build-plm-arrondissements.mjs [eraFilter]
+//   e.g. `node scripts/build-plm-arrondissements.mjs 2017` runs only the 2017 jobs.
+//   The 2017 presidential BV files share the exact 2022 layout (21 fixed columns,
+//   7-wide pres candidate blocks), so the same aggregation covers both vintages.
 
 import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
-const BV = path.join(ROOT, 'data-sources/burvot-2022')
+const SOURCES = path.join(ROOT, 'data-sources')
 const ELEC = path.join(ROOT, 'public/data/elections')
 
 // PLM cities: ministry (dept, commune) → INSEE base for arrondissements + valid range.
@@ -155,19 +158,18 @@ function injectChoro(relPath, choroEntries) {
   return j.communes.length
 }
 
-async function process({ type, round, bvFile, mode, fullPath, choroPath }) {
+async function processJob({ bvFile, mode, refPath, fullPath, choroPath }) {
   // Master lookups from the existing data files.
   const presParty = new Map()
   const legisLabel = new Map()
+  const ref = JSON.parse(fs.readFileSync(path.join(ELEC, refPath), 'utf8'))
   if (mode === 'pres') {
-    const ref = JSON.parse(fs.readFileSync(path.join(ELEC, `presidential/2022/round${round}.json`), 'utf8'))
     for (const c of ref.candidates) presParty.set(c.name, c.party)
   } else {
-    const ref = JSON.parse(fs.readFileSync(path.join(ELEC, `legislative/2022/round1-communes.json`), 'utf8'))
     for (const c of ref.candidates) legisLabel.set(c.party, c.name)
   }
 
-  const acc = await aggregate(path.join(BV, bvFile), mode)
+  const acc = await aggregate(path.join(SOURCES, bvFile), mode)
   const fullEntries = []
   const choroEntries = []
   for (const [insee, e] of [...acc.entries()].sort()) {
@@ -190,27 +192,47 @@ async function process({ type, round, bvFile, mode, fullPath, choroPath }) {
 }
 
 const JOBS = [
-  { type: 'pres', round: 1, bvFile: 'burvot-pres-t1.txt', mode: 'pres',
+  { era: '2022', type: 'pres', round: 1, bvFile: 'burvot-2022/burvot-pres-t1.txt', mode: 'pres',
+    refPath: 'presidential/2022/round1.json',
     fullPath: 'presidential/2022/round1-communes.json', choroPath: 'presidential/2022/round1-communes-choropleth.json' },
-  { type: 'pres', round: 2, bvFile: 'burvot-pres-t2.txt', mode: 'pres',
+  { era: '2022', type: 'pres', round: 2, bvFile: 'burvot-2022/burvot-pres-t2.txt', mode: 'pres',
+    refPath: 'presidential/2022/round2.json',
     fullPath: null, choroPath: 'presidential/2022/round2-communes-choropleth.json' }, // no R2 full commune file
-  { type: 'legis', round: 1, bvFile: 'burvot-legis-t1.txt', mode: 'legis',
+  { era: '2022', type: 'legis', round: 1, bvFile: 'burvot-2022/burvot-legis-t1.txt', mode: 'legis',
+    refPath: 'legislative/2022/round1-communes.json',
     fullPath: 'legislative/2022/round1-communes.json', choroPath: 'legislative/2022/round1-communes-choropleth.json' },
-  { type: 'legis', round: 2, bvFile: 'burvot-legis-t2.txt', mode: 'legis',
+  { era: '2022', type: 'legis', round: 2, bvFile: 'burvot-2022/burvot-legis-t2.txt', mode: 'legis',
+    refPath: 'legislative/2022/round1-communes.json',
     fullPath: 'legislative/2022/round2-communes.json', choroPath: 'legislative/2022/round2-communes-choropleth.json' },
+  { era: '2017', type: 'pres', round: 1, bvFile: 'presidentielle-2017/pres2017-t1-bv.txt', mode: 'pres',
+    refPath: 'presidential/2017/round1.json',
+    fullPath: 'presidential/2017/round1-communes.json', choroPath: 'presidential/2017/round1-communes-choropleth.json' },
+  { era: '2017', type: 'pres', round: 2, bvFile: 'presidentielle-2017/pres2017-t2-bv.txt', mode: 'pres',
+    refPath: 'presidential/2017/round2.json',
+    fullPath: 'presidential/2017/round2-communes.json', choroPath: 'presidential/2017/round2-communes-choropleth.json' },
+  // 2017 legislative BV files share the 2022 legis layout (21 fixed cols + 8-wide
+  // blocks with Nuance) — mode 'legis' applies unchanged.
+  { era: '2017-leg', type: 'legis', round: 1, bvFile: 'legislatives-2017/leg2017-t1-bv.txt', mode: 'legis',
+    refPath: 'legislative/2017/round1-communes.json',
+    fullPath: 'legislative/2017/round1-communes.json', choroPath: 'legislative/2017/round1-communes-choropleth.json' },
+  { era: '2017-leg', type: 'legis', round: 2, bvFile: 'legislatives-2017/leg2017-t2-bv.txt', mode: 'legis',
+    refPath: 'legislative/2017/round2-communes.json',
+    fullPath: 'legislative/2017/round2-communes.json', choroPath: 'legislative/2017/round2-communes-choropleth.json' },
 ]
 
+const eraFilter = process.argv[2]
 let sample = null
 for (const job of JOBS) {
-  console.log(`${job.type} round ${job.round}:`)
-  const entries = await process(job)
+  if (eraFilter && job.era !== eraFilter) continue
+  console.log(`${job.era} ${job.type} round ${job.round}:`)
+  const entries = await processJob(job)
   if (job.type === 'pres' && job.round === 1) sample = entries
 }
 
-// Sanity print: Paris totals should sum to the whole-city figure.
+// Sanity print: Paris totals should sum to the whole-city figure in the data.
 if (sample) {
   const paris = sample.filter((e) => +e.inseeCode >= 75101 && +e.inseeCode <= 75120)
   const reg = paris.reduce((a, e) => a + e.registeredVoters, 0)
-  console.log(`\nParis 20 arr Σ inscrits (pres R1) = ${reg.toLocaleString('fr-FR')} (whole-city = 1 368 025)`)
+  console.log(`\nParis 20 arr Σ inscrits (pres R1) = ${reg.toLocaleString('fr-FR')}`)
   console.log('Sample 1er arr leader:', paris[0]?.leadingCandidate, paris[0]?.candidates.slice(0, 3).map((c) => `${c.name} ${c.percentage}%`).join(', '))
 }

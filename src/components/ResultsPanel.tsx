@@ -3,12 +3,13 @@ import { useElectionStore } from '../store/electionStore'
 import type { Granularity } from '../store/electionStore'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
-import { getCandidateColor, partyByName } from '../utils/partyColors'
+import { getCandidateColor } from '../utils/partyColors'
 import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetail'
-import { computeCircoCounts } from '../utils/circoCounts'
+import { isDeptCode, parentDeptCode } from '../utils/deptInsight'
 import { TOP_CITIES } from '../utils/topCities'
-import { CommuneSearch } from './CommuneSearch'
 import { NationalSummary } from './NationalSummary'
+import { DeptInsight } from './DeptInsight'
+import { DeptHistory } from './DeptHistory'
 
 interface Props {
   electionData: RoundData | undefined
@@ -64,7 +65,7 @@ function fmtInt(n: number) {
 }
 
 export function ResultsPanel({ electionData, communeData, communeDataMissing, communeChoro, circoData, circoChoro, granularity, palette }: Props) {
-  const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget } = useElectionStore()
+  const { hoveredCommune, clickedCommune, setClickedCommune, setFlyTarget, settleDept } = useElectionStore()
 
   const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
 
@@ -88,80 +89,20 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
         ? 'Survolez ou cliquez sur une circonscription pour afficher ses résultats'
         : 'Survolez ou cliquez sur une commune pour afficher ses résultats'
 
-    // ── Circo / hemicycle idle: ranked list of candidates by circos won ─────────
-    // (1st from the lightweight choropleth, 2nd from full circo data — shared
-    // with the mobile national sheet via computeCircoCounts.)
-    if (granularity !== 'commune' && circoChoro) {
-      const parties = partyByName(circoChoro.candidates)
-      const { counts1st, counts2nd, total } = computeCircoCounts(circoChoro, circoData)
-
-      const ranked = [...counts1st.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .filter(([, n]) => n > 0)
-
+    // ── Circo / hemicycle idle: national summary only — the per-circo won/1st/2nd
+    // counts live in NationalSummary's Pourcentages/Sièges switch (July 2026,
+    // shared with the mobile national sheet via computeCircoCounts).
+    if (granularity !== 'commune') {
       return (
         <PanelShell>
-          <NationalSummary electionData={electionData} palette={palette} />
+          <NationalSummary
+            electionData={electionData}
+            palette={palette}
+            circoChoro={circoChoro}
+            circoData={circoData}
+          />
+          <DeptHistory deptCode="FR" />
           <p className="px-4 pt-3 pb-1 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">{hint}</p>
-          <div className="px-4 pt-2 pb-4 space-y-3">
-            {/* Column headers */}
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                En tête par circonscription
-              </p>
-              <div className="flex gap-3 text-xs text-gray-400 dark:text-gray-500 shrink-0 ml-2">
-                <span>1er</span>
-                {circoData && <span>2e</span>}
-              </div>
-            </div>
-
-            {ranked.map(([name, count1st]) => {
-              const color = getCandidateColor(name, 0, parties.get(name), palette)
-              const count2nd = counts2nd.get(name) ?? 0
-              const pct1st = (count1st / total) * 100
-              const pct2nd = (count2nd / total) * 100
-              return (
-                <CandidateRow
-                  key={name}
-                  name={name}
-                  color={color}
-                  right={
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold" style={{ color }}>
-                        {fmtInt(count1st)}
-                      </span>
-                      {circoData && (
-                        <span className="text-sm text-gray-400 dark:text-gray-500 w-7 text-right">
-                          {count2nd > 0 ? fmtInt(count2nd) : '—'}
-                        </span>
-                      )}
-                    </div>
-                  }
-                  bar={
-                    /* Stacked bar: solid = 1st place, faded = 2nd place */
-                    <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-1.5 relative overflow-hidden">
-                      <div
-                        className="absolute inset-y-0 left-0 h-full"
-                        style={{ width: `${pct1st}%`, background: color, borderRadius: '9999px 0 0 9999px' }}
-                      />
-                      {circoData && count2nd > 0 && (
-                        <div
-                          className="absolute inset-y-0 h-full"
-                          style={{
-                            left: `${pct1st}%`,
-                            width: `${Math.min(pct2nd, 100 - pct1st)}%`,
-                            background: color,
-                            opacity: 0.35,
-                            borderRadius: '0 9999px 9999px 0',
-                          }}
-                        />
-                      )}
-                    </div>
-                  }
-                />
-              )
-            })}
-          </div>
         </PanelShell>
       )
     }
@@ -174,9 +115,14 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
 
     return (
       <PanelShell>
-        <NationalSummary electionData={electionData} palette={palette} />
+        <NationalSummary
+          electionData={electionData}
+          palette={palette}
+          circoChoro={circoChoro}
+          circoData={circoData}
+        />
+        <DeptHistory deptCode="FR" />
         <p className="px-4 pt-3 pb-2 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">{hint}</p>
-        <CommuneSearch />
         <div className="border-t border-gray-100 dark:border-slate-800 px-3 pt-3 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2 mb-1">
             30 plus grandes villes
@@ -233,12 +179,30 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
   const turnoutPct = (commune.turnout / commune.registeredVoters) * 100
   const blankPct = (commune.blankVotes / commune.registeredVoters) * 100
 
+  // Département insight (two-axis P2): only for a SETTLED dept selection —
+  // hover previews and dept-fallback resolutions stay on the plain detail view.
+  const isDeptSelection = !!clickedCommune && isDeptCode(clickedCommune) && commune.inseeCode === clickedCommune
+  // Hierarchy breadcrumb: one click up from a commune/circo to its département.
+  const parentCode = activeCode ? parentDeptCode(activeCode) : null
+  const parentDept =
+    parentCode && parentCode !== commune.inseeCode
+      ? electionData?.communes.find((c) => c.inseeCode === parentCode) ?? null
+      : null
+
   return (
     <PanelShell
       header={
         <>
           <p className="mt-0.5 text-base font-bold text-gray-900 dark:text-gray-100">{commune.name}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">INSEE {commune.inseeCode}</p>
+          {parentDept && (
+            <button
+              className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              onClick={() => settleDept(parentDept.inseeCode)}
+            >
+              ↑ {parentDept.name}
+            </button>
+          )}
         </>
       }
     >
@@ -349,6 +313,18 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
             )
           })}
       </div>}
+
+      {/* Département insight sections (two-axis P2) */}
+      {isDeptSelection && (
+        <DeptInsight
+          deptCode={commune.inseeCode}
+          circoChoro={circoChoro}
+          circoData={circoData}
+          communeChoro={communeChoro}
+          communeData={communeData}
+          palette={palette}
+        />
+      )}
     </PanelShell>
   )
 }

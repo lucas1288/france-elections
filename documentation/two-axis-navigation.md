@@ -1,7 +1,22 @@
 # Two-axis navigation — design doc
 
-**Status**: draft, direction agreed in principle (July 2026). No implementation started.
+**Status**: direction agreed (July 2026); UI mockups reviewed and approved July 2026 —
+search-bar-as-geo-axis (variant B) chosen. **P1 shipped July 2026** (search pill +
+territory navigator, both platforms). **P2 shipped July 2026** (département insight
+sections + surrounding-dept dimming + `↑ dept` breadcrumb). **P3 shipped July 2026**
+(families.json registry + palette memberships + validation script).
+**Présidentielle 2017 + Législatives 2017 ingested July 2026** (5 elections live —
+the timeline strip has 2 presidential + 3 legislative stops). **P4 shipped July
+2026** (`TimelineStrip`: desktop bottom-of-map card, mobile top-bar slot replacing
+the chip + T1/T2; tap-only v1). **P5 v1 shipped July 2026** (dept-level history:
+`build-dept-history.mjs` precompute → `history/depts.json`, per-family sparkline
+"Historique" section in the dept insight panel, both platforms). ALL PHASES
+SHIPPED — remaining follow-ups: drag-scrub, commune-level history, the full
+history screen (proposal D — pending the desktop results-layout rethink), and
+more elections to deepen the series.
 **Owner**: lucas. **Origin**: UI-rework discussion, July 2026.
+**Mockups**: visual UI ideas artifact (top bar variants, navigator, dept mode,
+timeline strip, history screen) — https://claude.ai/code/artifact/e668b182-c326-4772-bdbd-24701fce7214
 
 ---
 
@@ -83,30 +98,46 @@ as data modelling (not UI).
 
 ## Proposals
 
-### A. Territory chip + navigator (cheap, high leverage — do first)
+### A. Search-bar-as-geo-axis + territory navigator (cheap, high leverage — do first)
 
-A geo chip next to the election chip: `France` by default, `Hérault ▾` when settled.
-Tapping opens a **territory navigator**: search box + hierarchy browsing
-(France → départements → communes/circos). Selecting sets the geo axis (flyTo +
-selection), exactly like the election chip sets the time axis.
+**Decided (July 2026, UI mockup review): the search bar IS the geo-axis control**
+(Google-Maps pattern), not a separate chip. The top bar holds a prominent search
+field + the election chip. The field plays three roles: empty → search prompt;
+territory settled → displays it ("Hérault ✕"); ✕ → un-settles the geo axis.
+One control per axis, no redundant chip. (A "France ▾" chip variant was mocked up
+and rejected in favour of this.)
+
+Tapping/focusing the field opens the **territory navigator**: federated search
+(communes / départements / circos in one query, results grouped by type with badges)
++ hierarchy browsing with a breadcrumb (France → départements → communes/circos)
++ recents. Selecting sets the geo axis (flyTo + selection), exactly like the
+election chip sets the time axis. Communes/départements come from geo.api.gouv.fr;
+circos from a small local name index (577 entries).
 
 - Makes the second axis visible, persistent, and settable **without touching the map**.
-- **Absorbs the "prominent search bar" backlog item** — search is just the fastest way
-  to set the geo axis. The sidebar `CommuneSearch` and the mobile SearchSheet fold
+- **Absorbs the "prominent search bar" backlog item** — search is the front door of
+  the geo axis. The sidebar `CommuneSearch` and the mobile SearchSheet fold
   into this (SearchSheet's row format was already designed to extend to dept/circo).
 - Breadcrumb semantics: from a commune, one tap up to its département; from a dept,
   up to France.
 
 ### B. Département insight view (existing backlog item — this is its purpose)
 
+**SHIPPED July 2026** (`DeptInsight.tsx` + `utils/deptInsight.ts`; docs in CLAUDE.md).
 Settling on a département gives a real "you are here" mode, not just a zoom level:
 
-- Dept-level totals + ranked forces (already in `roundN.json` — no new data).
-- Circos won within the dept (from full circo data, already always loaded).
-- Top/bottom communes (participation, force scores).
-- Visual treatment: dim/desaturate surrounding départements; clear "focused" state.
-- Interactivity ideas from the earlier backlog note (filter by force at this level)
-  slot in here.
+- Dept-level totals + ranked forces (already in `roundN.json` — no new data). ✅
+- Circos won within the dept (from full circo data, already always loaded) — leader
+  per circo, click = jump to that circo. ✅
+- Top/bottom communes (participation) + largest communes + communes-led-per-force
+  counts. ✅ (full-commune sections appear when that file is loaded — commune tab)
+- Visual treatment: **dim surrounding départements** (fill-opacity paint expressions,
+  crossfade) — the chosen answer to open question 3's dept case. ✅
+- Also shipped alongside: `↑ département` breadcrumb in the detail panels (the
+  navigator breadcrumb semantics from proposal A, hierarchy-up in one tap) and a
+  shared `settleDept` store action.
+- NOT shipped (deliberately): dept-scoped force *filtering* — the global
+  single-party view covers most of it; revisit on demand.
 
 ### C. Timeline scrubber (adjacent moves on the time axis)
 
@@ -151,26 +182,42 @@ Axis moves should feel spatial and continuous:
 
 | Phase | What | Depends on | Notes |
 |---|---|---|---|
-| P1 | Territory chip + navigator (+ absorb search) | — | pure UI, no new data; makes the model visible |
-| P2 | Département insight view | P1 (focus semantics) | existing backlog item; data already loaded |
-| P3 | Political family mapping in palette data | — | data modelling; also a prereq for 2017+ ingestion |
-| P4 | Timeline scrubber | better with 2017+ ingested | interleave the 2017 ingestion before/with this |
-| P5 | Territory time-series panel | P3 + precomputed history files | dept first, communes later |
+| P1 | Search-bar-as-geo-axis + navigator (+ absorb search) | — | **SHIPPED July 2026** — `TerritorySearchBar` + `TerritoryNavigator`, bbox index from tiles |
+| P2 | Département insight view | P1 (focus semantics) | **SHIPPED July 2026** — insight sections + dept dimming + breadcrumb |
+| P3 | Political family mapping in palette data | — | **SHIPPED July 2026** — families.json (14 families / 5 blocs) + palette `family` keys + validate-families.mjs |
+| P4 | Timeline scrubber | better with 2017+ ingested | **SHIPPED July 2026** — `TimelineStrip.tsx`, tap-only v1 (drag-scrub later) |
+| P5 | Territory time-series panel | P3 + precomputed history files | **v1 SHIPPED July 2026** — dept level (`DeptHistory.tsx`); communes + full history screen later |
 
 Recommended order: **P1 → P2 → P3 → (2017 ingestion) → P4 → P5.**
 
 ## Open questions (to pressure-test next)
 
-1. **Timeline interaction details** — strip placement on mobile vs desktop; how rounds
-   nest in election stops; how the type filter/lanes look; how the 2010 circo break
-   renders.
-2. **Family mapping authoring** — where it lives (per-election `palette.json` vs a
-   global `families.json`), who the canonical families are, how to handle forces that
-   split/merge asymmetrically (NUPES→NFP easy; UDF diaspora hard).
-3. **Focus-mode visual language** — dimming vs masking vs outline for the settled
-   territory; how much of the surrounding map stays interactive.
+1. **Timeline interaction details** — MOSTLY ANSWERED by the P4 build (July 2026):
+   tap-to-switch v1 (stops preserve the round, unlike the picker which resets to T1);
+   desktop = floating bottom-of-map card (top-bar chip + T1/T2 kept, per mockup);
+   mobile = the strip lives in the top-bar slot (second header row), so it never
+   conflicts with the detail sheet — the mockup's "collapse to a mini-chip" was
+   unneeded. Still open: drag-scrub gesture (v2), and colouring stops by the winner
+   IN the settled territory rather than nationally (the mockup's "c'est là que ça
+   devient fort" idea — needs cross-election data for the settled territory, kin
+   to P5's history files).
+2. **Family mapping authoring** — ANSWERED (P3, July 2026): hybrid — a global
+   `families.json` registry (14 families + 5 blocs, colors, left→right order) with
+   `family: <id>` memberships in each election's `palette.json`. Alliances are a
+   family of their own (`union-gauche`) and blocs give continuity across alliance
+   years. Macronisme merged into `centre`; Reconquête its own family (bloc
+   extrême droite); PCF separate. Taxonomy is fixed; memberships grow per
+   ingestion (`scripts/validate-families.mjs` gates them).
+3. **Focus-mode visual language** — ANSWERED for départements (P2): dimming
+   (fill-opacity 0.35 outside the settled dept, everything stays interactive).
+   Still open for commune/circo-level focus if we ever want it there.
 4. **Does the geo chip replace `focusedTerritory`** (overseas focus) or generalise it?
    Likely: `focusedTerritory` becomes a special case of the settled geo axis.
-5. **URL/deep-linking** — two settled axes are a natural shareable state
-   (`?election=leg-2024-t2&territory=34`). Worth folding in when the axes become
-   first-class.
+5. **URL/deep-linking** — ANSWERED (July 2026): `src/hooks/useUrlSync.ts`.
+   `?election=leg-2024-t2&territory=34&view=circo&party=RN` / `mode=abstention`.
+   Params → store at load (election held until the manifest validates it;
+   territory restored with the navigator's selection semantics — 5-char
+   circo-vs-commune ambiguity resolved by `view`); store → URL afterwards via
+   `history.replaceState` (no history entries — back leaves the app). Not
+   captured: camera position beyond the territory, overseas focus without a
+   selection.
