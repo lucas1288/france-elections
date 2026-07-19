@@ -26,6 +26,69 @@ export const ELECTIONS = {
     },
   },
 
+  'presidential-2012': {
+    type: 'presidential',
+    year: 2012,
+    // Source: the consolidated "Données des élections agrégées" (BV-level,
+    // harmonized) — the parquets are fetchable; the per-election CSV slices
+    // are produced by scripts/extract-agregees.py (requires pip duckdb).
+    sources: {
+      dir: 'agregees',
+      files: {
+        'general.parquet': R('ff16d511-10c0-405e-9b35-511723948fce'),
+        'candidat.parquet': R('4d3b35f6-0b22-4415-a24c-419a676312e2'),
+        '2012_pres_t1-general.csv': null,
+        '2012_pres_t1-candidat.csv': null,
+        '2012_pres_t2-general.csv': null,
+        '2012_pres_t2-candidat.csv': null,
+      },
+    },
+    steps: [
+      ['parse-agregees.mjs', 'presidential', '2012'],
+      ['aggregate-2017-merged-communes.mjs', 'presidential', '2012'],
+      ['fix-agregees-names.mjs', 'presidential', '2012'],
+      ['mark-annulled-communes.mjs'],
+    ],
+    expected: {
+      1: { inscrits: 46028571, shares: { HOLL: 28.63, SARK: 27.18, LEPE: 17.9, MELE: 11.1, BAYR: 9.13 } },
+      2: { inscrits: 46066215, shares: { HOLL: 51.64, SARK: 48.36 } },
+    },
+  },
+
+  'legislative-2012': {
+    type: 'legislative',
+    year: 2012,
+    sources: {
+      dir: 'agregees',
+      files: {
+        'general.parquet': R('ff16d511-10c0-405e-9b35-511723948fce'),
+        'candidat.parquet': R('4d3b35f6-0b22-4415-a24c-419a676312e2'),
+        '2012_legi_t1-general.csv': null,
+        '2012_legi_t1-candidat.csv': null,
+        '2012_legi_t2-general.csv': null,
+        '2012_legi_t2-candidat.csv': null,
+      },
+    },
+    steps: [
+      ['parse-agregees.mjs', 'legislative', '2012'],
+      ['aggregate-2017-merged-communes.mjs', 'legislative', '2012'],
+      ['fix-agregees-names.mjs', 'legislative', '2012'],
+      ['carry-r1-into-round2.mjs'],
+      ['mark-annulled-communes.mjs'],
+    ],
+    expected: {
+      1: { inscrits: 46082403, shares: { SOC: 29.35, UMP: 27.12, FN: 13.6, FG: 6.91, VEC: 5.46 } },
+      2: {
+        inscrits: 43237936, // post carry-r1 (includes the R1-decided circos' territories)
+        shares: { SOC: 40.91, UMP: 37.95 },
+        // Elected flags are DERIVED (R2 winner; R1 >50% + ≥25% inscrits) —
+        // these gates pin them to the official Assemblée composition.
+        seats: { SOC: 280, UMP: 194, DVG: 22, VEC: 17, DVD: 15, RDG: 12, NCE: 12, FG: 10, PRV: 6, FN: 2 },
+        seatTotal: 577,
+      },
+    },
+  },
+
   'presidential-2017': {
     type: 'presidential',
     year: 2017,
