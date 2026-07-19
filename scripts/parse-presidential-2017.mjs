@@ -29,22 +29,13 @@
  * mark-annulled-communes.mjs, and build-plm-arrondissements for 2017 (separate
  * BV source) — see the pipeline order in CLAUDE.md.
  */
-import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { createRequire } from 'node:module'
-
-const require = createRequire(import.meta.url)
-const XLSX = require('xlsx')
+import { XLSX, sheetGrid } from './lib/xls.mjs'
+import { pad, deptCode, communeInsee2017 as communeInsee } from './lib/codes.mjs'
+import { pctRound, abstention2, nationalTotals, makeWriter } from './lib/emit.mjs'
 
 const SRC = join(import.meta.dirname, '..', 'data-sources', 'presidentielle-2017')
 const OUT = join(import.meta.dirname, '..', 'public', 'data', 'elections', 'presidential', '2017')
-mkdirSync(OUT, { recursive: true })
-
-// Ministry Z-codes → INSEE dept codes (2017 uses more Z-codes than the circo tiles).
-const ZDEPT = {
-  ZA: '971', ZB: '972', ZC: '973', ZD: '974', ZM: '976', ZN: '988',
-  ZP: '987', ZS: '975', ZW: '986', ZX: '977', ZZ: '99',
-}
 
 const PARTY_BY_NOM = {
   'MACRON': 'EM', 'LE PEN': 'FN', 'FILLON': 'LR', 'MÉLENCHON': 'LFI',
@@ -71,42 +62,18 @@ const CANDIDATES_R2 = [
   { name: 'Marine LE PEN', party: 'FN' },
 ]
 
-const pad = (v, n) => String(v).padStart(n, '0')
-const round2 = (n) => Math.round(n * 100) / 100
-
-function deptCode(raw) {
-  const s = String(raw)
-  return ZDEPT[s] ?? pad(s, 2)
-}
-
-function communeInsee(rawDept, rawCode) {
-  const z = String(rawDept)
-  if (z === 'ZZ') return '99' + pad(rawCode, 3)          // consular "communes"
-  if (z === 'ZX') return '97' + String(rawCode)          // 701→97701 St-Barth, 801→97801 St-Martin
-  if (ZDEPT[z]) return ZDEPT[z] + pad(Number(rawCode) % 100, 2) // ZA 101→97101, ZM 501→97601, ZP 11→98711…
-  return pad(z, 2) + pad(rawCode, 3)                     // metro incl. 2A/2B
-}
-
 /**
  * Parse one results sheet into entries. `makeKey(row)` returns
  * { inseeCode, name } for the sheet's geographic level.
  */
 function parseSheet(sheet, makeKey) {
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 })
-  const hdrIdx = rows.findIndex((r) => r[0] === 'Code du département')
-  if (hdrIdx < 0) throw new Error('header row not found')
-  const header = rows[hdrIdx]
-  const col = (label) => {
-    const i = header.indexOf(label)
-    if (i < 0) throw new Error(`column '${label}' not found`)
-    return i
-  }
+  const { rows, col, idxsOf } = sheetGrid(sheet)
   const cInscrits = col('Inscrits'), cVotants = col('Votants')
   const cBlancs = col('Blancs'), cNuls = col('Nuls'), cExprimes = col('Exprimés')
-  const nomIdxs = header.map((h, i) => (h === 'Nom' ? i : -1)).filter((i) => i >= 0)
+  const nomIdxs = idxsOf('Nom')
 
   const entries = []
-  for (const r of rows.slice(hdrIdx + 1)) {
+  for (const r of rows) {
     if (r[0] == null || r[0] === '') continue
     const key = makeKey(r)
     const expressed = Number(r[cExprimes]) || 0
@@ -119,7 +86,7 @@ function parseSheet(sheet, makeKey) {
         name: `${r[ni + 1]} ${nom}`,
         party: PARTY_BY_NOM[nom] ?? '',
         votes,
-        percentage: expressed ? round2((votes / expressed) * 100) : 0,
+        percentage: pctRound(votes, expressed),
       })
     }
     const leader = candidates.reduce((a, b) => (b.votes > (a?.votes ?? -1) ? b : a), null)
@@ -147,9 +114,7 @@ function choropleth(entries, granularity, round) {
     communes: entries.map((e) => ({
       inseeCode: e.inseeCode,
       leadingCandidate: e.leadingCandidate,
-      abstention: e.registeredVoters
-        ? round2(((e.registeredVoters - e.turnout) / e.registeredVoters) * 100)
-        : undefined,
+      abstention: abstention2(e.registeredVoters, e.turnout),
     })),
   }
 }
@@ -164,10 +129,7 @@ function roundData(entries, round) {
   }
 }
 
-const write = (name, data) => {
-  writeFileSync(join(OUT, name), JSON.stringify(data))
-  console.log(`  ${name}`)
-}
+const write = makeWriter(OUT)
 
 for (const round of [1, 2]) {
   console.log(`— Tour ${round}`)
@@ -193,12 +155,7 @@ for (const round of [1, 2]) {
   write(`round${round}-communes-choropleth.json`, choropleth(communes, 'commune', round))
 
   // Sanity: national totals from the dept file vs official figures.
-  const tot = { ins: 0, exp: 0, votes: new Map() }
-  for (const d of depts) {
-    tot.ins += d.registeredVoters
-    tot.exp += d.expressedVotes
-    for (const c of d.candidates) tot.votes.set(c.name, (tot.votes.get(c.name) ?? 0) + c.votes)
-  }
+  const tot = nationalTotals(depts, (c) => c.name)
   console.log(`  depts=${depts.length} circos=${circos.length} communes=${communes.length}`)
   console.log(`  inscrits=${tot.ins.toLocaleString('fr-FR')}`)
   for (const [name, v] of [...tot.votes].sort((a, b) => b[1] - a[1]).slice(0, 4)) {

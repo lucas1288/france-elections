@@ -192,16 +192,16 @@ async function processJob({ bvFile, mode, refPath, fullPath, choroPath }) {
 }
 
 const JOBS = [
-  { era: '2022', type: 'pres', round: 1, bvFile: 'burvot-2022/burvot-pres-t1.txt', mode: 'pres',
+  { era: '2022-pres', type: 'pres', round: 1, bvFile: 'burvot-2022/burvot-pres-t1.txt', mode: 'pres',
     refPath: 'presidential/2022/round1.json',
     fullPath: 'presidential/2022/round1-communes.json', choroPath: 'presidential/2022/round1-communes-choropleth.json' },
-  { era: '2022', type: 'pres', round: 2, bvFile: 'burvot-2022/burvot-pres-t2.txt', mode: 'pres',
+  { era: '2022-pres', type: 'pres', round: 2, bvFile: 'burvot-2022/burvot-pres-t2.txt', mode: 'pres',
     refPath: 'presidential/2022/round2.json',
     fullPath: null, choroPath: 'presidential/2022/round2-communes-choropleth.json' }, // no R2 full commune file
-  { era: '2022', type: 'legis', round: 1, bvFile: 'burvot-2022/burvot-legis-t1.txt', mode: 'legis',
+  { era: '2022-leg', type: 'legis', round: 1, bvFile: 'burvot-2022/burvot-legis-t1.txt', mode: 'legis',
     refPath: 'legislative/2022/round1-communes.json',
     fullPath: 'legislative/2022/round1-communes.json', choroPath: 'legislative/2022/round1-communes-choropleth.json' },
-  { era: '2022', type: 'legis', round: 2, bvFile: 'burvot-2022/burvot-legis-t2.txt', mode: 'legis',
+  { era: '2022-leg', type: 'legis', round: 2, bvFile: 'burvot-2022/burvot-legis-t2.txt', mode: 'legis',
     refPath: 'legislative/2022/round1-communes.json',
     fullPath: 'legislative/2022/round2-communes.json', choroPath: 'legislative/2022/round2-communes-choropleth.json' },
   { era: '2017', type: 'pres', round: 1, bvFile: 'presidentielle-2017/pres2017-t1-bv.txt', mode: 'pres',

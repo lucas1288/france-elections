@@ -51,15 +51,17 @@ function markChoropleth(path, codes) {
 }
 
 for (const type of readdirSync(ROOT, { withFileTypes: true }).filter((d) => d.isDirectory())) {
-  for (const year of readdirSync(join(ROOT, type.name))) {
-    const dir = join(ROOT, type.name, year)
+  // Only <type>/<year> result directories qualify (skips e.g. history/depts.json).
+  for (const year of readdirSync(join(ROOT, type.name), { withFileTypes: true })) {
+    if (!year.isDirectory() || !/^\d{4}$/.test(year.name)) continue
+    const dir = join(ROOT, type.name, year.name)
     for (const file of readdirSync(dir)) {
       // Full-data files: roundN.json (dept), roundN-communes.json, roundN-circ.json
       const m = file.match(/^(round\d+)(-communes|-circ)?\.json$/)
       if (!m) continue
       const codes = markFull(join(dir, file))
       if (!codes.length) continue
-      console.log(`${type.name}/${year}/${file}: ${codes.length} annulled → ${codes.join(', ')}`)
+      console.log(`${type.name}/${year.name}/${file}: ${codes.length} annulled → ${codes.join(', ')}`)
       const choro = join(dir, `${m[1]}${m[2] ?? ''}-choropleth.json`)
       const n = markChoropleth(choro, codes)
       if (n) console.log(`  + choropleth sibling: ${n} entries marked`)

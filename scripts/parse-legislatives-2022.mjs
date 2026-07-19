@@ -20,17 +20,13 @@
  *   dpt:   17 fixed cols; then per nuance ×5: Code Nuance;Voix;%Ins;%Exp;Sièges
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { readFileSync } from 'fs'
 import { inseeFromMinistry } from './fix-overseas-codes.mjs'
+import { num, pctFixed as pct, abstention1, nuanceList as sharedNuanceList, carryDecidedR1, makeWriter } from './lib/emit.mjs'
+import { ZDEPT } from './lib/codes.mjs'
 
 const SRC = 'data-sources/legislatives-2022'
 const OUT = 'public/data/elections/legislative/2022'
-
-// Ministry dept code → INSEE dept code (same convention as parse-cirlg-2022.mjs)
-const ZDEPT = {
-  ZA: '971', ZB: '972', ZC: '973', ZD: '974', ZM: '976', ZS: '975',
-  ZW: '986', ZX: '977', ZP: '987', ZN: '988', ZZ: '99',
-}
 
 const NUANCE_LABELS = {
   DXG: 'Extrême gauche', NUP: 'NUPES', RDG: 'Radicaux de gauche',
@@ -41,7 +37,6 @@ const NUANCE_LABELS = {
 }
 const label = (nuance) => NUANCE_LABELS[nuance] ?? nuance
 
-const num = (s) => parseInt((s ?? '').replace(/\s/g, ''), 10) || 0
 const readLines = (f) =>
   readFileSync(`${SRC}/${f}`, 'latin1').split('\n').filter(Boolean).slice(1)
 
@@ -50,9 +45,6 @@ const circoCode = (rawDept, rawCirco) => {
   const c = rawCirco.padStart(2, '0')
   return rawDept === 'ZZ' ? `99${c}` : `${deptCode(rawDept)}${c}`
 }
-
-const pct = (votes, expressed) =>
-  parseFloat(((votes / (expressed || 1)) * 100).toFixed(2))
 
 // ── Circo level ────────────────────────────────────────────────────────────────
 function parseCirlg(file) {
@@ -163,35 +155,16 @@ function parseSubcom(file) {
 }
 
 // Global nuance list for a round, ordered by national vote total.
-function nuanceList(entries) {
-  const totals = new Map()
-  for (const e of entries)
-    for (const c of e.candidates)
-      totals.set(c.party, (totals.get(c.party) ?? 0) + c.votes)
-  return [...totals.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([nuance]) => ({ name: label(nuance), party: nuance }))
-}
+const nuanceList = (entries) => sharedNuanceList(entries, label)
 
-function write(file, obj) {
-  writeFileSync(`${OUT}/${file}`, JSON.stringify(obj))
-  console.log(`wrote ${OUT}/${file}`)
-}
-
-mkdirSync(OUT, { recursive: true })
+const write = makeWriter(OUT)
 
 const r1 = parseCirlg('resultats-par-niveau-cirlg-t1-france-entiere.txt')
 const r2 = parseCirlg('resultats-par-niveau-cirlg-t2-france-entiere.txt')
 
 // Circos decided at round 1 → carry into round 2 outputs
-const r2Codes = new Set(r2.map((c) => c.inseeCode))
-const decidedAtR1 = r1.filter(
-  (c) => !r2Codes.has(c.inseeCode) && c.candidates.some((x) => x.elected),
-)
-const r2complete = [...r2, ...decidedAtR1].sort((a, b) =>
-  a.inseeCode.localeCompare(b.inseeCode),
-)
-console.log(`r1: ${r1.length} circos | r2: ${r2.length} + ${decidedAtR1.length} decided at r1`)
+const { circos: r2complete, carried } = carryDecidedR1(r1, r2)
+console.log(`r1: ${r1.length} circos | r2: ${r2.length} + ${carried} decided at r1`)
 
 for (const [round, circos] of [[1, r1], [2, r2complete]]) {
   const candidates = nuanceList(circos)
@@ -204,9 +177,7 @@ for (const [round, circos] of [[1, r1], [2, r2complete]]) {
     communes: circos.map((c) => ({
       inseeCode: c.inseeCode,
       leadingCandidate: label(c.leadingNuance),
-      abstention: c.registeredVoters
-        ? Math.round(((c.registeredVoters - c.turnout) / c.registeredVoters) * 1000) / 10
-        : undefined,
+      abstention: abstention1(c.registeredVoters, c.turnout),
     })),
   })
 }
@@ -228,9 +199,7 @@ for (const [round, file] of [[1, 'resultats-par-niveau-subcom-t1-france-entiere.
     communes: communes.map((c) => ({
       inseeCode: c.inseeCode,
       leadingCandidate: c.leadingCandidate,
-      abstention: c.registeredVoters
-        ? Math.round(((c.registeredVoters - c.turnout) / c.registeredVoters) * 1000) / 10
-        : undefined,
+      abstention: abstention1(c.registeredVoters, c.turnout),
     })),
   })
   console.log(`  round ${round}: ${communes.length} communes`)

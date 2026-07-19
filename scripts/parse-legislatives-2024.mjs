@@ -22,7 +22,8 @@
  * Usage: node scripts/parse-legislatives-2024.mjs
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { readFileSync } from 'fs'
+import { num, pctFixed as pct, abstention1 as abst, nuanceList as sharedNuanceList, carryDecidedR1, makeWriter } from './lib/emit.mjs'
 
 const SRC = 'data-sources/legislatives-2024'
 const OUT = 'public/data/elections/legislative/2024'
@@ -37,10 +38,6 @@ const NUANCE_LABELS = {
   RN: 'Rassemblement national', REC: 'Reconquête', EXD: 'Extrême droite',
 }
 const label = (n) => NUANCE_LABELS[n] ?? n
-
-const num = (s) => parseInt((s ?? '').replace(/\s/g, ''), 10) || 0
-const pct = (votes, expressed) => parseFloat(((votes / (expressed || 1)) * 100).toFixed(2))
-const abst = (reg, vot) => (reg ? Math.round(((reg - vot) / reg) * 1000) / 10 : undefined)
 
 // Round-1 files are unquoted; round-2 files wrap text/code fields in double
 // quotes (e.g. "01";"0101"). Strip surrounding quotes per cell so both parse the same.
@@ -88,11 +85,7 @@ function readCandidates(cols, fixed, expressed) {
 }
 
 // Global nuance list for a round, ordered by national vote total.
-function nuanceList(entries) {
-  const totals = new Map()
-  for (const e of entries) for (const c of e.candidates) totals.set(c.party, (totals.get(c.party) ?? 0) + c.votes)
-  return [...totals.entries()].sort((a, b) => b[1] - a[1]).map(([n]) => ({ name: label(n), party: n }))
-}
+const nuanceList = (entries) => sharedNuanceList(entries, label)
 
 // ── circonscription level ───────────────────────────────────────────────────────
 // fixed 18: 0 dept,2 codeCirco,3 libellé,4 inscrits,5 votants,9 exprimés,12 blancs,15 nuls
@@ -200,21 +193,14 @@ function parseArrondissements(file) {
   })
 }
 
-function write(file, obj) {
-  writeFileSync(`${OUT}/${file}`, JSON.stringify(obj))
-  console.log(`wrote ${OUT}/${file}`)
-}
-
-mkdirSync(OUT, { recursive: true })
+const write = makeWriter(OUT)
 
 // ── circonscription outputs ──────────────────────────────────────────────────────
 const cr1 = parseCirco('t1-circo.csv')
 const cr2raw = parseCirco('t2-circo.csv')
 // circos won outright at round 1 have no round-2 row → carry them into round 2
-const r2Codes = new Set(cr2raw.map((c) => c.inseeCode))
-const decidedR1 = cr1.filter((c) => !r2Codes.has(c.inseeCode) && c.candidates.some((x) => x.elected))
-const cr2 = [...cr2raw, ...decidedR1].sort((a, b) => a.inseeCode.localeCompare(b.inseeCode))
-console.log(`circo r1: ${cr1.length} | r2: ${cr2raw.length} + ${decidedR1.length} decided at r1 = ${cr2.length}`)
+const { circos: cr2, carried } = carryDecidedR1(cr1, cr2raw)
+console.log(`circo r1: ${cr1.length} | r2: ${cr2raw.length} + ${carried} decided at r1 = ${cr2.length}`)
 
 for (const [round, circos] of [[1, cr1], [2, cr2]]) {
   const candidates = nuanceList(circos)
