@@ -32,21 +32,13 @@
  * build-plm-arrondissements.mjs 2017-leg → carry-r1-into-round2.mjs →
  * mark-annulled-communes.mjs → validate-families.mjs.
  */
-import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { createRequire } from 'node:module'
-
-const require = createRequire(import.meta.url)
-const XLSX = require('xlsx')
+import { XLSX, sheetGrid } from './lib/xls.mjs'
+import { pad, deptCode, communeInsee2017 as communeInsee } from './lib/codes.mjs'
+import { pctRound, abstention2, nuanceList as sharedNuanceList, carryDecidedR1, seatCounts, nationalTotals, makeWriter } from './lib/emit.mjs'
 
 const SRC = join(import.meta.dirname, '..', 'data-sources', 'legislatives-2017')
 const OUT = join(import.meta.dirname, '..', 'public', 'data', 'elections', 'legislative', '2017')
-mkdirSync(OUT, { recursive: true })
-
-const ZDEPT = {
-  ZA: '971', ZB: '972', ZC: '973', ZD: '974', ZM: '976', ZN: '988',
-  ZP: '987', ZS: '975', ZW: '986', ZX: '977', ZZ: '99',
-}
 
 // Ministry nuance codes, législatives 2017 (labels shown in the UI).
 const NUANCE_LABELS = {
@@ -69,36 +61,6 @@ const NUANCE_LABELS = {
   EXD: 'Extrême droite',
 }
 const label = (code) => NUANCE_LABELS[code] ?? code
-
-const pad = (v, n) => String(v).padStart(n, '0')
-const round2 = (n) => Math.round(n * 100) / 100
-
-function deptCode(raw) {
-  const s = String(raw)
-  return ZDEPT[s] ?? pad(s, 2)
-}
-
-function communeInsee(rawDept, rawCode) {
-  const z = String(rawDept)
-  if (z === 'ZZ') return '99' + pad(rawCode, 3)
-  if (z === 'ZX') return '97' + String(rawCode)
-  if (ZDEPT[z]) return ZDEPT[z] + pad(Number(rawCode) % 100, 2)
-  return pad(z, 2) + pad(rawCode, 3)
-}
-
-/** Locate the header row + stats columns of a results sheet. */
-function sheetGrid(sheet) {
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 })
-  const hdrIdx = rows.findIndex((r) => r?.[0] === 'Code du département')
-  if (hdrIdx < 0) throw new Error('header row not found')
-  const header = rows[hdrIdx]
-  const col = (l) => {
-    const i = header.indexOf(l)
-    if (i < 0) throw new Error(`column '${l}' not found`)
-    return i
-  }
-  return { rows: rows.slice(hdrIdx + 1), header, col }
-}
 
 function baseEntry(r, key, col) {
   return {
@@ -138,7 +100,7 @@ function parseDepts(sheet) {
         name: label(code),
         party: code,
         votes,
-        percentage: e.expressedVotes ? round2((votes / e.expressedVotes) * 100) : 0,
+        percentage: pctRound(votes, e.expressedVotes),
       })
     }
     entries.push(finishEntry(e, candidates))
@@ -167,7 +129,7 @@ function parseCircos(sheet) {
         name: `${r[ni + 1]} ${nom}`,
         party: String(r[ni + 2] ?? ''),
         votes,
-        percentage: e.expressedVotes ? round2((votes / e.expressedVotes) * 100) : 0,
+        percentage: pctRound(votes, e.expressedVotes),
       }
       if (r[ni + 6] === 'Elu' || Number(r[ni + 6]) === 1) c.elected = true
       candidates.push(c)
@@ -213,7 +175,7 @@ function parseCommunes(wb) {
       name: label(code),
       party: code,
       votes,
-      percentage: a.expressedVotes ? round2((votes / a.expressedVotes) * 100) : 0,
+      percentage: pctRound(votes, a.expressedVotes),
     }))
     const { votes: _v, ...rest } = a
     entries.push(finishEntry(rest, candidates))
@@ -222,12 +184,7 @@ function parseCommunes(wb) {
 }
 
 /** Nuances ranked by total votes desc — the files' header `candidates` list. */
-function nuanceList(entries) {
-  const totals = new Map()
-  for (const e of entries)
-    for (const c of e.candidates) totals.set(c.party, (totals.get(c.party) ?? 0) + c.votes)
-  return [...totals.entries()].sort((a, b) => b[1] - a[1]).map(([code]) => ({ name: label(code), party: code }))
-}
+const nuanceList = (entries) => sharedNuanceList(entries, label)
 
 function roundData(entries, round, candidates) {
   return { year: 2017, round, candidates: candidates ?? nuanceList(entries), communes: entries }
@@ -245,18 +202,13 @@ function choropleth(entries, granularity, round, candidates, { leaderAsNuance = 
       return {
         inseeCode: e.inseeCode,
         leadingCandidate: e.expressedVotes && e.leadingCandidate ? leader : '',
-        abstention: e.registeredVoters
-          ? round2(((e.registeredVoters - e.turnout) / e.registeredVoters) * 100)
-          : undefined,
+        abstention: abstention2(e.registeredVoters, e.turnout),
       }
     }),
   }
 }
 
-const write = (name, data) => {
-  writeFileSync(join(OUT, name), JSON.stringify(data))
-  console.log(`  ${name}`)
-}
+const write = makeWriter(OUT)
 
 let r1Circos = null
 for (const round of [1, 2]) {
@@ -269,10 +221,7 @@ for (const round of [1, 2]) {
   // Carry R1-decided circos (elected at T1, no T2 vote) into the round-2 file.
   let carried = 0
   if (round === 2 && r1Circos) {
-    const have = new Set(circos.map((c) => c.inseeCode))
-    const decided = r1Circos.filter((c) => !have.has(c.inseeCode))
-    circos = [...circos, ...decided].sort((a, b) => a.inseeCode.localeCompare(b.inseeCode))
-    carried = decided.length
+    ;({ circos, carried } = carryDecidedR1(r1Circos, circos))
   }
   if (round === 1) r1Circos = circos
 
@@ -285,16 +234,8 @@ for (const round of [1, 2]) {
   write(`round${round}-communes-choropleth.json`, choropleth(communes, 'commune', round, communeNuances))
 
   // ── Sanity: national totals + seats ────────────────────────────────────────
-  const tot = { ins: 0, exp: 0, votes: new Map() }
-  for (const d of depts) {
-    tot.ins += d.registeredVoters
-    tot.exp += d.expressedVotes
-    for (const c of d.candidates) tot.votes.set(c.party, (tot.votes.get(c.party) ?? 0) + c.votes)
-  }
-  const seats = new Map()
-  for (const c of circos)
-    for (const cand of c.candidates)
-      if (cand.elected) seats.set(cand.party, (seats.get(cand.party) ?? 0) + 1)
+  const tot = nationalTotals(depts)
+  const seats = seatCounts(circos)
   const seatTotal = [...seats.values()].reduce((a, b) => a + b, 0)
   console.log(`  depts=${depts.length} circos=${circos.length}${carried ? ` (dont ${carried} acquises au T1)` : ''} communes=${communes.length}`)
   console.log(`  inscrits=${tot.ins.toLocaleString('fr-FR')}`)
