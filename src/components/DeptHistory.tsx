@@ -28,7 +28,8 @@ const YEAR_Y = 112
  * blocs for BOTH election types, the level whose series stay continuous across
  * alliance years like NUPES/NFP). One combined multi-line chart on a SHARED
  * 0-based scale so magnitude differences read true, + legend rows with the
- * latest value, + a participation sparkline on a fixed 0–100 scale. Series
+ * SELECTED election's value, + a participation sparkline on a fixed 0–100
+ * scale. The selected election's year is highlighted on the chart. Series
  * cover every ingested election of the CURRENT type (the timeline strip's
  * lane), round 1 only (the comparable round). Data: history/depts.json
  * (family-level, generated) aggregated to blocs client-side via families.json.
@@ -37,6 +38,7 @@ const YEAR_Y = 112
  */
 export function DeptHistory({ deptCode }: Props) {
   const selectedType = useElectionStore((s) => s.selected.type)
+  const selectedYear = useElectionStore((s) => s.selected.year)
   const { data: history } = useDeptHistory()
   const { data: registry } = useFamilies()
 
@@ -46,6 +48,8 @@ export function DeptHistory({ deptCode }: Props) {
     const points = dept.series.filter((p) => p.t === selectedType && p.r === 1)
     if (points.length < 2) return null
     const years = points.map((p) => p.y)
+    // Index of the selected election on the time axis (fallback: most recent).
+    const selIdx = years.indexOf(selectedYear) === -1 ? years.length - 1 : years.indexOf(selectedYear)
 
     // Family scores → bloc scores per point.
     const blocOfFam = new Map(
@@ -67,17 +71,17 @@ export function DeptHistory({ deptCode }: Props) {
         id,
         def: registry.blocs[id],
         values,
-        latest: values[values.length - 1],
+        current: values[selIdx],
       }))
       .filter((r) => r.def && r.values.some((v) => v > 0))
-      .sort((a, b) => b.latest - a.latest)
+      .sort((a, b) => b.current - a.current)
 
-    return { years, rows, participation: points.map((p) => p.part) }
-  }, [history, registry, deptCode, selectedType])
+    return { years, rows, selIdx, participation: points.map((p) => p.part) }
+  }, [history, registry, deptCode, selectedType, selectedYear])
 
   if (!series) return null
 
-  const { years, rows } = series
+  const { years, rows, selIdx } = series
   const minYear = years[0]
   const maxYear = years[years.length - 1]
   const x = (y: number) =>
@@ -117,11 +121,17 @@ export function DeptHistory({ deptCode }: Props) {
             </text>
           </g>
         ))}
+        {/* selected-election marker (same blue as the timeline strip's ring) */}
+        <line
+          x1={x(years[selIdx])} y1={PLOT.top} x2={x(years[selIdx])} y2={PLOT.bottom}
+          stroke="#3b82f6" strokeWidth="1" opacity="0.45"
+        />
         {/* year ticks */}
-        {years.map((y) => (
+        {years.map((y, i) => (
           <text
             key={y} x={x(y)} y={YEAR_Y} fontSize="8" textAnchor="middle"
-            className="fill-gray-400 dark:fill-gray-500"
+            fontWeight={i === selIdx ? 'bold' : 'normal'}
+            className={i === selIdx ? 'fill-blue-500 dark:fill-blue-400' : 'fill-gray-400 dark:fill-gray-500'}
           >
             {y}
           </text>
@@ -138,7 +148,7 @@ export function DeptHistory({ deptCode }: Props) {
               {years.map((y, i) => (
                 <circle
                   key={y} cx={x(y)} cy={yPos(r.values[i])}
-                  r={i === years.length - 1 ? 2.8 : 1.8} fill={r.def.color}
+                  r={i === selIdx ? 2.8 : 1.8} fill={r.def.color}
                 />
               ))}
             </g>
@@ -146,7 +156,7 @@ export function DeptHistory({ deptCode }: Props) {
         })}
       </svg>
 
-      {/* Legend: bloc, latest value */}
+      {/* Legend: bloc, value at the selected election */}
       {rows.map((r) => (
         <div key={r.id} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: r.def.color }} />
@@ -154,7 +164,7 @@ export function DeptHistory({ deptCode }: Props) {
             {r.def.label}
           </span>
           <span className="w-11 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {fmt(r.latest)}%
+            {fmt(r.current)}%
           </span>
         </div>
       ))}
@@ -176,9 +186,14 @@ export function DeptHistory({ deptCode }: Props) {
               .join(' ')}
             fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
           />
+          <circle
+            cx={maxYear === minYear ? 48 : 3 + ((years[selIdx] - minYear) / (maxYear - minYear)) * 90}
+            cy={19 - (series.participation[selIdx] / 100) * 16}
+            r="2.5" fill="#3b82f6"
+          />
         </svg>
         <span className="w-11 shrink-0 text-right text-sm font-semibold text-gray-500 dark:text-gray-400">
-          {fmt(series.participation[series.participation.length - 1])}%
+          {fmt(series.participation[selIdx])}%
         </span>
       </div>
 

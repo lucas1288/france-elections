@@ -56,7 +56,7 @@ function carry(year, r1Path, r2Path, { candidates } = {}) {
   return r2.candidates
 }
 
-for (const year of [2017, 2022, 2024]) {
+for (const year of [2012, 2017, 2022, 2024]) {
   carry(year, 'round1.json', 'round2.json') // départements
   const cands = carry(year, 'round1-communes.json', 'round2-communes.json')
   carry(year, 'round1-communes-choropleth.json', 'round2-communes-choropleth.json', { candidates: cands ?? undefined })

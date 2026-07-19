@@ -42,32 +42,58 @@ import { join } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..')
 const TYPE = process.argv[2] === 'legislative' ? 'legislative' : 'presidential'
-const OUT = join(ROOT, 'public', 'data', 'elections', TYPE, '2017')
+const YEAR = process.argv[3] ?? '2017'
+const OUT = join(ROOT, 'public', 'data', 'elections', TYPE, YEAR)
 const MVT = join(ROOT, 'data-sources', 'cog', 'v_mvt_commune_2025.csv')
 // Day after the election's R2 — earlier movements are already in the data.
-const ELECTION_DATE = TYPE === 'legislative' ? '2017-06-19' : '2017-05-08'
+const ELECTION_DATE = {
+  'presidential-2017': '2017-05-08', 'legislative-2017': '2017-06-19',
+  'presidential-2012': '2012-05-07', 'legislative-2012': '2012-06-18',
+}[`${TYPE}-${YEAR}`]
+if (!ELECTION_DATE) { console.error(`no election date for ${TYPE} ${YEAR}`); process.exit(1) }
 
-// Restored communes (défusions post-2017): tile code → code holding the 2017 votes.
-const DEFUSIONS = {
-  '15031': '15141', // Celles           — ex-Neussargues en Pinatelle (split 2025)
-  '15035': '15141', // Chalinargues
-  '15047': '15141', // Chavagnac
-  '15171': '15141', // Sainte-Anastasie
-  '85165': '85084', // L'Oie            — ex-Essarts en Bocage (split 2024)
-  '85212': '85084', // Sainte-Florence
-  '14666': '14712', // Sannerville      — ex-Saline (split 2019)
-  '60694': '60054', // Les Hauts-Talican — 2024 partial split: Beaumont-les-Nonains kept 60054, the remaining commune took 60694 (2017 votes are in the 60054 aggregate)
+// Restored communes (défusions): tile code → code holding this election's
+// votes — ONLY for communes that were already merged AT THE VOTE. Communes
+// merged after the vote and restored later keep their own real entries (the
+// restoration guard below stops resolveCode from merging them away).
+const DEFUSIONS_BY_YEAR = {
+  2017: {
+    '15031': '15141', // Celles           — ex-Neussargues en Pinatelle (split 2025)
+    '15035': '15141', // Chalinargues
+    '15047': '15141', // Chavagnac
+    '15171': '15141', // Sainte-Anastasie
+    '85165': '85084', // L'Oie            — ex-Essarts en Bocage (split 2024)
+    '85212': '85084', // Sainte-Florence
+    '14666': '14712', // Sannerville      — ex-Saline (split 2019)
+  },
+  2012: {
+    // The rare communes already merged AT the 2012 vote and restored later:
+    '55138': '55298', // Culey        — voted in Loisey-Culey (split 2014)
+    '76095': '76108', // Bihorel      — voted in Bois-Guillaume-Bihorel (split 2014)
+    '76601': '76676', // Saint-Lucien — voted in its 2012 parent (split 2017)
+  },
 }
+const DEFUSIONS = DEFUSIONS_BY_YEAR[YEAR] ?? {}
 
 // ── Movement chains: 2017 code → current code (+ current name) ────────────────
 const fwd = new Map()
+const restored = [] // [code, date] of MOD 21 (division) outputs — codes current again
 for (const line of readFileSync(MVT, 'utf8').trim().split('\n').slice(1)) {
   const f = line.split(',').map((s) => s.replace(/^"|"$/g, ''))
   const [mod, date, typeAv, comAv, , , , , typeAp, comAp, , , , libAp] = f
+  if (typeAv !== 'COM' || typeAp !== 'COM') continue
+  if (mod === '21' && date >= ELECTION_DATE) restored.push([comAp, date])
   if (!['31', '32', '33', '34', '41', '50'].includes(mod)) continue
-  if (typeAv !== 'COM' || typeAp !== 'COM' || comAv === comAp) continue
-  if (date < ELECTION_DATE) continue
-  fwd.set(comAv, { to: comAp, lib: libAp })
+  if (comAv === comAp || date < ELECTION_DATE) continue
+  const cur = fwd.get(comAv)
+  if (!cur || date > cur.date) fwd.set(comAv, { to: comAp, lib: libAp, date })
+}
+// Restoration guard: a code divided back into existence AFTER its merge is a
+// current tile again — its own vote entry (when it exists for this election)
+// must be kept, not merged away into the ex-parent.
+for (const [code, date] of restored) {
+  const m = fwd.get(code)
+  if (m && m.date <= date) fwd.delete(code)
 }
 function resolveCode(code) {
   let cur = code

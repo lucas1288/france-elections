@@ -67,3 +67,10 @@ don't delete it, it can't be auto-refetched.
 > sources there (and note any non-refetchable file in this README).
 > GOTCHA: the ministry silently revises old files on data.gouv (légis 2022
 > re-download differed by ±1 voter in 72 dépts vs the June 2026 ingestion).
+
+## `agregees/` — consolidated "Données des élections agrégées" (data.gouv)
+`general.parquet` + `candidat.parquet` (harmonized BV-level results,
+1999→today) and the per-election CSV slices (`{year}_{pres|legi}_t{N}-*.csv`)
+produced by `scripts/extract-agregees.py` (requires `pip install duckdb`).
+Preferred source for pre-2017 vintages — consumed by
+`scripts/parse-agregees.mjs`. Parquet URLs live in `elections.config.mjs`.
