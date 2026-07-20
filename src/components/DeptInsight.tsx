@@ -3,8 +3,9 @@ import { useElectionStore } from '../store/electionStore'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
-import { circoInDept, communeInDept, isPlmArrondissement, circoNumber } from '../utils/deptInsight'
+import { circoInDept, communeInDept, isPlmArrondissement, circoNumber, plmCityOfDept } from '../utils/deptInsight'
 import { DeptHistory } from './DeptHistory'
+import { ArrondissementBreakdown } from './ArrondissementBreakdown'
 import { CIRCO_BBOXES } from '../utils/territoryBBoxes'
 import { TOP_CITIES } from '../utils/topCities'
 
@@ -111,6 +112,10 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
     }
   }, [communeData, deptCode])
 
+  // A département that IS a single PLM commune (Paris only): the commune-level
+  // sections degenerate to one row, so show an arrondissement breakdown instead.
+  const plmCity = plmCityOfDept(deptCode)
+
   const jumpToCirco = (code: string) => {
     if (granularity !== 'circonscription') setGranularity('circonscription')
     selectTerritory(code)
@@ -176,8 +181,18 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
         </div>
       )}
 
+      {/* Paris: arrondissement breakdown in place of the one-commune sections */}
+      {plmCity && (
+        <ArrondissementBreakdown
+          cityCode={plmCity}
+          communeChoro={communeChoro}
+          communeData={communeData}
+          palette={palette}
+        />
+      )}
+
       {/* Communes en tête par force */}
-      {communeStats && (
+      {!plmCity && communeStats && (
         <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 space-y-2">
           <SectionLabel>En tête par commune ({fmtInt(communeStats.total)} communes)</SectionLabel>
           {communeStats.ranked.slice(0, 6).map(([name, count]) => {
@@ -204,7 +219,7 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
       )}
 
       {/* Rankings from the full commune file */}
-      {communeDetail && (
+      {!plmCity && communeDetail && (
         <>
           <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 space-y-1">
             <SectionLabel>Plus grandes communes</SectionLabel>
