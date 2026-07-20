@@ -5,11 +5,12 @@ import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor } from '../utils/partyColors'
 import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetail'
-import { isDeptCode, parentDeptCode } from '../utils/deptInsight'
+import { isDeptCode, parentDeptCode, isPlmCity } from '../utils/deptInsight'
 import { TOP_CITIES } from '../utils/topCities'
 import { NationalSummary } from './NationalSummary'
 import { DeptInsight } from './DeptInsight'
 import { DeptHistory } from './DeptHistory'
+import { ArrondissementBreakdown } from './ArrondissementBreakdown'
 
 interface Props {
   electionData: RoundData | undefined
@@ -313,6 +314,16 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
             )
           })}
       </div>}
+
+      {/* PLM whole-city (Paris via city dot, Lyon, Marseille): per-arrondissement breakdown */}
+      {isPlmCity(commune.inseeCode) && (
+        <ArrondissementBreakdown
+          cityCode={commune.inseeCode}
+          communeChoro={communeChoro}
+          communeData={communeData}
+          palette={palette}
+        />
+      )}
 
       {/* Département insight sections (two-axis P2) */}
       {isDeptSelection && (

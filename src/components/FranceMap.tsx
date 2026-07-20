@@ -799,6 +799,9 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     // ── Click handlers ────────────────────────────────────────────────────────
     const makeClickHandler = (sourceLayer: SourceLayer, source: 'admin' | 'circo', zoomOnClick = false) =>
       (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+        // A top-city dot sits above the dept/commune fill (commune mode, low
+        // zoom); when one is under the cursor, let its own handler win.
+        if (source === 'admin' && map.queryRenderedFeatures(e.point, { layers: ['city-dots'] }).length) return
         const feature = e.features?.[0]
         const rawId = String(feature?.id ?? '')
         if (rawId) {
@@ -822,6 +825,19 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     map.on('click', 'dept-fill', makeClickHandler('departements', 'admin', true))
     map.on('click', 'communes-fill', makeClickHandler('communes', 'admin', true))
     map.on('click', 'circo-fill', makeClickHandler('circonscriptions', 'circo'))
+
+    // Top-30 city dots: at overview zoom (commune mode) they're the only handle
+    // on a city — clicking one flies in + selects that commune directly.
+    map.on('click', 'city-dots', (e) => {
+      const code = String(e.features?.[0]?.id ?? '')
+      if (!code) return
+      const { selectTerritory, setFlyTarget } = useElectionStore.getState()
+      selectTerritory(code)
+      const city = TOP_CITIES.find((c) => c.inseeCode === code)
+      if (city) setFlyTarget({ lng: city.lng, lat: city.lat, zoom: city.zoom })
+    })
+    map.on('mouseenter', 'city-dots', () => { map.getCanvas().style.cursor = 'pointer' })
+    map.on('mouseleave', 'city-dots', () => { map.getCanvas().style.cursor = '' })
 
     // overseas-fill covers the same area as circo/commune polygons when zoomed in.
     // Only handle it when no more specific layer was also hit at this point.
