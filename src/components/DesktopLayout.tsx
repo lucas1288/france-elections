@@ -50,7 +50,7 @@ function GranularityToggle({
 }
 
 export function DesktopLayout(props: LayoutProps) {
-  const { selected, setSelected, granularity, setGranularity } = useElectionStore()
+  const { selected, granularity, setGranularity } = useElectionStore()
   const isOverview = useIsOverview()
   const colorMode = useElectionStore((s) => s.colorMode)
   const mapZoomedIn = useElectionStore((s) => s.mapZoomedIn)
@@ -58,8 +58,6 @@ export function DesktopLayout(props: LayoutProps) {
   const [navigatorOpen, setNavigatorOpen] = useState(false)
   const circoAvailable = props.circoAvailable
   const isHemicycle = granularity === 'hemicycle'
-
-  const rounds = Array.from({ length: props.rounds }, (_, i) => i + 1)
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-slate-950">
@@ -77,39 +75,10 @@ export function DesktopLayout(props: LayoutProps) {
         </div>
         <div className="border-l border-gray-200 h-8 dark:border-slate-700" />
 
-        {/* Election chip + round toggle — mobile's "data axis", desktop-sized.
-            The chip opens the shared chronological picker (modal on desktop). */}
-        <button
-          type="button"
-          onClick={() => setPickerOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700"
-        >
-          <span>{props.electionLabel || 'Élection'}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 dark:text-gray-500" aria-hidden="true">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-        {props.rounds > 1 && (
-          <div className="flex shrink-0 rounded-lg bg-gray-100 p-0.5 text-sm dark:bg-slate-800">
-            {rounds.map((r) => {
-              const active = selected.round === r
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setSelected({ ...selected, round: r })}
-                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
-                    active ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  T{r}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        <div className="border-l border-gray-200 h-8 dark:border-slate-700" />
+        {/* NOTE (July 2026): the election chip + T1/T2 toggle used to live here.
+            Both moved to the TimelineStrip (bottom-centre of the map): its stops
+            switch elections, its pills switch rounds, and its list icon opens the
+            full ElectionPicker. The top bar keeps only the view + geo controls. */}
         <GranularityToggle
           value={granularity}
           onChange={setGranularity}
