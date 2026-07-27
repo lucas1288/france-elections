@@ -32,10 +32,9 @@ function fmtInt(n: number) {
   return n.toLocaleString('fr-FR')
 }
 
-const ABSTENTION_GRADIENT = 'linear-gradient(90deg, #e5e7eb, #111827)'
-
 /**
- * Mobile "Résultats nationaux" sheet. A bottom-left chip opens a sheet listing
+ * Mobile "Résultats nationaux" sheet. The national snippet card (shown at the
+ * unzoomed overview) opens a sheet listing
  * the national vote share (candidates for presidentials, nuances/alliances for
  * legislatives) + abstention. Every row is a map control: tapping one colours
  * the choropleth by that force's score-vs-national ratio (or the abstention
@@ -82,13 +81,6 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
   const turnoutPct = (totals.turnout / totals.registeredVoters) * 100
   const blankPct = (totals.blankVotes / totals.registeredVoters) * 100
   const nullPct = (totals.nullVotes / totals.registeredVoters) * 100
-
-  // Chip swatch mirrors the active map view.
-  const activeName = electionData.candidates.find((c) => c.party === activeParty)?.name ?? ''
-  const chipColor =
-    colorMode.kind === 'party'
-      ? getCandidateColor(activeName, electionData.candidates.findIndex((c) => c.party === activeParty), activeParty ?? '', palette)
-      : null
 
   const pickParty = (party: string) => { togglePartyMode(party); setOpen(false) }
   const pickAbstention = () => { toggleAbstentionMode(); setOpen(false) }
@@ -158,21 +150,6 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
           </div>
         </button>
       )}
-
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Résultats nationaux"
-        className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 dark:bg-slate-900/90 text-gray-600 dark:text-gray-300 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:ring-white/10"
-      >
-        {abstentionActive ? (
-          <span className="h-4 w-4 shrink-0 rounded-sm" style={{ background: ABSTENTION_GRADIENT }} />
-        ) : chipColor ? (
-          <span className="h-4 w-4 shrink-0 rounded-sm" style={{ background: chipColor }} />
-        ) : (
-          <PaletteIcon />
-        )}
-      </button>
 
       <Drawer.Root open={open} onOpenChange={setOpen}>
         <Drawer.Portal>
@@ -327,17 +304,5 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
         </Drawer.Portal>
       </Drawer.Root>
     </>
-  )
-}
-
-function PaletteIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="13.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
-      <circle cx="17.5" cy="10.5" r="1.5" fill="currentColor" stroke="none" />
-      <circle cx="8.5" cy="7.5" r="1.5" fill="currentColor" stroke="none" />
-      <circle cx="6.5" cy="12.5" r="1.5" fill="currentColor" stroke="none" />
-      <path d="M12 2C6.5 2 2 6 2 11c0 4 3 7 7 7 1 0 2-1 2-2 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.3 0-1 .8-1.8 1.8-1.8H14c3.3 0 6-2.7 6-6 0-3.9-3.6-6.9-8-6.9z" />
-    </svg>
   )
 }
