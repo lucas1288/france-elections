@@ -4,7 +4,6 @@ import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { circoInDept, communeInDept, isPlmArrondissement, circoNumber, plmCityOfDept } from '../utils/deptInsight'
-import { DeptHistory } from './DeptHistory'
 import { ArrondissementBreakdown } from './ArrondissementBreakdown'
 import { CIRCO_BBOXES } from '../utils/territoryBBoxes'
 import { TOP_CITIES } from '../utils/topCities'
@@ -34,13 +33,19 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Département insight sections (two-axis P2): shown under the dept-level
- * results when a département is the settled selection, in both the desktop
- * sidebar and the mobile detail sheet. Everything renders from data that is
- * already loaded: circo leaders from the circo choropleth/full file (always
- * loaded when the election has circos), commune stats from the commune
- * choropleth, and the commune rankings from the full commune file (commune
- * tab only — the sections appear once it loads).
+ * Département TERRITORIAL sections (two-axis P2): how the département breaks
+ * down — its circonscriptions, its arrondissements (Paris), which force leads
+ * how many communes, the largest communes and the turnout extremes. Shown for a
+ * settled département selection in both the desktop sidebar and the mobile
+ * sheet, on the "Territoires" tab.
+ *
+ * The Historique chart used to render here too; since the panel gained tabs it
+ * belongs to its own tab, so callers place `<DeptHistory>` themselves.
+ *
+ * Everything renders from data that is already loaded: circo leaders from the
+ * circo choropleth/full file (always loaded when the election has circos),
+ * commune stats from the commune choropleth, and the commune rankings from the
+ * full commune file (commune tab only — the sections appear once it loads).
  */
 export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, communeData, palette }: Props) {
   const { granularity, setGranularity, selectTerritory, setFlyBounds, setFlyTarget } = useElectionStore()
@@ -65,6 +70,8 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
           num: circoNumber(code, deptCode),
           leader: top?.name ?? choroLeader ?? null,
           pct: top?.percentage ?? null,
+          // Won outright at round 1 → the figures shown are its ROUND-1 ones.
+          decidedAtR1: !!(full?.decidedAtR1 ?? choroByCode.get(code)?.decidedAtR1),
           color: top
             ? getCandidateColor(top.name, 0, top.party, palette)
             : choroLeader
@@ -74,6 +81,8 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
       })
       .sort((a, b) => a.num - b.num)
   }, [circoChoro, circoData, deptCode, palette])
+
+  const decidedAtR1Count = circos.filter((c) => c.decidedAtR1).length
 
   // ── Communes led per force (choropleth counts; PLM counted once via the city) ──
   const communeStats = useMemo(() => {
@@ -148,14 +157,20 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
 
   return (
     <>
-      {/* Historique — cross-election family series (P5; hidden until the
-          history file + families registry are loaded) */}
-      <DeptHistory deptCode={deptCode} />
-
       {/* Circonscriptions */}
       {circos.length > 0 && (
         <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 space-y-1">
           <SectionLabel>Circonscriptions ({circos.length})</SectionLabel>
+          {/* Decodes the T1 chips below. Without this a département whose circos
+              were largely decided at round 1 (Paris, légis 2024) reads as a
+              plain T2 list and the figures look inconsistent with the T2 map. */}
+          {decidedAtR1Count > 0 && (
+            <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
+              {decidedAtR1Count === circos.length
+                ? `Toutes remportées dès le 1er tour (T1) — résultats du 1er tour.`
+                : `${decidedAtR1Count} remportée${decidedAtR1Count > 1 ? 's' : ''} dès le 1er tour (T1) — résultats du 1er tour pour celles-là.`}
+            </p>
+          )}
           <div className="-mx-2">
             {circos.map((c) => (
               <button
@@ -170,6 +185,14 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
                 <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 truncate">
                   {c.leader ?? '—'}
                 </span>
+                {c.decidedAtR1 && (
+                  <span
+                    title="Remportée dès le 1er tour — résultats du 1er tour"
+                    className="shrink-0 rounded px-1 py-px text-[10px] font-semibold text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/60"
+                  >
+                    T1
+                  </span>
+                )}
                 {c.pct != null && (
                   <span className="shrink-0 text-xs font-semibold text-gray-500 dark:text-gray-400">
                     {fmt(c.pct)}%

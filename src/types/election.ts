@@ -85,6 +85,15 @@ export interface CommuneResult {
   leadingCandidate: string
   /** All ballots annulled (Conseil constitutionnel) — no expressed votes. */
   annulled?: boolean
+  /**
+   * Legislative round-2 files only: this territory's circo(s) were won outright
+   * at round 1, so it had no round-2 vote and these figures ARE the round-1
+   * ones, carried forward to keep the T2 views hole-free. Set by
+   * `carryDecidedR1` (circo files) and `carry-r1-into-round2.mjs`
+   * (dept/commune). Surfaces should say so rather than presenting them as
+   * round-2 results.
+   */
+  decidedAtR1?: boolean
 }
 
 export interface RoundData {

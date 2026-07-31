@@ -178,6 +178,9 @@ for (const [round, circos] of [[1, r1], [2, r2complete]]) {
       inseeCode: c.inseeCode,
       leadingCandidate: label(c.leadingNuance),
       abstention: abstention1(c.registeredVoters, c.turnout),
+      // decidedAtR1 must survive into the choropleth: it's the file the circo
+      // map layer is coloured from, and the T2 map mutes R1-decided circos.
+      ...(c.decidedAtR1 && { decidedAtR1: true }),
     })),
   })
 }

@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import type { RoundData, CommuneResult } from '../types/election'
 import type { Granularity } from '../store/electionStore'
 import { computeNationalTotals } from './nationalResults'
+import { isDeptCode, parentDeptCode } from './deptInsight'
 
 /**
  * Overseas commune codes are 5 digits starting with 97x or 98x; the
@@ -99,4 +101,67 @@ export function makeNationalPctLookup(electionData: RoundData | undefined): Nati
     if (c.party && !byParty.has(c.party)) byParty.set(c.party, c.percentage)
   }
   return (name, party) => byName.get(name) ?? (party ? byParty.get(party) ?? null : null)
+}
+
+export interface TerritoryView extends ResolvedTerritory {
+  /** National baseline lookup for the "reminder" bars (null before data loads). */
+  nationalPct: NationalPctLookup | null
+  /**
+   * True only for a SETTLED département selection — the dept insight sections
+   * appear for those, but not for hover previews or the overseas/round
+   * fallbacks (where the dept entry merely stands in for a commune).
+   */
+  isDeptSelection: boolean
+  /** Parent département entry, for the "↑ {dept}" breadcrumb. Null at dept level. */
+  parentDept: CommuneResult | null
+  turnoutPct: number
+  blankPct: number
+  nullPct: number
+}
+
+/**
+ * Everything both detail surfaces (desktop `ResultsPanel`, mobile
+ * `MobileDetailSheet`) derive from a selection. Previously each recomputed the
+ * fallbacks, the settled-dept test, the breadcrumb lookup and the three
+ * percentages itself; they now share this and differ only in markup.
+ *
+ * `activeCode` is the hovered-or-clicked code on desktop but click-only on
+ * mobile, so the caller passes whichever it uses; `clickedCommune` is passed
+ * separately because the settled-dept test must ignore hover previews.
+ */
+export function useTerritoryView(
+  activeCode: string | null,
+  clickedCommune: string | null,
+  granularity: Granularity,
+  data: {
+    electionData?: RoundData
+    communeData: RoundData | null
+    circoData: RoundData | null
+    communeDataMissing?: boolean
+  },
+): TerritoryView {
+  const { electionData } = data
+  const resolved = resolveTerritory(activeCode, granularity, data)
+  const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
+
+  const commune = resolved.commune
+  const isDeptSelection =
+    !!clickedCommune && isDeptCode(clickedCommune) && commune?.inseeCode === clickedCommune
+
+  const parentCode = activeCode ? parentDeptCode(activeCode) : null
+  const parentDept =
+    parentCode && parentCode !== commune?.inseeCode
+      ? electionData?.communes.find((c) => c.inseeCode === parentCode) ?? null
+      : null
+
+  const reg = commune?.registeredVoters ?? 0
+  return {
+    ...resolved,
+    nationalPct,
+    isDeptSelection,
+    parentDept,
+    turnoutPct: commune && reg ? (commune.turnout / reg) * 100 : 0,
+    blankPct: commune && reg ? (commune.blankVotes / reg) * 100 : 0,
+    nullPct: commune && reg ? (commune.nullVotes / reg) * 100 : 0,
+  }
 }

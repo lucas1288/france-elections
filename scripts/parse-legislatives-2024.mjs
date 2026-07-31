@@ -210,7 +210,9 @@ for (const [round, circos] of [[1, cr1], [2, cr2]]) {
   })
   write(`round${round}-circ-choropleth.json`, {
     granularity: 'circonscription', year: 2024, round, candidates,
-    communes: circos.map((c) => ({ inseeCode: c.inseeCode, leadingCandidate: label(c.leadingNuance), abstention: abst(c.registeredVoters, c.turnout) })),
+    // decidedAtR1 must survive into the choropleth: it's the file the circo map
+    // layer is coloured from, and the T2 map mutes R1-decided circos.
+    communes: circos.map((c) => ({ inseeCode: c.inseeCode, leadingCandidate: label(c.leadingNuance), abstention: abst(c.registeredVoters, c.turnout), ...(c.decidedAtR1 && { decidedAtR1: true }) })),
   })
 }
 

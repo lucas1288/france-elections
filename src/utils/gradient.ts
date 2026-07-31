@@ -40,6 +40,25 @@ export function partyRatioShade(localPct: number, nationalPct: number, baseColor
   return mixHex(GRADIENT_FLOOR, baseColor, t)
 }
 
+// How far an R1-decided territory is blended toward the map's no-data neutral.
+// High enough to read instantly as "not a round-2 result", low enough that the
+// winner's hue stays identifiable (lucas's brief: grey it out, keep the colour
+// readable).
+const R1_MUTE_T = 0.55
+
+/**
+ * Muted shade for a territory whose figures are carried round-1 results
+ * (`decidedAtR1`) shown in a round-2 view. `neutral` is the theme's no-data
+ * fill, so the territory recedes in both light and dark mode rather than
+ * glowing pale against a dark map.
+ *
+ * Only meaningful in LEADER colour mode: the party and abstention ramps already
+ * use lightness to encode a value, so muting there would corrupt the reading.
+ */
+export function decidedAtR1Shade(color: string, neutral: string): string {
+  return mixHex(color, neutral, R1_MUTE_T)
+}
+
 const ABSTENTION_LOW = '#e5e7eb'  // light grey — low abstention
 const ABSTENTION_HIGH = '#111827' // near-black — high abstention
 const ABSTENTION_MIN = 15

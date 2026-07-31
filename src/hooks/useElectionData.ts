@@ -19,8 +19,11 @@ export interface ChoroplethData {
   round: number
   candidates: Array<{ name: string; party: string }>
   /** `abstention` (percent) is added by scripts/add-choropleth-abstention.mjs;
-   *  `annulled` + empty leader by scripts/mark-annulled-communes.mjs. */
-  communes: Array<{ inseeCode: string; leadingCandidate: string; abstention?: number; annulled?: boolean }>
+   *  `annulled` + empty leader by scripts/mark-annulled-communes.mjs;
+   *  `decidedAtR1` (legislative round 2 only — these are the round-1 figures,
+   *  carried because the circo was won outright at T1) by
+   *  scripts/carry-r1-into-round2.mjs. */
+  communes: Array<{ inseeCode: string; leadingCandidate: string; abstention?: number; annulled?: boolean; decidedAtR1?: boolean }>
 }
 
 /**
