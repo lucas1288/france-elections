@@ -58,10 +58,17 @@ export function nuanceList(entries, label) {
  * carry their R1 entries in so the round-2 map has no holes. Returns the
  * merged, code-sorted list plus the carried count.
  * (Dept/commune-level holes are filled later by carry-r1-into-round2.mjs.)
+ *
+ * Carried entries are tagged `decidedAtR1: true` so the UI can tell them apart:
+ * a T2 view showing one of these is really showing the T1 result, and the app
+ * differentiates them visually (greyed on the map, badged in the panels).
+ * Copies rather than mutates, so the R1 outputs stay untagged.
  */
 export function carryDecidedR1(r1, r2) {
   const have = new Set(r2.map((c) => c.inseeCode))
-  const carried = r1.filter((c) => !have.has(c.inseeCode) && c.candidates.some((x) => x.elected))
+  const carried = r1
+    .filter((c) => !have.has(c.inseeCode) && c.candidates.some((x) => x.elected))
+    .map((c) => ({ ...c, decidedAtR1: true }))
   const all = [...r2, ...carried].sort((a, b) => a.inseeCode.localeCompare(b.inseeCode))
   return { circos: all, carried: carried.length }
 }

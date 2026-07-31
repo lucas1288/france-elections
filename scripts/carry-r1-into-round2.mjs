@@ -45,7 +45,12 @@ function carry(year, r1Path, r2Path, { candidates } = {}) {
   const r1 = read(p1)
   const r2 = read(p2)
   const have = new Set(r2.communes.map((c) => c.inseeCode))
-  const missing = r1.communes.filter((c) => !have.has(c.inseeCode))
+  // Tag the carried entries: a T2 view showing one of these is really showing
+  // the T1 result (the territory's circo(s) were won outright at round 1), and
+  // the app differentiates them visually. Copies, so round 1 stays untagged.
+  const missing = r1.communes
+    .filter((c) => !have.has(c.inseeCode))
+    .map((c) => ({ ...c, decidedAtR1: true }))
   if (!missing.length) { console.log(`${year} ${r2Path}: complete (${r2.communes.length})`); return r2.candidates }
   r2.communes = [...r2.communes, ...missing]
   // Choropleth entries carry no per-candidate votes → reuse the list recomputed

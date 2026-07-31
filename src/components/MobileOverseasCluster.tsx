@@ -15,6 +15,11 @@ interface Territory {
   label: string
 }
 
+// No-data fill for the cluster diamonds; also the blend target that mutes
+// round-1-decided territories (see decidedAtR1Shade). The cluster sits on the
+// light map margin in both themes, so it isn't theme-switched.
+const NEUTRAL = '#e2e8f0'
+
 // DOM then COM, matching the desktop OverseasInsets order.
 const TERRITORIES: Territory[] = [
   { code: '971', label: 'Guadeloupe' },
@@ -57,12 +62,12 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
     if (!electionData) return m
     const national = computeNationalTotals(electionData)
     for (const c of electionData.communes) {
-      m.set(c.inseeCode, territoryColor(c, colorMode, palette, national))
+      m.set(c.inseeCode, territoryColor(c, colorMode, palette, national, undefined, NEUTRAL))
     }
     return m
   }, [electionData, palette, colorMode])
 
-  const getFill = (code: string) => fillByCode.get(code) ?? '#e2e8f0'
+  const getFill = (code: string) => fillByCode.get(code) ?? NEUTRAL
 
   // No zoom/focus hide conditions: the geo anchor slides out of view naturally.
   if (!electionData) return null

@@ -182,6 +182,9 @@ const choropleth = (entries, granularity, round, candidates, { leaderAsNuance = 
         ? leaderAsNuance ? label(e.candidates[0]?.party ?? '') : e.leadingCandidate
         : '',
     abstention: abstention2(e.registeredVoters, e.turnout),
+    // decidedAtR1 must survive into the choropleth: it's the file the map
+    // layers are coloured from, and the T2 map mutes R1-decided territories.
+    ...(e.decidedAtR1 && { decidedAtR1: true }),
   })),
 })
 

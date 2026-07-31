@@ -1,12 +1,19 @@
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { useElectionStore } from '../store/electionStore'
+import { usePanelTabs, type PanelTabId } from '../utils/panelTabs'
+import { PanelTabs } from './results/PanelTabs'
+import { Headline } from './results/Headline'
+import { DeptHistory } from './DeptHistory'
 import type { RoundData, Palette } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
-import { getCandidateColor } from '../utils/partyColors'
-import { resolveTerritory, makeNationalPctLookup } from '../utils/territoryDetail'
-import { isDeptCode, parentDeptCode, isPlmCity } from '../utils/deptInsight'
+import { useTerritoryView } from '../utils/territoryDetail'
+import { isPlmCity } from '../utils/deptInsight'
 import { DeptInsight } from './DeptInsight'
 import { ArrondissementBreakdown } from './ArrondissementBreakdown'
+import { CandidateRows } from './results/CandidateRows'
+import { Participation } from './results/Participation'
+import { Notice } from './results/Notice'
+import { DecidedAtR1Notice } from './results/DecidedAtR1Notice'
 
 interface Props {
   electionData: RoundData | undefined
@@ -16,13 +23,6 @@ interface Props {
   circoData: RoundData | null
   circoChoro: ChoroplethData | null
   palette: Palette | null
-}
-
-function fmt(n: number, decimals = 1) {
-  return n.toFixed(decimals).replace('.', ',')
-}
-function fmtInt(n: number) {
-  return n.toLocaleString('fr-FR')
 }
 
 /**
@@ -40,29 +40,33 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
   const setClickedCommune = useElectionStore((s) => s.setClickedCommune)
   const settleDept = useElectionStore((s) => s.settleDept)
 
-  const nationalPct = useMemo(() => makeNationalPctLookup(electionData), [electionData])
-  const { commune, isOverseasFallback, isRoundFallback } = resolveTerritory(clickedCommune, granularity, {
+  const {
+    commune, isOverseasFallback, isRoundFallback,
+    nationalPct, isDeptSelection, parentDept, turnoutPct, blankPct, nullPct,
+  } = useTerritoryView(clickedCommune, clickedCommune, granularity, {
     electionData,
     communeData,
     circoData,
     communeDataMissing,
   })
 
+  // Tabs (redesign R2) — same model and order as the desktop sidebar.
+  const tabs = usePanelTabs({
+    scope: 'territory',
+    code: commune?.inseeCode ?? null,
+    isDeptSelection,
+  })
+  const [tab, setTab] = useState<PanelTabId>('results')
+  const subject = commune?.inseeCode ?? ''
+  const [prevSubject, setPrevSubject] = useState(subject)
+  if (subject !== prevSubject) {
+    setPrevSubject(subject)
+    setTab('results')
+  }
+  const activeTab = tabs.some((t) => t.id === tab) ? tab : 'results'
+
   const open = !!clickedCommune
   const close = () => setClickedCommune(null)
-
-  // Département insight (two-axis P2) + hierarchy breadcrumb — mirrors ResultsPanel.
-  const isDeptSelection =
-    !!clickedCommune && isDeptCode(clickedCommune) && commune?.inseeCode === clickedCommune
-  const parentCode = clickedCommune ? parentDeptCode(clickedCommune) : null
-  const parentDept =
-    parentCode && parentCode !== commune?.inseeCode
-      ? electionData?.communes.find((c) => c.inseeCode === parentCode) ?? null
-      : null
-
-  const turnoutPct = commune ? (commune.turnout / commune.registeredVoters) * 100 : 0
-  const blankPct = commune ? (commune.blankVotes / commune.registeredVoters) * 100 : 0
-  const nullPct = commune ? (commune.nullVotes / commune.registeredVoters) * 100 : 0
 
   return (
     <div
@@ -105,114 +109,90 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
             </button>
           </div>
 
-          {isRoundFallback && (
-            <div className="mx-4 mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 px-3 py-2">
-              <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                Données par commune indisponibles pour ce tour (ministère de l'Intérieur).
-                Résultats affichés au niveau du département.
-              </p>
-            </div>
-          )}
-
-          {isOverseasFallback && (
-            <div className="mx-4 mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 px-3 py-2">
-              <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                Données par commune indisponibles pour l'outre-mer (ministère de l'Intérieur).
-                Résultats affichés au niveau du département.
-              </p>
-            </div>
-          )}
-
-          {/* Participation */}
-          <div className="mt-3 border-y border-gray-100 dark:border-slate-800 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Participation</p>
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{fmt(turnoutPct)}%</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                ({fmtInt(commune.turnout)} / {fmtInt(commune.registeredVoters)} inscrits)
-              </span>
-            </div>
-            <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
-              <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${turnoutPct}%` }} />
-            </div>
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              Blancs&nbsp;: {fmt(blankPct)}% — Nuls&nbsp;: {fmt(nullPct)}%
-            </p>
+          <div className="mt-2">
+            <PanelTabs tabs={tabs} active={activeTab} onChange={setTab} density="touch" />
           </div>
 
-          {/* Annulled ballots: no expressed votes to show */}
-          {commune.annulled && (
-            <div className="mx-4 mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 px-3 py-2">
-              <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                L'ensemble des suffrages de cette commune a été annulé par le Conseil
-                constitutionnel (irrégularités constatées lors du scrutin). Aucun suffrage exprimé.
-              </p>
-            </div>
+          {activeTab === 'results' && (
+            <>
+              {isRoundFallback && (
+                <Notice density="touch">
+                  Données par commune indisponibles pour ce tour (ministère de l'Intérieur).
+                  Résultats affichés au niveau du département.
+                </Notice>
+              )}
+
+              {isOverseasFallback && (
+                <Notice density="touch">
+                  Données par commune indisponibles pour l'outre-mer (ministère de l'Intérieur).
+                  Résultats affichés au niveau du département.
+                </Notice>
+              )}
+
+              {/* Round-1-decided: the T2 figures below are actually the T1 ones */}
+              {commune.decidedAtR1 && (
+                <DecidedAtR1Notice density="touch" granularity={granularity} code={commune.inseeCode} />
+              )}
+
+              {/* Tier 1 — who won here, at a glance */}
+              {!commune.annulled && <Headline commune={commune} palette={palette} density="touch" />}
+
+              {/* Participation */}
+              <div className="mt-3 border-y border-gray-100 dark:border-slate-800 px-4 py-3 space-y-1">
+                <Participation
+                  turnout={commune.turnout}
+                  registeredVoters={commune.registeredVoters}
+                  turnoutPct={turnoutPct}
+                  blankPct={blankPct}
+                  nullPct={nullPct}
+                />
+              </div>
+
+              {/* Annulled ballots: no expressed votes to show */}
+              {commune.annulled && (
+                <Notice density="touch">
+                  L'ensemble des suffrages de cette commune a été annulé par le Conseil
+                  constitutionnel (irrégularités constatées lors du scrutin). Aucun suffrage exprimé.
+                </Notice>
+              )}
+
+              {/* Tier 2 — the full field */}
+              {!commune.annulled && (
+                <div className="space-y-3 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Candidats</p>
+                  <CandidateRows candidates={commune.candidates} palette={palette} nationalPct={nationalPct} />
+                </div>
+              )}
+            </>
           )}
 
-          {/* Candidates */}
-          {!commune.annulled && <div className="space-y-3 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Candidats</p>
-            {commune.candidates
-              .slice()
-              .sort((a, b) => b.percentage - a.percentage)
-              .map((cand, i) => {
-                const color = getCandidateColor(cand.name, i, cand.party, palette)
-                const natPct = nationalPct?.(cand.name, cand.party) ?? null
-                return (
-                  <div key={cand.name}>
-                    <div className="mb-0.5 flex items-center justify-between">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
-                        <span className="truncate text-sm text-gray-800 dark:text-gray-200">{cand.name}</span>
-                      </div>
-                      <span className="ml-2 shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {fmt(cand.percentage)}%
-                      </span>
-                    </div>
-                    {/* Local score bar */}
-                    <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
-                      <div className="h-full rounded-full" style={{ width: `${cand.percentage}%`, background: color }} />
-                    </div>
-                    {/* National reminder bar */}
-                    {natPct != null && (
-                      <div className="mt-0.5 h-1 w-full rounded-full bg-gray-50 dark:bg-slate-800/60">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${Math.min(natPct, 100)}%`, background: color, opacity: 0.35 }}
-                        />
-                      </div>
-                    )}
-                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                      {fmtInt(cand.votes)} voix
-                      {natPct != null && <span className="text-gray-300 dark:text-gray-600"> · national {fmt(natPct)}%</span>}
-                    </p>
-                  </div>
-                )
-              })}
-          </div>}
+          {activeTab === 'territories' && (
+            <>
+              {/* PLM whole-city (Paris via city dot, Lyon, Marseille) */}
+              {isPlmCity(commune.inseeCode) && (
+                <ArrondissementBreakdown
+                  cityCode={commune.inseeCode}
+                  communeChoro={communeChoro}
+                  communeData={communeData}
+                  palette={palette}
+                />
+              )}
 
-          {/* PLM whole-city (Paris via city dot, Lyon, Marseille): arrondissement breakdown */}
-          {commune && isPlmCity(commune.inseeCode) && (
-            <ArrondissementBreakdown
-              cityCode={commune.inseeCode}
-              communeChoro={communeChoro}
-              communeData={communeData}
-              palette={palette}
-            />
+              {/* Département breakdown (two-axis P2) */}
+              {isDeptSelection && (
+                <DeptInsight
+                  deptCode={commune.inseeCode}
+                  circoChoro={circoChoro}
+                  circoData={circoData}
+                  communeChoro={communeChoro}
+                  communeData={communeData}
+                  palette={palette}
+                />
+              )}
+            </>
           )}
 
-          {/* Département insight sections (two-axis P2) */}
-          {isDeptSelection && commune && (
-            <DeptInsight
-              deptCode={commune.inseeCode}
-              circoChoro={circoChoro}
-              circoData={circoData}
-              communeChoro={communeChoro}
-              communeData={communeData}
-              palette={palette}
-            />
-          )}
+          {activeTab === 'history' && <DeptHistory deptCode={commune.inseeCode} />}
         </div>
       )}
     </div>

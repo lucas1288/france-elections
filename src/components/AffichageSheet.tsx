@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Drawer } from 'vaul'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor } from '../utils/partyColors'
-import { computeNationalTotals } from '../utils/nationalResults'
-import { computeCircoCounts } from '../utils/circoCounts'
+import { useNationalSummary, type NationalViewMode } from '../utils/nationalSummary'
 import { useElectionStore } from '../store/electionStore'
 import { DeptHistory } from './DeptHistory'
+import { ForceRows } from './results/ForceRows'
+import { ViewModeSwitch } from './results/ViewModeSwitch'
+import { PanelTabs } from './results/PanelTabs'
+import { usePanelTabs, type PanelTabId } from '../utils/panelTabs'
 
 interface Props {
   electionData: RoundData | undefined
@@ -46,7 +49,7 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
   const colorMode = useElectionStore((s) => s.colorMode)
   // '%' = national vote share; 'circos' = seats won / arrived 1st / arrived 2nd
   // across circonscriptions (a switch in the sheet toggles the two).
-  const [viewMode, setViewMode] = useState<'pct' | 'circos'>('pct')
+  const [viewMode, setViewMode] = useState<NationalViewMode>('pct')
   const togglePartyMode = useElectionStore((s) => s.togglePartyMode)
   const toggleAbstentionMode = useElectionStore((s) => s.toggleAbstentionMode)
   const clickedCommune = useElectionStore((s) => s.clickedCommune)
@@ -54,33 +57,23 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
   const zoomedAway = useElectionStore((s) => s.zoomedAway)
   const [open, setOpen] = useState(false)
 
-  const totals = useMemo(
-    () => (electionData ? computeNationalTotals(electionData) : null),
-    [electionData],
-  )
+  // Tabs (redesign R2). No "Territoires" here: on mobile the 30 cities live in
+  // the search sheet, so this surface only has Résultats + Historique.
+  const tabs = usePanelTabs({
+    scope: 'national',
+    code: null,
+    isDeptSelection: false,
+    nationalTerritories: false,
+  })
+  const [tab, setTab] = useState<PanelTabId>('results')
+  const activeTab = tabs.some((t) => t.id === tab) ? tab : 'results'
 
-  // Per-force won/1st/2nd circo counts — feeds the "Sièges"/"Circos" view of the
-  // sheet (any tab; the full circo file is small and always loaded).
-  const circoCounts = useMemo(
-    () => (circoChoro && circoData ? computeCircoCounts(circoChoro, circoData) : null),
-    [circoChoro, circoData],
-  )
-  // "En tête (pas encore gagné)" bucket exists only when some lead isn't a win
-  // (round 1 of legislatives; always for presidentials). At T2 every lead IS the
-  // seat winner, so the bucket would be 0 for everyone — hide it.
-  const showLeadBucket =
-    !!circoCounts &&
-    [...circoCounts.counts1st].some(([name, n]) => n > (circoCounts.countsWon.get(name) ?? 0))
-  const hasSeats = !!circoCounts && circoCounts.countsWon.size > 0
+  const model = useNationalSummary(electionData, circoChoro, circoData)
+  if (!model) return null
 
-  if (!electionData || !totals || !totals.registeredVoters) return null
-
+  const { totals, turnoutPct, blankPct, nullPct } = model
   const activeParty = colorMode.kind === 'party' ? colorMode.party : null
   const abstentionActive = colorMode.kind === 'abstention'
-
-  const turnoutPct = (totals.turnout / totals.registeredVoters) * 100
-  const blankPct = (totals.blankVotes / totals.registeredVoters) * 100
-  const nullPct = (totals.nullVotes / totals.registeredVoters) * 100
 
   const pickParty = (party: string) => { togglePartyMode(party); setOpen(false) }
   const pickAbstention = () => { toggleAbstentionMode(); setOpen(false) }
@@ -174,7 +167,15 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
               </button>
             </div>
 
-            <p className="mt-1 border-t border-gray-100 dark:border-slate-800 px-4 pt-2.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+            <PanelTabs tabs={tabs} active={activeTab} onChange={setTab} density="touch" />
+
+            {activeTab === 'history' ? (
+              <div className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+                <DeptHistory deptCode="FR" />
+              </div>
+            ) : (
+            <>
+            <p className="mt-1 px-4 pt-2.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
               Cliquez sur la participation, un candidat ou un parti/alliance pour voir le détail de
               ses résultats sur la carte interactive.
             </p>
@@ -206,100 +207,21 @@ export function AffichageSheet({ electionData, palette, electionLabel, round, ci
 
               {/* View switch: national vote share vs circo counts (seats won /
                   arrived 1st / arrived 2nd). Only when circo data is available. */}
-              {circoCounts && (
-                <div className="px-2 pb-1 pt-1.5">
-                  <div className="flex w-full rounded-lg bg-gray-100 p-0.5 text-sm dark:bg-slate-800">
-                    {([
-                      ['pct', 'Pourcentages'],
-                      ['circos', hasSeats ? 'Sièges' : 'Circonscriptions'],
-                    ] as const).map(([mode, label]) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setViewMode(mode)}
-                        className={`flex-1 rounded-md px-2 py-1.5 font-medium transition-colors ${
-                          viewMode === mode ? 'bg-white text-gray-900 shadow-sm dark:bg-slate-600 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  {viewMode === 'circos' && (
-                    <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
-                      Sur {fmtInt(circoCounts.total)} circonscriptions —{' '}
-                      {[
-                        hasSeats && 'sièges remportés',
-                        showLeadBucket && 'en tête',
-                        '2e position',
-                      ].filter(Boolean).join(' | ')}
-                    </p>
-                  )}
-                </div>
+              {model.circoCounts && (
+                <ViewModeSwitch model={model} mode={viewMode} onChange={setViewMode} density="touch" />
               )}
 
-              {(viewMode === 'circos' && circoCounts
-                ? [...totals.candidates].sort((a, b) => {
-                    const k = (n: string) => {
-                      const won = circoCounts.countsWon.get(n) ?? 0
-                      const lead = (circoCounts.counts1st.get(n) ?? 0) - won
-                      return won * 1e6 + lead * 1e3 + (circoCounts.counts2nd.get(n) ?? 0)
-                    }
-                    return k(b.name) - k(a.name)
-                  })
-                : totals.candidates
-              ).map((c, i) => {
-                const color = getCandidateColor(c.name, i, c.party, palette)
-                const active = activeParty === c.party
-                // Exclusive buckets: seats won are excluded from "en tête".
-                const won = circoCounts?.countsWon.get(c.name) ?? 0
-                const lead1st = Math.max(0, (circoCounts?.counts1st.get(c.name) ?? 0) - won)
-                const n2 = circoCounts?.counts2nd.get(c.name) ?? 0
-                const pctOf = (n: number) => (circoCounts ? (n / circoCounts.total) * 100 : 0)
-                const showCircos = viewMode === 'circos' && !!circoCounts
-                return (
-                  <button
-                    key={c.name}
-                    type="button"
-                    onClick={() => pickParty(c.party)}
-                    className={`w-full rounded-lg px-2 py-2 text-left transition-colors ${
-                      active ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:ring-blue-800' : 'active:bg-gray-100 dark:active:bg-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color }} />
-                      <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{c.name}</span>
-                      <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{c.party}</span>
-                      <span className="shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {showCircos
-                          ? [
-                              hasSeats ? fmtInt(won) : null,
-                              showLeadBucket ? fmtInt(lead1st) : null,
-                              fmtInt(n2),
-                            ].filter((v) => v !== null).join(' | ')
-                          : `${fmtPct(c.percentage)}%`}
-                      </span>
-                    </div>
-                    {showCircos ? (
-                      /* Stacked circo bar — seats won (full colour), arrived 1st
-                         (medium), arrived 2nd (faint), scaled to all circos */
-                      <div className="mt-1 flex h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800">
-                        {won > 0 && <div className="h-full" style={{ width: `${pctOf(won)}%`, background: color }} />}
-                        {lead1st > 0 && <div className="h-full" style={{ width: `${pctOf(lead1st)}%`, background: color, opacity: 0.55 }} />}
-                        {n2 > 0 && <div className="h-full" style={{ width: `${pctOf(n2)}%`, background: color, opacity: 0.25 }} />}
-                      </div>
-                    ) : (
-                      <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
-                        <div className="h-full rounded-full" style={{ width: `${c.percentage}%`, background: color }} />
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-
-              {/* National history — bloc series across elections (P5) */}
-              <DeptHistory deptCode="FR" />
+              <ForceRows
+                model={model}
+                mode={viewMode}
+                palette={palette}
+                density="touch"
+                activeParty={activeParty}
+                onPick={pickParty}
+              />
             </div>
+            </>
+            )}
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>

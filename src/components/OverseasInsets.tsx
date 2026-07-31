@@ -131,19 +131,22 @@ export function OverseasInsets({ electionData, palette }: Props) {
       .catch(console.error)
   }, [])
 
+  const isDark = useElectionStore((s) => s.isDark)
+  const neutral = isDark ? '#334155' : '#e2e8f0'
+
   // Per-territory fill colors, mode-aware (mirrors the main map's dept coloring).
+  // `neutral` also drives the decidedAtR1 muting, so it has to be in the deps.
   const fillByCode = useMemo(() => {
     const m = new Map<string, string>()
     if (!electionData) return m
     const national = computeNationalTotals(electionData)
     for (const c of electionData.communes) {
-      m.set(c.inseeCode, territoryColor(c, colorMode, palette, national))
+      m.set(c.inseeCode, territoryColor(c, colorMode, palette, national, undefined, neutral))
     }
     return m
-  }, [electionData, palette, colorMode])
+  }, [electionData, palette, colorMode, neutral])
 
-  const isDark = useElectionStore((s) => s.isDark)
-  const getFill = (code: string) => fillByCode.get(code) ?? (isDark ? '#334155' : '#e2e8f0')
+  const getFill = (code: string) => fillByCode.get(code) ?? neutral
 
   // Territories the selected force came 1st in (single-party view) — get a highlight border.
   const wonByCode = useMemo(() => {

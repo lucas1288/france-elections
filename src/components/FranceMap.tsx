@@ -12,7 +12,7 @@ import { computeNationalTotals } from '../utils/nationalResults'
 import type { NationalTotals } from '../utils/nationalResults'
 import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
-import { abstentionShade } from '../utils/gradient'
+import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
 import { OverseasInsets } from './OverseasInsets'
 import { MobileOverseasCluster } from './MobileOverseasCluster'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
@@ -402,7 +402,7 @@ function applyDeptColors(
   const parties = partyByName(electionData.candidates)
   const codes = mode.kind === 'party' ? partyCodeSet(mode.party, palette) : undefined
   for (const dept of electionData.communes) {
-    const color = territoryColor(dept, mode, palette, national, codes)
+    const color = territoryColor(dept, mode, palette, national, codes, DEFAULT_COLOR)
     const won = codes ? codes.has(parties.get(dept.leadingCandidate) ?? '') : false
     map.setFeatureState({ source: 'admin', sourceLayer: 'departements', id: dept.inseeCode }, { color, won })
     map.setFeatureState({ source: 'overseas', id: dept.inseeCode }, { color, won })
@@ -486,6 +486,11 @@ function computeActiveColors(
       const entry = fullByCode.get(c.inseeCode)
       color = entry ? territoryColor(entry, mode, palette, national, codes) : DEFAULT_COLOR
     }
+    // Legislative T2: territories whose circo(s) were won outright at round 1
+    // carry their ROUND-1 figures. Mute them so they don't read as round-2
+    // results — leader mode only, where lightness is otherwise unused (the
+    // party/abstention ramps encode a value in it).
+    if (mode.kind === 'leader' && c.decidedAtR1) color = decidedAtR1Shade(color, DEFAULT_COLOR)
     // "Came 1st" in single-party view: the territory's leader belongs to the selected force.
     const won = codes ? codes.has(parties.get(c.leadingCandidate) ?? '') : false
     byCode.set(c.inseeCode, { color, won })
@@ -580,8 +585,15 @@ function hoverTipHTML(entry: CommuneResult, palette: Palette | null): string {
     </div>`
   }).join('')
   const turnout = entry.registeredVoters ? (entry.turnout / entry.registeredVoters) * 100 : 0
+  // These are round-1 figures carried into the T2 view (the circo(s) were won
+  // outright at round 1) — say so ABOVE the numbers, so the provenance is read
+  // before the figures, and to explain why the territory is muted on the map.
+  const r1Note = entry.decidedAtR1
+    ? `<div style="color:#d97706;margin-bottom:3px;">Résultats du 1er tour&nbsp;— pas de second tour ici</div>`
+    : ''
   return `<div style="font-size:12px;min-width:148px;max-width:200px;">
     <div style="font-weight:700;margin-bottom:3px;">${escapeHTML(entry.name)}</div>
+    ${r1Note}
     ${rows}
     <div style="color:#94a3b8;margin-top:3px;">Participation&nbsp;${pct(turnout)}%</div>
   </div>`

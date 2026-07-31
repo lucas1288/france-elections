@@ -9,7 +9,7 @@ import { getCandidateColor, partyByName } from '../utils/partyColors'
 import { computeNationalTotals } from '../utils/nationalResults'
 import { territoryColor } from '../utils/territoryColor'
 import { dataUrl } from '../utils/dataUrl'
-import { abstentionShade } from '../utils/gradient'
+import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
 
 interface Props {
   electionData: RoundData | undefined
@@ -74,11 +74,15 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
   const national = electionData ? computeNationalTotals(electionData) : null
   const fullByCode = new Map((fullData?.communes ?? []).map((e) => [e.inseeCode, e]))
   const neutral = isDark ? '#334155' : '#e2e8f0'
-  const dotColor = (c: { inseeCode: string; leadingCandidate: string; abstention?: number }) => {
-    if (colorMode.kind === 'leader') return getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+  const dotColor = (c: { inseeCode: string; leadingCandidate: string; abstention?: number; decidedAtR1?: boolean }) => {
+    if (colorMode.kind === 'leader') {
+      const color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+      // Round-1-decided circo shown in a T2 view: mute it (see decidedAtR1Shade).
+      return c.decidedAtR1 ? decidedAtR1Shade(color, neutral) : color
+    }
     if (colorMode.kind === 'abstention') return c.abstention != null ? abstentionShade(c.abstention) : neutral
     const entry = fullByCode.get(c.inseeCode)
-    return entry ? territoryColor(entry, colorMode, palette, national) : neutral
+    return entry ? territoryColor(entry, colorMode, palette, national, undefined, neutral) : neutral
   }
 
   // Overall abroad winner: prefer '99' aggregate; fall back to modal leader

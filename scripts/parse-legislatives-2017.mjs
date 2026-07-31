@@ -203,6 +203,9 @@ function choropleth(entries, granularity, round, candidates, { leaderAsNuance = 
         inseeCode: e.inseeCode,
         leadingCandidate: e.expressedVotes && e.leadingCandidate ? leader : '',
         abstention: abstention2(e.registeredVoters, e.turnout),
+        // decidedAtR1 must survive into the choropleth: it's the file the map
+        // layers are coloured from, and the T2 map mutes R1-decided territories.
+        ...(e.decidedAtR1 && { decidedAtR1: true }),
       }
     }),
   }
