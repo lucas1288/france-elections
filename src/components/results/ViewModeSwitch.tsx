@@ -29,10 +29,12 @@ export function ViewModeSwitch({ model, mode, onChange, density }: Props) {
           touch ? 'text-sm' : 'text-xs'
         }`}
       >
-        {([
-          ['pct', 'Pourcentages'],
-          ['circos', model.circoSwitchLabel],
-        ] as const).map(([m, label]) => (
+        {(
+          [
+            ['pct', 'Pourcentages'],
+            ['circos', model.circoSwitchLabel],
+          ] as const
+        ).map(([m, label]) => (
           <button
             key={m}
             type="button"

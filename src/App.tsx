@@ -1,6 +1,14 @@
 import { useEffect } from 'react'
 import { useElectionStore } from './store/electionStore'
-import { useElectionData, useChoroplethData, useCircoChoroplethData, useFullCommuneData, useFullCircoData, useElectionIndex, usePalette } from './hooks/useElectionData'
+import {
+  useElectionData,
+  useChoroplethData,
+  useCircoChoroplethData,
+  useFullCommuneData,
+  useFullCircoData,
+  useElectionIndex,
+  usePalette,
+} from './hooks/useElectionData'
 import { useIsMobile } from './hooks/useIsMobile'
 import { useUrlSync } from './hooks/useUrlSync'
 import { DesktopLayout } from './components/DesktopLayout'
@@ -32,15 +40,32 @@ export default function App() {
 
   const electionQuery = useElectionData(selected.type, selected.year, selected.round)
   const paletteQuery = usePalette(selected.type, selected.year)
-  const choroplethQuery = useChoroplethData(selected.type, selected.year, selected.round, communeAvailable)
-  const circoQuery = useCircoChoroplethData(selected.type, selected.year, selected.round, circoAvailable)
+  const choroplethQuery = useChoroplethData(
+    selected.type,
+    selected.year,
+    selected.round,
+    communeAvailable,
+  )
+  const circoQuery = useCircoChoroplethData(
+    selected.type,
+    selected.year,
+    selected.round,
+    circoAvailable,
+  )
   const fullCommuneQuery = useFullCommuneData(
-    selected.type, selected.year, selected.round,
+    selected.type,
+    selected.year,
+    selected.round,
     communeAvailable && granularity === 'commune',
   )
   // Full circo files are small (~0.2–0.6 MB), so they load whenever available —
   // the national sheet's seats/circo-counts view needs them on every tab.
-  const fullCircoQuery = useFullCircoData(selected.type, selected.year, selected.round, circoAvailable)
+  const fullCircoQuery = useFullCircoData(
+    selected.type,
+    selected.year,
+    selected.round,
+    circoAvailable,
+  )
   const palette = paletteQuery.data ?? null
 
   const effectiveChoropleth =

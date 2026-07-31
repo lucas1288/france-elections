@@ -39,7 +39,8 @@ export function territoryColor(
   }
   if (mode.kind === 'party') {
     const set = codes ?? partyCodeSet(mode.party, palette)
-    const base = palette?.parties?.[mode.party]?.color ?? getCandidateColor('', 0, mode.party, palette)
+    const base =
+      palette?.parties?.[mode.party]?.color ?? getCandidateColor('', 0, mode.party, palette)
     let votes = 0
     for (const c of entry.candidates) if (set.has(c.party)) votes += c.votes
     const localPct = entry.expressedVotes ? (votes / entry.expressedVotes) * 100 : 0

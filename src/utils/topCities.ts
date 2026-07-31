@@ -9,6 +9,8 @@ export interface TopCity {
 
 // Source: INSEE recensement de la population, populations légales au 1er janvier 2023
 // (publication décembre 2025 — https://www.insee.fr/fr/statistiques/8681011)
+// Hand-aligned columns below — the alignment is the point, so prettier is held off.
+// prettier-ignore
 export const TOP_CITIES: TopCity[] = [
   { name: 'Paris',                      inseeCode: '75056', population: 2103778, lng:  2.3488, lat: 48.8534, zoom: 11 },
   { name: 'Marseille',                  inseeCode: '13055', population:  886040, lng:  5.3698, lat: 43.2965, zoom: 11 },

@@ -57,52 +57,60 @@ export function NationalSummary({ electionData, palette, circoChoro, circoData }
           active tab already says "Résultats" — a third "Résultats nationaux"
           label plus a collapse control was pure chrome. */}
       <div className="px-2 pt-3 pb-3 space-y-1">
-          <p className="px-2 pb-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
-            Cliquez sur la participation, un candidat ou un parti/alliance pour voir le
-            détail de ses résultats sur la carte.
-          </p>
+        <p className="px-2 pb-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
+          Cliquez sur la participation, un candidat ou un parti/alliance pour voir le détail de ses
+          résultats sur la carte.
+        </p>
 
-          {/* Participation / abstention — clicking it drives the abstention map view */}
-          <button
-            className={`w-full rounded-lg px-2 py-1.5 text-left transition-colors ${
-              abstentionActive
-                ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:ring-blue-800'
-                : 'hover:bg-gray-50 dark:hover:bg-slate-800/60'
-            }`}
-            onClick={toggleAbstentionMode}
-          >
-            <div className="flex items-baseline gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Participation</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">{fmtPct(turnoutPct)}%</p>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Abstention</p>
-                <p className="text-lg font-bold text-gray-500 dark:text-gray-400 leading-tight">{fmtPct(abstentionPct)}%</p>
-              </div>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 self-end ml-auto">
-                {fmtInt(t.registeredVoters)} inscrits
+        {/* Participation / abstention — clicking it drives the abstention map view */}
+        <button
+          className={`w-full rounded-lg px-2 py-1.5 text-left transition-colors ${
+            abstentionActive
+              ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:ring-blue-800'
+              : 'hover:bg-gray-50 dark:hover:bg-slate-800/60'
+          }`}
+          onClick={toggleAbstentionMode}
+        >
+          <div className="flex items-baseline gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                Participation
+              </p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                {fmtPct(turnoutPct)}%
               </p>
             </div>
-          </button>
-
-          {/* View switch: national vote share vs circo counts (seats won /
-              arrived 1st / arrived 2nd). Only when circo data is available. */}
-          {model.circoCounts && (
-            <ViewModeSwitch model={model} mode={viewMode} onChange={setViewMode} density="compact" />
-          )}
-
-          {/* Ranked vote share — each row is a map control (single-force view) */}
-          <div className="space-y-0.5">
-            <ForceRows
-              model={model}
-              mode={viewMode}
-              palette={palette}
-              density="compact"
-              activeParty={activeParty}
-              onPick={togglePartyMode}
-            />
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                Abstention
+              </p>
+              <p className="text-lg font-bold text-gray-500 dark:text-gray-400 leading-tight">
+                {fmtPct(abstentionPct)}%
+              </p>
+            </div>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 self-end ml-auto">
+              {fmtInt(t.registeredVoters)} inscrits
+            </p>
           </div>
+        </button>
+
+        {/* View switch: national vote share vs circo counts (seats won /
+              arrived 1st / arrived 2nd). Only when circo data is available. */}
+        {model.circoCounts && (
+          <ViewModeSwitch model={model} mode={viewMode} onChange={setViewMode} density="compact" />
+        )}
+
+        {/* Ranked vote share — each row is a map control (single-force view) */}
+        <div className="space-y-0.5">
+          <ForceRows
+            model={model}
+            mode={viewMode}
+            palette={palette}
+            density="compact"
+            activeParty={activeParty}
+            onPick={togglePartyMode}
+          />
+        </div>
       </div>
     </div>
   )

@@ -3,7 +3,13 @@ import { useElectionStore } from '../store/electionStore'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor, partyByName } from '../utils/partyColors'
-import { circoInDept, communeInDept, isPlmArrondissement, circoNumber, plmCityOfDept } from '../utils/deptInsight'
+import {
+  circoInDept,
+  communeInDept,
+  isPlmArrondissement,
+  circoNumber,
+  plmCityOfDept,
+} from '../utils/deptInsight'
 import { ArrondissementBreakdown } from './ArrondissementBreakdown'
 import { CIRCO_BBOXES } from '../utils/territoryBBoxes'
 import { TOP_CITIES } from '../utils/topCities'
@@ -47,8 +53,16 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  * commune stats from the commune choropleth, and the commune rankings from the
  * full commune file (commune tab only — the sections appear once it loads).
  */
-export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, communeData, palette }: Props) {
-  const { granularity, setGranularity, selectTerritory, setFlyBounds, setFlyTarget } = useElectionStore()
+export function DeptInsight({
+  deptCode,
+  circoChoro,
+  circoData,
+  communeChoro,
+  communeData,
+  palette,
+}: Props) {
+  const { granularity, setGranularity, selectTerritory, setFlyBounds, setFlyTarget } =
+    useElectionStore()
 
   // ── Circonscriptions of the dept: leader (person when full data is in) + % ──
   const circos = useMemo(() => {
@@ -61,9 +75,10 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
     return codes
       .map((code) => {
         const full = fullByCode.get(code)
-        const top = full && !full.annulled
-          ? [...full.candidates].sort((a, b) => b.votes - a.votes)[0]
-          : undefined
+        const top =
+          full && !full.annulled
+            ? [...full.candidates].sort((a, b) => b.votes - a.votes)[0]
+            : undefined
         const choroLeader = choroByCode.get(code)?.leadingCandidate
         return {
           code,
@@ -75,8 +90,8 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
           color: top
             ? getCandidateColor(top.name, 0, top.party, palette)
             : choroLeader
-            ? getCandidateColor(choroLeader, 0, choroParties.get(choroLeader), palette)
-            : null,
+              ? getCandidateColor(choroLeader, 0, choroParties.get(choroLeader), palette)
+              : null,
         }
       })
       .sort((a, b) => a.num - b.num)
@@ -93,7 +108,8 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
     for (const c of communeChoro.communes) {
       if (!communeInDept(c.inseeCode, deptCode) || isPlmArrondissement(c.inseeCode)) continue
       total++
-      if (c.leadingCandidate) counts.set(c.leadingCandidate, (counts.get(c.leadingCandidate) ?? 0) + 1)
+      if (c.leadingCandidate)
+        counts.set(c.leadingCandidate, (counts.get(c.leadingCandidate) ?? 0) + 1)
     }
     if (!total) return null
     const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
@@ -139,7 +155,16 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
     if (city) setFlyTarget({ lng: city.lng, lat: city.lat, zoom: city.zoom })
   }
 
-  const communeRow = (c: { inseeCode: string; name: string; leadingCandidate: string; annulled?: boolean; candidates: { name: string; party: string; votes: number }[] }, right: React.ReactNode) => {
+  const communeRow = (
+    c: {
+      inseeCode: string
+      name: string
+      leadingCandidate: string
+      annulled?: boolean
+      candidates: { name: string; party: string; votes: number }[]
+    },
+    right: React.ReactNode,
+  ) => {
     const top = !c.annulled ? [...c.candidates].sort((a, b) => b.votes - a.votes)[0] : undefined
     const color = top ? getCandidateColor(top.name, 0, top.party, palette) : '#cbd5e1'
     return (
@@ -149,7 +174,9 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
         onClick={() => jumpToCommune(c.inseeCode)}
       >
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-        <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 truncate">{c.name}</span>
+        <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 truncate">
+          {c.name}
+        </span>
         <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{right}</span>
       </button>
     )
@@ -181,7 +208,10 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
                 <span className="w-8 shrink-0 text-xs text-gray-400 dark:text-gray-500">
                   {c.num === 1 ? '1ère' : `${c.num}e`}
                 </span>
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color ?? '#cbd5e1' }} />
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ background: c.color ?? '#cbd5e1' }}
+                />
                 <span className="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 truncate">
                   {c.leader ?? '—'}
                 </span>
@@ -226,14 +256,19 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
                 <div className="flex items-center justify-between mb-0.5">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{name}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {name}
+                    </span>
                   </div>
                   <span className="ml-2 shrink-0 text-xs font-semibold text-gray-500 dark:text-gray-400">
                     {fmtInt(count)}
                   </span>
                 </div>
                 <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-1">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${pct}%`, background: color }}
+                  />
                 </div>
               </div>
             )
@@ -247,20 +282,26 @@ export function DeptInsight({ deptCode, circoChoro, circoData, communeChoro, com
           <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 space-y-1">
             <SectionLabel>Plus grandes communes</SectionLabel>
             <div className="-mx-2">
-              {communeDetail.largest.map((c) => communeRow(c, `${fmtInt(c.registeredVoters)} inscrits`))}
+              {communeDetail.largest.map((c) =>
+                communeRow(c, `${fmtInt(c.registeredVoters)} inscrits`),
+              )}
             </div>
           </div>
           {communeDetail.top.length > 0 && (
             <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 space-y-1">
               <SectionLabel>Participation la plus forte</SectionLabel>
               <div className="-mx-2">
-                {communeDetail.top.map((c) => communeRow(c, `${fmt((c.turnout / c.registeredVoters) * 100)}%`))}
+                {communeDetail.top.map((c) =>
+                  communeRow(c, `${fmt((c.turnout / c.registeredVoters) * 100)}%`),
+                )}
               </div>
               <p className="pt-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                 Participation la plus faible
               </p>
               <div className="-mx-2">
-                {communeDetail.bottom.map((c) => communeRow(c, `${fmt((c.turnout / c.registeredVoters) * 100)}%`))}
+                {communeDetail.bottom.map((c) =>
+                  communeRow(c, `${fmt((c.turnout / c.registeredVoters) * 100)}%`),
+                )}
               </div>
               <p className="pt-1 text-[11px] leading-relaxed text-gray-400 dark:text-gray-500">
                 Communes de 1 000 inscrits ou plus.

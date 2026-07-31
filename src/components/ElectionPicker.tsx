@@ -25,7 +25,16 @@ interface Props {
 
 function CloseIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
       <path d="M18 6L6 18M6 6l12 12" />
     </svg>
   )
@@ -48,7 +57,9 @@ export function ElectionPicker({ open, onClose }: Props) {
 
   const sorted = useMemo(
     () =>
-      [...elections].sort((a, b) => b.year - a.year || (TYPE_MONTH[b.type] ?? 0) - (TYPE_MONTH[a.type] ?? 0)),
+      [...elections].sort(
+        (a, b) => b.year - a.year || (TYPE_MONTH[b.type] ?? 0) - (TYPE_MONTH[a.type] ?? 0),
+      ),
     [elections],
   )
   const rows = sorted.filter((e) => filter === 'all' || e.type === filter)
@@ -63,88 +74,131 @@ export function ElectionPicker({ open, onClose }: Props) {
           : 'pointer-events-none translate-y-full md:translate-y-0 md:opacity-0'
       }`}
       aria-hidden={!open}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
     >
       <div className="flex min-h-0 flex-1 flex-col md:max-h-[80vh] md:w-full md:max-w-md md:flex-none md:overflow-hidden md:rounded-2xl md:bg-white md:shadow-2xl dark:md:bg-slate-900">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
-        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">Choisir une élection</h2>
-        <button
-          type="button"
-          aria-label="Fermer"
-          onClick={onClose}
-          className="ml-auto rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
-        >
-          <CloseIcon />
-        </button>
-      </div>
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+          <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">
+            Choisir une élection
+          </h2>
+          <button
+            type="button"
+            aria-label="Fermer"
+            onClick={onClose}
+            className="ml-auto rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
+          >
+            <CloseIcon />
+          </button>
+        </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-2 border-b border-gray-100 dark:border-slate-800 px-4 pb-3">
-        <FilterChip label="Toutes" active={filter === 'all'} onClick={() => setFilter('all')} />
-        {types.map((t) => (
-          <FilterChip
-            key={t}
-            label={TYPE_LABELS_PLURAL[t] ?? t}
-            active={filter === t}
-            onClick={() => setFilter(t)}
-          />
-        ))}
-      </div>
+        {/* Filter chips */}
+        <div className="flex gap-2 border-b border-gray-100 dark:border-slate-800 px-4 pb-3">
+          <FilterChip label="Toutes" active={filter === 'all'} onClick={() => setFilter('all')} />
+          {types.map((t) => (
+            <FilterChip
+              key={t}
+              label={TYPE_LABELS_PLURAL[t] ?? t}
+              active={filter === t}
+              onClick={() => setFilter(t)}
+            />
+          ))}
+        </div>
 
-      {/* Chronological list, newest first */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {rows.map((e) => {
-          const active = isSelected(e)
-          return (
-            <button
-              key={`${e.type}-${e.year}`}
-              type="button"
-              onClick={() => {
-                setSelected({ type: e.type, year: e.year, round: 1 })
-                onClose()
-              }}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left ${active ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}
-            >
-              <span className={`w-11 shrink-0 text-lg font-medium ${active ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-100'}`}>
-                {e.year}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className={`block text-sm ${active ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                  {TYPE_LABELS[e.type] ?? e.type}
+        {/* Chronological list, newest first */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {rows.map((e) => {
+            const active = isSelected(e)
+            return (
+              <button
+                key={`${e.type}-${e.year}`}
+                type="button"
+                onClick={() => {
+                  setSelected({ type: e.type, year: e.year, round: 1 })
+                  onClose()
+                }}
+                className={`flex w-full items-center gap-3 px-4 py-3 text-left ${active ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}
+              >
+                <span
+                  className={`w-11 shrink-0 text-lg font-medium ${active ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-100'}`}
+                >
+                  {e.year}
                 </span>
-                {e.winner && (
-                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: e.winner.color }} />
-                    <span className="truncate">{e.winner.name}</span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block text-sm ${active ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}
+                  >
+                    {TYPE_LABELS[e.type] ?? e.type}
                   </span>
+                  {e.winner && (
+                    <span className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ background: e.winner.color }}
+                      />
+                      <span className="truncate">{e.winner.name}</span>
+                    </span>
+                  )}
+                </span>
+                {active ? (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-blue-600 dark:text-blue-400"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-gray-300 dark:text-gray-600"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
                 )}
-              </span>
-              {active ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-600 dark:text-blue-400" aria-hidden="true">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300 dark:text-gray-600" aria-hidden="true">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              )}
-            </button>
-          )
-        })}
-      </div>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
 }
 
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-        active ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300'
+        active
+          ? 'bg-gray-900 text-white'
+          : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300'
       }`}
     >
       {label}

@@ -34,15 +34,30 @@ interface Props {
  * interactive (tap the map to reselect, tap the back button to zoom out). Shares
  * selection resolution + national baseline with ResultsPanel via territoryDetail.
  */
-export function MobileDetailSheet({ electionData, communeData, communeDataMissing, communeChoro, circoData, circoChoro, palette }: Props) {
+export function MobileDetailSheet({
+  electionData,
+  communeData,
+  communeDataMissing,
+  communeChoro,
+  circoData,
+  circoChoro,
+  palette,
+}: Props) {
   const granularity = useElectionStore((s) => s.granularity)
   const clickedCommune = useElectionStore((s) => s.clickedCommune)
   const setClickedCommune = useElectionStore((s) => s.setClickedCommune)
   const settleDept = useElectionStore((s) => s.settleDept)
 
   const {
-    commune, isOverseasFallback, isRoundFallback,
-    nationalPct, isDeptSelection, parentDept, turnoutPct, blankPct, nullPct,
+    commune,
+    isOverseasFallback,
+    isRoundFallback,
+    nationalPct,
+    isDeptSelection,
+    parentDept,
+    turnoutPct,
+    blankPct,
+    nullPct,
   } = useTerritoryView(clickedCommune, clickedCommune, granularity, {
     electionData,
     communeData,
@@ -85,7 +100,9 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
           {/* Header */}
           <div className="flex items-start gap-2 px-4 pt-4">
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-lg font-bold text-gray-900 dark:text-gray-100">{commune.name}</h2>
+              <h2 className="truncate text-lg font-bold text-gray-900 dark:text-gray-100">
+                {commune.name}
+              </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">INSEE {commune.inseeCode}</p>
               {parentDept && (
                 <button
@@ -103,7 +120,16 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
               onClick={close}
               className="shrink-0 rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
@@ -131,11 +157,17 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
 
               {/* Round-1-decided: the T2 figures below are actually the T1 ones */}
               {commune.decidedAtR1 && (
-                <DecidedAtR1Notice density="touch" granularity={granularity} code={commune.inseeCode} />
+                <DecidedAtR1Notice
+                  density="touch"
+                  granularity={granularity}
+                  code={commune.inseeCode}
+                />
               )}
 
               {/* Tier 1 — who won here, at a glance */}
-              {!commune.annulled && <Headline commune={commune} palette={palette} density="touch" />}
+              {!commune.annulled && (
+                <Headline commune={commune} palette={palette} density="touch" />
+              )}
 
               {/* Participation */}
               <div className="mt-3 border-y border-gray-100 dark:border-slate-800 px-4 py-3 space-y-1">
@@ -152,15 +184,22 @@ export function MobileDetailSheet({ electionData, communeData, communeDataMissin
               {commune.annulled && (
                 <Notice density="touch">
                   L'ensemble des suffrages de cette commune a été annulé par le Conseil
-                  constitutionnel (irrégularités constatées lors du scrutin). Aucun suffrage exprimé.
+                  constitutionnel (irrégularités constatées lors du scrutin). Aucun suffrage
+                  exprimé.
                 </Notice>
               )}
 
               {/* Tier 2 — the full field */}
               {!commune.annulled && (
                 <div className="space-y-3 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Candidats</p>
-                  <CandidateRows candidates={commune.candidates} palette={palette} nationalPct={nationalPct} />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    Candidats
+                  </p>
+                  <CandidateRows
+                    candidates={commune.candidates}
+                    palette={palette}
+                    nationalPct={nationalPct}
+                  />
                 </div>
               )}
             </>

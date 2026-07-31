@@ -45,13 +45,36 @@ function PanelShell({ header, children }: { header: React.ReactNode; children: R
   )
 }
 
-export function ResultsPanel({ electionData, communeData, communeDataMissing, communeChoro, circoData, circoChoro, granularity, palette }: Props) {
-  const { hoveredCommune, clickedCommune, setGranularity, selectTerritory, setFlyTarget, settleDept } = useElectionStore()
+export function ResultsPanel({
+  electionData,
+  communeData,
+  communeDataMissing,
+  communeChoro,
+  circoData,
+  circoChoro,
+  granularity,
+  palette,
+}: Props) {
+  const {
+    hoveredCommune,
+    clickedCommune,
+    setGranularity,
+    selectTerritory,
+    setFlyTarget,
+    settleDept,
+  } = useElectionStore()
 
   const activeCode = clickedCommune ?? hoveredCommune
   const {
-    commune, isOverseasFallback, isRoundFallback,
-    nationalPct, isDeptSelection, parentDept, turnoutPct, blankPct, nullPct,
+    commune,
+    isOverseasFallback,
+    isRoundFallback,
+    nationalPct,
+    isDeptSelection,
+    parentDept,
+    turnoutPct,
+    blankPct,
+    nullPct,
   } = useTerritoryView(activeCode, clickedCommune, granularity, {
     electionData,
     communeData,
@@ -88,16 +111,18 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
       granularity === 'commune' && !communeData
         ? 'Chargement des données communales…'
         : granularity !== 'commune' && !circoData
-        ? 'Chargement des données par circonscription…'
-        : granularity === 'hemicycle'
-        ? 'Cliquez sur un siège pour afficher les résultats de la circonscription'
-        : granularity === 'circonscription'
-        ? 'Survolez ou cliquez sur une circonscription pour afficher ses résultats'
-        : 'Survolez ou cliquez sur une commune pour afficher ses résultats'
+          ? 'Chargement des données par circonscription…'
+          : granularity === 'hemicycle'
+            ? 'Cliquez sur un siège pour afficher les résultats de la circonscription'
+            : granularity === 'circonscription'
+              ? 'Survolez ou cliquez sur une circonscription pour afficher ses résultats'
+              : 'Survolez ou cliquez sur une commune pour afficher ses résultats'
 
     // Fast lookups for the city list's leader dots.
     const fullCityMap = new Map(communeData?.communes.map((c) => [c.inseeCode, c]))
-    const choroCityMap = new Map(communeChoro?.communes.map((c) => [c.inseeCode, c.leadingCandidate]))
+    const choroCityMap = new Map(
+      communeChoro?.communes.map((c) => [c.inseeCode, c.leadingCandidate]),
+    )
     const choroParty = new Map(communeChoro?.candidates.map((c) => [c.name, c.party]))
 
     return (
@@ -119,7 +144,9 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
               circoChoro={circoChoro}
               circoData={circoData}
             />
-            <p className="px-4 pt-3 pb-2 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">{hint}</p>
+            <p className="px-4 pt-3 pb-2 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+              {hint}
+            </p>
           </>
         )}
 
@@ -148,9 +175,14 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
                   className="w-full flex items-center gap-2 px-2 py-1 text-left rounded hover:bg-blue-50 dark:hover:bg-slate-800/60 transition-colors group"
                   onClick={() => jumpToCity(city)}
                 >
-                  <span className="w-5 text-right text-xs text-gray-300 dark:text-gray-600 shrink-0">{i + 1}</span>
+                  <span className="w-5 text-right text-xs text-gray-300 dark:text-gray-600 shrink-0">
+                    {i + 1}
+                  </span>
                   <span className="flex items-center gap-0.5 shrink-0">
-                    <span className="w-2 h-2 rounded-full" style={{ background: dot1 ?? '#e2e8f0' }} />
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: dot1 ?? '#e2e8f0' }}
+                    />
                     <span
                       className="w-2 h-2 rounded-full"
                       style={{ background: dot2 ?? '#e2e8f0', opacity: dot2 ? 0.45 : 0.2 }}
@@ -209,13 +241,18 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
           {isOverseasFallback && (
             <Notice density="compact">
               Les données par commune pour les départements et territoires d'outre-mer n'ont pas été
-              rendues disponibles par le ministère de l'Intérieur. Résultats affichés au niveau du département.
+              rendues disponibles par le ministère de l'Intérieur. Résultats affichés au niveau du
+              département.
             </Notice>
           )}
 
           {/* Round-1-decided: the T2 figures below are actually the T1 ones */}
           {commune.decidedAtR1 && (
-            <DecidedAtR1Notice density="compact" granularity={granularity} code={commune.inseeCode} />
+            <DecidedAtR1Notice
+              density="compact"
+              granularity={granularity}
+              code={commune.inseeCode}
+            />
           )}
 
           {/* Tier 1 — who won here, at a glance */}
@@ -235,8 +272,8 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
           {/* Annulled ballots: no expressed votes to show */}
           {commune.annulled && (
             <Notice density="compact">
-              L'ensemble des suffrages de cette commune a été annulé par le Conseil
-              constitutionnel (irrégularités constatées lors du scrutin). Aucun suffrage exprimé.
+              L'ensemble des suffrages de cette commune a été annulé par le Conseil constitutionnel
+              (irrégularités constatées lors du scrutin). Aucun suffrage exprimé.
             </Notice>
           )}
 
@@ -246,7 +283,11 @@ export function ResultsPanel({ electionData, communeData, communeDataMissing, co
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                 Candidats
               </p>
-              <CandidateRows candidates={commune.candidates} palette={palette} nationalPct={nationalPct} />
+              <CandidateRows
+                candidates={commune.candidates}
+                palette={palette}
+                nationalPct={nationalPct}
+              />
             </div>
           )}
         </>

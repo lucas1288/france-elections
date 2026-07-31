@@ -25,7 +25,10 @@ export interface ElectionRef {
  */
 export interface Palette {
   byName?: Record<string, string>
-  parties?: Record<string, { label: string; color: string; alliance?: boolean; members?: string[]; family?: string }>
+  parties?: Record<
+    string,
+    { label: string; color: string; alliance?: boolean; members?: string[]; family?: string }
+  >
 }
 
 /**

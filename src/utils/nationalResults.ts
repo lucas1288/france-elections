@@ -30,7 +30,11 @@ export interface NationalTotals {
  * national baseline that the gradient views compare against.
  */
 export function computeNationalTotals(round: RoundData): NationalTotals {
-  let registeredVoters = 0, turnout = 0, blankVotes = 0, nullVotes = 0, expressedVotes = 0
+  let registeredVoters = 0,
+    turnout = 0,
+    blankVotes = 0,
+    nullVotes = 0,
+    expressedVotes = 0
   const byName = new Map<string, NationalCandidateTotal>()
 
   for (const dept of round.communes) {

@@ -1,0 +1,32 @@
+# ── Build output & deps ───────────────────────────────────────────────────────
+dist
+node_modules
+.wrangler
+package-lock.json
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+# Not formatting-relevant and enormous: public/data is ~230 MB and untracked,
+# data-sources holds the raw ministry files verbatim (never reformat those —
+# they're the inputs the parsers are validated against).
+public/data
+data-sources
+public/fonts
+
+# ── GENERATED sources ─────────────────────────────────────────────────────────
+# Written by scripts, so formatting them here just gets reverted on the next
+# generator run. If their layout should change, change the emitter.
+# ← scripts/build-territory-bboxes.mjs
+src/utils/territoryBBoxes.ts
+# ← scripts/build-merged-communes.mjs
+src/utils/mergedCommunes.ts
+
+# ── Not yet adopted (deliberate, see below) ───────────────────────────────────
+# The ingestion pipeline: 29 of 30 scripts would be reformatted. That's a large
+# diff in the code whose OUTPUT is byte-compared during validation, so it wants
+# its own pass gated on `node scripts/ingest.mjs --validate-all`, not a drive-by
+# reformat inside a UI change.
+scripts
+
+# Docs: prose and tables are hand-laid-out here (CLAUDE.md especially), and
+# prettier's markdown pass would rewrite all six at once. Also its own decision.
+*.md

@@ -14,6 +14,7 @@ import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
 import { OverseasInsets } from './OverseasInsets'
+import { ThemeToggle } from './ThemeToggle'
 import { MobileOverseasCluster } from './MobileOverseasCluster'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
@@ -58,16 +59,26 @@ function ensurePMTiles() {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const METRO_BOUNDS: maplibregl.LngLatBoundsLike = [[-5.5, 41.2], [9.7, 51.2]]
+const METRO_BOUNDS: maplibregl.LngLatBoundsLike = [
+  [-5.5, 41.2],
+  [9.7, 51.2],
+]
 // Extra padding on the right shifts the metropolitan view left so Corsica (far
 // south-east) isn't hidden behind the Legend / Français-à-l'étranger overlays.
-const METRO_FIT: maplibregl.FitBoundsOptions = { padding: { top: 40, bottom: 40, left: 50, right: 270 } }
+// Top/bottom padding clears the floating chrome introduced in R3 (search pill
+// north, layers menu + timeline strip south) now that the header container is
+// gone and the map runs the full height of the shell.
+const METRO_FIT: maplibregl.FitBoundsOptions = {
+  padding: { top: 80, bottom: 80, left: 50, right: 270 },
+}
 // Mobile portrait: the view is width-constrained (France's ~1.4:1 box in a tall
 // phone viewport), so minimal horizontal padding lets France grow as large as
 // possible — cutting the inherent vertical whitespace. The floating chrome (top
 // bar, bottom switcher, corner buttons) is translucent, so France may sit under
 // it like the desktop overlays; only a little top/bottom breathing room is kept.
-const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = { padding: { top: 40, bottom: 380, left: 8, right: 8 } }
+const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = {
+  padding: { top: 40, bottom: 380, left: 8, right: 8 },
+}
 // Geo anchor for the mobile overseas inset (MapLibre Marker): the Bay of Biscay,
 // south-west of France's coast (≈ Corsica's latitude, left side — lucas's spot).
 // Open sea on this map, so the inset reads as part of the map, pans/zooms with
@@ -75,6 +86,8 @@ const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = { padding: { top: 40, bott
 const OVERSEAS_INSET_LNGLAT: [number, number] = [-3.4, 42.5]
 
 // Bounding boxes for overseas territories (used for flyTo on inset click)
+// Hand-aligned columns below — the alignment is the point, so prettier is held off.
+// prettier-ignore
 const OVERSEAS_BOUNDS: Record<string, maplibregl.LngLatBoundsLike> = {
   '971': [[-62.1096, 15.5321], [-60.7021, 16.8143]],  // Guadeloupe
   '972': [[-61.5293, 14.0887], [-60.5095, 15.1788]],  // Martinique
@@ -105,7 +118,10 @@ const PLM_CITY_CODES = ['75056', '69123', '13055']
 // polygons replace them at commune zoom. Filter on the `code` PROPERTY, not
 // ['id']: filter expressions evaluate against the raw tile feature id, which is
 // unset here (promoteId only feeds setFeatureState + query results, not filters).
-const NOT_PLM_CITY: maplibregl.FilterSpecification = ['!', ['match', ['get', 'code'], PLM_CITY_CODES, true, false]]
+const NOT_PLM_CITY: maplibregl.FilterSpecification = [
+  '!',
+  ['match', ['get', 'code'], PLM_CITY_CODES, true, false],
+]
 
 // ── MapLibre style ─────────────────────────────────────────────────────────────
 
@@ -115,9 +131,12 @@ function adminLabelLayer(
   centerType: 'prefecture' | 'sous-prefecture',
 ): maplibregl.SymbolLayerSpecification {
   return {
-    id, type: 'symbol', source: 'admin-centers',
+    id,
+    type: 'symbol',
+    source: 'admin-centers',
     minzoom: 8,
-    filter: ['all',
+    filter: [
+      'all',
       ['==', ['get', 'type'], centerType],
       ['!', ['in', ['get', 'inseeCode'], ['literal', TOP_CITY_CODES]]],
     ],
@@ -153,14 +172,18 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
   const outlinePaint = (width: number): maplibregl.LineLayerSpecification['paint'] => ({
     'line-color': [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], '#0f172a',
-      ['boolean', ['feature-state', 'hover'], false], '#334155',
+      ['boolean', ['feature-state', 'selected'], false],
+      '#0f172a',
+      ['boolean', ['feature-state', 'hover'], false],
+      '#334155',
       '#64748b',
     ],
     'line-width': [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], width * 2.5,
-      ['boolean', ['feature-state', 'hover'], false], width * 1.8,
+      ['boolean', ['feature-state', 'selected'], false],
+      width * 2.5,
+      ['boolean', ['feature-state', 'hover'], false],
+      width * 1.8,
       width,
     ],
   })
@@ -220,6 +243,10 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
         },
       },
     },
+    // The layer list is written compactly on purpose — one layer ≈ 2-3 lines — so the
+    // whole style spec reads as a scannable list. Expanded one-property-per-line it
+    // roughly triples in length, so prettier is held off for this array only.
+    // prettier-ignore
     layers: [
       { id: 'background', type: 'background', paint: { 'background-color': '#f1f5f9' } },
 
@@ -355,30 +382,54 @@ function applyMapTheme(map: maplibregl.Map, isDark: boolean) {
   for (const id of ['overseas-fill', 'dept-fill', 'communes-fill', 'circo-fill']) {
     map.setPaintProperty(id, 'fill-color', ['coalesce', ['feature-state', 'color'], DEFAULT_COLOR])
   }
-  map.setPaintProperty('city-dots', 'circle-color', ['coalesce', ['feature-state', 'color'], DEFAULT_COLOR])
+  map.setPaintProperty('city-dots', 'circle-color', [
+    'coalesce',
+    ['feature-state', 'color'],
+    DEFAULT_COLOR,
+  ])
 
   // Selection/hover strokes must invert (near-black is invisible on a dark sea).
   const outlineCase = isDark
-    ? ['case',
-        ['boolean', ['feature-state', 'selected'], false], '#f8fafc',
-        ['boolean', ['feature-state', 'hover'], false], '#cbd5e1',
-        '#64748b']
-    : ['case',
-        ['boolean', ['feature-state', 'selected'], false], '#0f172a',
-        ['boolean', ['feature-state', 'hover'], false], '#334155',
-        '#64748b']
+    ? [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false],
+        '#f8fafc',
+        ['boolean', ['feature-state', 'hover'], false],
+        '#cbd5e1',
+        '#64748b',
+      ]
+    : [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false],
+        '#0f172a',
+        ['boolean', ['feature-state', 'hover'], false],
+        '#334155',
+        '#64748b',
+      ]
   for (const id of ['overseas-outline', 'dept-outline', 'circo-outline']) {
     map.setPaintProperty(id, 'line-color', outlineCase)
   }
-  map.setPaintProperty('communes-outline', 'line-color', isDark
-    ? ['case',
-        ['boolean', ['feature-state', 'selected'], false], '#f8fafc',
-        ['boolean', ['feature-state', 'hover'], false], '#e2e8f0',
-        '#000000']
-    : ['case',
-        ['boolean', ['feature-state', 'selected'], false], '#0f172a',
-        ['boolean', ['feature-state', 'hover'], false], '#1e293b',
-        '#000000'])
+  map.setPaintProperty(
+    'communes-outline',
+    'line-color',
+    isDark
+      ? [
+          'case',
+          ['boolean', ['feature-state', 'selected'], false],
+          '#f8fafc',
+          ['boolean', ['feature-state', 'hover'], false],
+          '#e2e8f0',
+          '#000000',
+        ]
+      : [
+          'case',
+          ['boolean', ['feature-state', 'selected'], false],
+          '#0f172a',
+          ['boolean', ['feature-state', 'hover'], false],
+          '#1e293b',
+          '#000000',
+        ],
+  )
 
   // Labels: invert ink and halo.
   const ink = isDark ? '#e2e8f0' : '#1e293b'
@@ -404,7 +455,10 @@ function applyDeptColors(
   for (const dept of electionData.communes) {
     const color = territoryColor(dept, mode, palette, national, codes, DEFAULT_COLOR)
     const won = codes ? codes.has(parties.get(dept.leadingCandidate) ?? '') : false
-    map.setFeatureState({ source: 'admin', sourceLayer: 'departements', id: dept.inseeCode }, { color, won })
+    map.setFeatureState(
+      { source: 'admin', sourceLayer: 'departements', id: dept.inseeCode },
+      { color, won },
+    )
     map.setFeatureState({ source: 'overseas', id: dept.inseeCode }, { color, won })
   }
 }
@@ -416,7 +470,12 @@ function applyDeptColors(
 // and MapLibre's default 300ms opacity transition gives the crossfade for free.
 const FOCUS_DIM_OPACITY = 0.35
 const DEPT_TO_CIRCO_ZPREFIX: Record<string, string> = {
-  '971': 'ZA', '972': 'ZB', '973': 'ZC', '974': 'ZD', '975': 'ZS', '976': 'ZM',
+  '971': 'ZA',
+  '972': 'ZB',
+  '973': 'ZC',
+  '974': 'ZD',
+  '975': 'ZS',
+  '976': 'ZM',
 }
 
 function applyDeptFocus(map: maplibregl.Map, deptCode: string | null) {
@@ -426,21 +485,33 @@ function applyDeptFocus(map: maplibregl.Map, deptCode: string | null) {
     }
     return
   }
-  const focus = (test: maplibregl.ExpressionSpecification): maplibregl.ExpressionSpecification =>
-    ['case', test, 1, FOCUS_DIM_OPACITY]
+  const focus = (test: maplibregl.ExpressionSpecification): maplibregl.ExpressionSpecification => [
+    'case',
+    test,
+    1,
+    FOCUS_DIM_OPACITY,
+  ]
   // Dept layers match on the full code; communes/circos on their dept prefix
   // (overseas circos via their Z-code prefix — the tiles never saw INSEE codes).
   map.setPaintProperty('dept-fill', 'fill-opacity', focus(['==', ['get', 'code'], deptCode]))
   map.setPaintProperty('overseas-fill', 'fill-opacity', focus(['==', ['get', 'code'], deptCode]))
-  map.setPaintProperty('communes-fill', 'fill-opacity',
-    focus(['==', ['slice', ['get', 'code'], 0, deptCode.length], deptCode]))
+  map.setPaintProperty(
+    'communes-fill',
+    'fill-opacity',
+    focus(['==', ['slice', ['get', 'code'], 0, deptCode.length], deptCode]),
+  )
   const zprefix = DEPT_TO_CIRCO_ZPREFIX[deptCode] ?? deptCode
-  map.setPaintProperty('circo-fill', 'fill-opacity',
-    focus(['==', ['slice', ['get', 'codeCirconscription'], 0, zprefix.length], zprefix]))
+  map.setPaintProperty(
+    'circo-fill',
+    'fill-opacity',
+    focus(['==', ['slice', ['get', 'codeCirconscription'], 0, zprefix.length], zprefix]),
+  )
 }
 
 // Our CIRLG parser produces INSEE-derived codes (e.g. '97101') but the circo PMTiles
 // uses the original Z-codes from the data.gouv.fr GeoJSON (e.g. 'ZA01'). We need
+// Hand-aligned columns below — the alignment is the point, so prettier is held off.
+// prettier-ignore
 // both directions: INSEE→Zcode for setFeatureState (coloring), Zcode→INSEE for clicks
 // (so ResultsPanel can find results in the JSON data).
 const INSEE_TO_CIRCO_ZCODE: Record<string, string> = {
@@ -453,14 +524,17 @@ const INSEE_TO_CIRCO_ZCODE: Record<string, string> = {
   '97601': 'ZM01', '97602': 'ZM02',
 }
 const CIRCO_ZCODE_TO_INSEE: Record<string, string> = Object.fromEntries(
-  Object.entries(INSEE_TO_CIRCO_ZCODE).map(([insee, zcode]) => [zcode, insee])
+  Object.entries(INSEE_TO_CIRCO_ZCODE).map(([insee, zcode]) => [zcode, insee]),
 )
 
 // Computes the color for every territory in the active granularity. In leader
 // mode this reads the lightweight choropleth (full coverage, loads first); in a
 // gradient mode it reads the full per-territory data (joined by inseeCode), so
 // it falls back to a neutral color for territories the full data hasn't covered.
-interface TerritoryState { color: string; won: boolean }
+interface TerritoryState {
+  color: string
+  won: boolean
+}
 
 function computeActiveColors(
   choropleth: ChoroplethData,
@@ -500,7 +574,11 @@ function computeActiveColors(
 
 // Applies the active-granularity colors + won flags to the polygon layer
 // (handling circo Z-codes and obsolete merged-commune polygons).
-function applyActiveLayerColors(map: maplibregl.Map, granularity: ChoroplethData['granularity'], byCode: Map<string, TerritoryState>) {
+function applyActiveLayerColors(
+  map: maplibregl.Map,
+  granularity: ChoroplethData['granularity'],
+  byCode: Map<string, TerritoryState>,
+) {
   const isCirco = granularity === 'circonscription'
   for (const [code, state] of byCode) {
     if (isCirco) {
@@ -514,7 +592,8 @@ function applyActiveLayerColors(map: maplibregl.Map, granularity: ChoroplethData
     // Tile geometry predates some commune mergers: mirror the absorbing commune's state.
     for (const [oldCode, currentCode] of Object.entries(MERGED_COMMUNE_TO_CURRENT)) {
       const state = byCode.get(currentCode)
-      if (state) map.setFeatureState({ source: 'admin', sourceLayer: 'communes', id: oldCode }, state)
+      if (state)
+        map.setFeatureState({ source: 'admin', sourceLayer: 'communes', id: oldCode }, state)
     }
   }
 }
@@ -537,7 +616,7 @@ function syncMapData(
   const layerVisibility: Record<string, boolean> = {
     'communes-fill': isCommune,
     'communes-outline': isCommune,
-    'communes-won': isCommune,   // hide so stale won-state from the other granularity can't draw
+    'communes-won': isCommune, // hide so stale won-state from the other granularity can't draw
     'circo-fill': isCirco,
     'circo-outline': isCirco,
     'circo-won': isCirco,
@@ -555,7 +634,10 @@ function syncMapData(
     applyActiveLayerColors(map, choroplethData.granularity, byCode)
     if (isCommune) {
       for (const city of TOP_CITIES) {
-        map.setFeatureState({ source: 'top-cities-points', id: city.inseeCode }, { color: byCode.get(city.inseeCode)?.color ?? DEFAULT_COLOR })
+        map.setFeatureState(
+          { source: 'top-cities-points', id: city.inseeCode },
+          { color: byCode.get(city.inseeCode)?.color ?? DEFAULT_COLOR },
+        )
       }
     }
   }
@@ -563,7 +645,10 @@ function syncMapData(
 
 // ── Hover tooltip ────────────────────────────────────────────────────────────
 function escapeHTML(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string))
+  return s.replace(
+    /[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
+  )
 }
 
 // Compact snippet shown on hover: territory name, top candidates with %, turnout.
@@ -576,14 +661,16 @@ function hoverTipHTML(entry: CommuneResult, palette: Palette | null): string {
     </div>`
   }
   const sorted = [...entry.candidates].sort((a, b) => b.votes - a.votes).slice(0, 3)
-  const rows = sorted.map((c) => {
-    const color = getCandidateColor(c.name, 0, c.party, palette)
-    return `<div style="display:flex;align-items:center;gap:6px;line-height:1.5;">
+  const rows = sorted
+    .map((c) => {
+      const color = getCandidateColor(c.name, 0, c.party, palette)
+      return `<div style="display:flex;align-items:center;gap:6px;line-height:1.5;">
       <span style="width:8px;height:8px;border-radius:9999px;background:${color};flex:none;"></span>
       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(c.name)}</span>
       <b style="margin-left:8px;">${pct(c.percentage)}%</b>
     </div>`
-  }).join('')
+    })
+    .join('')
   const turnout = entry.registeredVoters ? (entry.turnout / entry.registeredVoters) * 100 : 0
   // These are round-1 figures carried into the T2 view (the circo(s) were won
   // outright at round 1) — say so ABOVE the numbers, so the provenance is read
@@ -609,18 +696,28 @@ function getFeatureBounds(geometry: GeoJSON.Geometry): maplibregl.LngLatBoundsLi
   if (!coords.length) return null
   const lngs = coords.map((c) => c[0])
   const lats = coords.map((c) => c[1])
-  return [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]]
+  return [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ]
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type SourceLayer = 'communes' | 'departements' | 'circonscriptions'
-interface HoverTarget { id: string; sourceLayer: SourceLayer; source: 'admin' | 'circo' }
+interface HoverTarget {
+  id: string
+  sourceLayer: SourceLayer
+  source: 'admin' | 'circo'
+}
 
 // Layer of a selection that did NOT come from a map click (navigator,
 // breadcrumb, dept-insight rows): derived from the code shape. 5-char codes
 // are ambiguous (overseas commune vs overseas circo) — the granularity decides.
-function inferSelectionTarget(code: string, granularity: Granularity): { source: 'admin' | 'circo'; sourceLayer: SourceLayer } {
+function inferSelectionTarget(
+  code: string,
+  granularity: Granularity,
+): { source: 'admin' | 'circo'; sourceLayer: SourceLayer } {
   if (isDeptCode(code)) return { source: 'admin', sourceLayer: 'departements' }
   if (code.length === 4 || (granularity !== 'commune' && code.length === 5)) {
     return { source: 'circo', sourceLayer: 'circonscriptions' }
@@ -629,7 +726,15 @@ function inferSelectionTarget(code: string, granularity: Granularity): { source:
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
-export function FranceMap({ electionData, choroplethData, fullData, palette, colorMode, geometry, mobile = false }: Props) {
+export function FranceMap({
+  electionData,
+  choroplethData,
+  fullData,
+  palette,
+  colorMode,
+  geometry,
+  mobile = false,
+}: Props) {
   const metroFit = mobile ? METRO_FIT_MOBILE : METRO_FIT
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -651,11 +756,32 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
   const lookupRef = useRef<Map<string, CommuneResult>>(new Map())
   // featureId is the raw tile feature id of the last map click (may differ from
   // clickedCommune for Z-coded circos and obsolete merged-commune polygons)
-  const clickedSourceLayerRef = useRef<{ sourceLayer: SourceLayer; source: 'admin' | 'circo'; featureId?: string }>({
-    sourceLayer: 'departements', source: 'admin',
+  const clickedSourceLayerRef = useRef<{
+    sourceLayer: SourceLayer
+    source: 'admin' | 'circo'
+    featureId?: string
+  }>({
+    sourceLayer: 'departements',
+    source: 'admin',
   })
 
-  const { setHoveredCommune, setClickedCommune, clickedCommune, granularity, focusedTerritory, setFocusedTerritory, flyTarget, setFlyTarget, flyBounds, setFlyBounds, setMapZoomedIn, mapZoomedIn, zoomedAway, setZoomedAway, isDark } = useElectionStore()
+  const {
+    setHoveredCommune,
+    setClickedCommune,
+    clickedCommune,
+    granularity,
+    focusedTerritory,
+    setFocusedTerritory,
+    flyTarget,
+    setFlyTarget,
+    flyBounds,
+    setFlyBounds,
+    setMapZoomedIn,
+    mapZoomedIn,
+    zoomedAway,
+    setZoomedAway,
+    isDark,
+  } = useElectionStore()
   const isOverview = useIsOverview()
   // Overseas insets share the overlay auto-hide: visible only at the overview AND not zoomed in.
   const showInsets = isOverview && !mapZoomedIn
@@ -696,7 +822,10 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
 
     // Desktop only: on mobile the top bar occupies the top-right and pinch-zoom
     // replaces the +/- buttons.
-    if (!mobile) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    // NOTE (R3): the MapLibre NavigationControl used to sit top-right on
+    // desktop. It's replaced by our own util stack (below) so zoom and theme
+    // read as ONE floating group in the app's own chrome style, per lucas's
+    // "floating util stack top-right (theme/zoom merged)".
 
     // Mobile: geo-anchor the overseas inset in the sea below France, printed-map
     // style — it pans/zooms with the terrain instead of floating over it.
@@ -711,19 +840,29 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     let wasAway = false
     map.on('zoom', () => {
       const zoomedIn = map.getZoom() >= ZOOM_HIDE_OVERLAYS
-      if (zoomedIn !== wasZoomedIn) { wasZoomedIn = zoomedIn; setMapZoomedIn(zoomedIn) }
+      if (zoomedIn !== wasZoomedIn) {
+        wasZoomedIn = zoomedIn
+        setMapZoomedIn(zoomedIn)
+      }
       // "Away from overview" = zoomed in beyond the overview's own zoom (+ a small
       // margin so a settle wobble doesn't flicker the back button).
       if (!overviewZoomRef.current) {
         overviewZoomRef.current = map.cameraForBounds(METRO_BOUNDS, metroFit)?.zoom ?? map.getZoom()
       }
       const away = map.getZoom() > overviewZoomRef.current + 0.3
-      if (away !== wasAway) { wasAway = away; setZoomedAway(away) }
+      if (away !== wasAway) {
+        wasAway = away
+        setZoomedAway(away)
+      }
     })
     mapRef.current = map
 
     const tipPopup = new maplibregl.Popup({
-      closeButton: false, closeOnClick: false, className: 'hover-tip', offset: 14, maxWidth: '220px',
+      closeButton: false,
+      closeOnClick: false,
+      className: 'hover-tip',
+      offset: 14,
+      maxWidth: '220px',
     })
     tipPopupRef.current = tipPopup
 
@@ -732,41 +871,68 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     const showTip = (e: maplibregl.MapMouseEvent, code: string) => {
       if (tipIdRef.current !== code) {
         const m = lookupRef.current
-        const entry = m.get(code)
-          ?? (code.length === 5 && (code.startsWith('97') || code.startsWith('98')) ? m.get(code.slice(0, 3)) : undefined)
-        if (!entry) { tipPopup.remove(); tipIdRef.current = ''; return }
+        const entry =
+          m.get(code) ??
+          (code.length === 5 && (code.startsWith('97') || code.startsWith('98'))
+            ? m.get(code.slice(0, 3))
+            : undefined)
+        if (!entry) {
+          tipPopup.remove()
+          tipIdRef.current = ''
+          return
+        }
         tipPopup.setHTML(hoverTipHTML(entry, paletteRef.current))
         tipIdRef.current = code
       }
       tipPopup.setLngLat(e.lngLat)
       if (!tipPopup.isOpen()) tipPopup.addTo(map)
     }
-    const hideTip = () => { tipPopup.remove(); tipIdRef.current = '' }
+    const hideTip = () => {
+      tipPopup.remove()
+      tipIdRef.current = ''
+    }
 
     map.on('load', () => {
-      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
+      syncMapData(
+        map,
+        electionDataRef.current,
+        choroplethRef.current,
+        paletteRef.current,
+        fullDataRef.current,
+        colorModeRef.current,
+      )
     })
 
     // ── Hover handlers — one per fill layer ──────────────────────────────────
-    const makeMouseMoveHandler = (sourceLayer: SourceLayer, source: 'admin' | 'circo') =>
+    const makeMouseMoveHandler =
+      (sourceLayer: SourceLayer, source: 'admin' | 'circo') =>
       (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
         map.getCanvas().style.cursor = 'pointer'
         const id = String(e.features?.[0]?.id ?? '')
         if (!id) return
         // Resolve to a code our data can look up: merged communes → absorbing
         // commune; circo Z-codes → INSEE.
-        const resolved = source === 'circo'
-          ? (CIRCO_ZCODE_TO_INSEE[id] ?? id)
-          : sourceLayer === 'communes'
-          ? (MERGED_COMMUNE_TO_CURRENT[id] ?? id)
-          : id
+        const resolved =
+          source === 'circo'
+            ? (CIRCO_ZCODE_TO_INSEE[id] ?? id)
+            : sourceLayer === 'communes'
+              ? (MERGED_COMMUNE_TO_CURRENT[id] ?? id)
+              : id
         // Reposition the tooltip every move (cheap — only rebuilds on feature change)
         showTip(e, resolved)
 
-        if (prevHoveredRef.current?.id === id && prevHoveredRef.current?.sourceLayer === sourceLayer) return
+        if (
+          prevHoveredRef.current?.id === id &&
+          prevHoveredRef.current?.sourceLayer === sourceLayer
+        )
+          return
         if (prevHoveredRef.current) {
           map.setFeatureState(
-            { source: prevHoveredRef.current.source, sourceLayer: prevHoveredRef.current.sourceLayer, id: prevHoveredRef.current.id },
+            {
+              source: prevHoveredRef.current.source,
+              sourceLayer: prevHoveredRef.current.sourceLayer,
+              id: prevHoveredRef.current.id,
+            },
             { hover: false },
           )
         }
@@ -780,7 +946,11 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       hideTip()
       if (prevHoveredRef.current) {
         map.setFeatureState(
-          { source: prevHoveredRef.current.source, sourceLayer: prevHoveredRef.current.sourceLayer, id: prevHoveredRef.current.id },
+          {
+            source: prevHoveredRef.current.source,
+            sourceLayer: prevHoveredRef.current.sourceLayer,
+            id: prevHoveredRef.current.id,
+          },
           { hover: false },
         )
         prevHoveredRef.current = null
@@ -793,8 +963,12 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     // under the cursor, else it would overwrite the circo/commune tooltip with the
     // département entry (it's registered last, so it fires last).
     const overseasMove = makeMouseMoveHandler('departements', 'admin')
-    const handleOverseasMove = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
-      const moreSpecific = map.queryRenderedFeatures(e.point, { layers: ['circo-fill', 'communes-fill'] })
+    const handleOverseasMove = (
+      e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] },
+    ) => {
+      const moreSpecific = map.queryRenderedFeatures(e.point, {
+        layers: ['circo-fill', 'communes-fill'],
+      })
       if (moreSpecific.length > 0) return
       overseasMove(e)
     }
@@ -809,22 +983,28 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     map.on('mouseleave', 'overseas-fill', handleMouseLeave)
 
     // ── Click handlers ────────────────────────────────────────────────────────
-    const makeClickHandler = (sourceLayer: SourceLayer, source: 'admin' | 'circo', zoomOnClick = false) =>
+    const makeClickHandler =
+      (sourceLayer: SourceLayer, source: 'admin' | 'circo', zoomOnClick = false) =>
       (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
         // A top-city dot sits above the dept/commune fill (commune mode, low
         // zoom); when one is under the cursor, let its own handler win.
-        if (source === 'admin' && map.queryRenderedFeatures(e.point, { layers: ['city-dots'] }).length) return
+        if (
+          source === 'admin' &&
+          map.queryRenderedFeatures(e.point, { layers: ['city-dots'] }).length
+        )
+          return
         const feature = e.features?.[0]
         const rawId = String(feature?.id ?? '')
         if (rawId) {
           // Circo PMTiles uses Z-codes (e.g. 'ZA01') but our JSON data uses INSEE codes
           // (e.g. '97101'). Obsolete merged-commune polygons resolve to their absorbing
           // commune. Translate so ResultsPanel can find the results.
-          const id = source === 'circo'
-            ? (CIRCO_ZCODE_TO_INSEE[rawId] ?? rawId)
-            : sourceLayer === 'communes'
-            ? (MERGED_COMMUNE_TO_CURRENT[rawId] ?? rawId)
-            : rawId
+          const id =
+            source === 'circo'
+              ? (CIRCO_ZCODE_TO_INSEE[rawId] ?? rawId)
+              : sourceLayer === 'communes'
+                ? (MERGED_COMMUNE_TO_CURRENT[rawId] ?? rawId)
+                : rawId
           clickedSourceLayerRef.current = { sourceLayer, source, featureId: rawId }
           setClickedCommune(id)
           if (zoomOnClick && feature?.geometry) {
@@ -848,13 +1028,19 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       const city = TOP_CITIES.find((c) => c.inseeCode === code)
       if (city) setFlyTarget({ lng: city.lng, lat: city.lat, zoom: city.zoom })
     })
-    map.on('mouseenter', 'city-dots', () => { map.getCanvas().style.cursor = 'pointer' })
-    map.on('mouseleave', 'city-dots', () => { map.getCanvas().style.cursor = '' })
+    map.on('mouseenter', 'city-dots', () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', 'city-dots', () => {
+      map.getCanvas().style.cursor = ''
+    })
 
     // overseas-fill covers the same area as circo/commune polygons when zoomed in.
     // Only handle it when no more specific layer was also hit at this point.
     map.on('click', 'overseas-fill', (e) => {
-      const moreSpecific = map.queryRenderedFeatures(e.point, { layers: ['circo-fill', 'communes-fill'] })
+      const moreSpecific = map.queryRenderedFeatures(e.point, {
+        layers: ['circo-fill', 'communes-fill'],
+      })
       if (moreSpecific.length > 0) return
       const rawId = String(e.features?.[0]?.id ?? '')
       if (rawId) {
@@ -864,12 +1050,27 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     })
 
     map.on('click', (e) => {
-      const hits = map.queryRenderedFeatures(e.point, { layers: ['dept-fill', 'communes-fill', 'circo-fill'] })
+      const hits = map.queryRenderedFeatures(e.point, {
+        layers: ['dept-fill', 'communes-fill', 'circo-fill'],
+      })
       if (!hits.length) setClickedCommune(null)
     })
 
-    return () => { tipPopup.remove(); tipPopupRef.current = null; map.remove(); mapRef.current = null }
-  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, setZoomedAway, metroFit, mobile, overseasInsetEl])
+    return () => {
+      tipPopup.remove()
+      tipPopupRef.current = null
+      map.remove()
+      mapRef.current = null
+    }
+  }, [
+    setHoveredCommune,
+    setClickedCommune,
+    setMapZoomedIn,
+    setZoomedAway,
+    metroFit,
+    mobile,
+    overseasInsetEl,
+  ])
 
   // ── Geometry version change (era switch) → rebuild style, then re-sync ─────
   useEffect(() => {
@@ -883,7 +1084,14 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     map.once('styledata', () => {
       // A style rebuild resets paint props to their light defaults — re-theme first.
       applyMapTheme(map, isDarkRef.current)
-      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
+      syncMapData(
+        map,
+        electionDataRef.current,
+        choroplethRef.current,
+        paletteRef.current,
+        fullDataRef.current,
+        colorModeRef.current,
+      )
       // Re-apply the dept-focus dimming (fill-opacity was reset to 1 too).
       const cc = useElectionStore.getState().clickedCommune
       applyDeptFocus(map, cc && isDeptCode(cc) ? cc : null)
@@ -902,9 +1110,19 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     if (!map.isStyleLoaded()) {
       // Cold load: the data can arrive before the style finishes. Don't drop the
       // sync — defer it until the map settles, reading the latest data from refs.
-      const onReady = () => syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
+      const onReady = () =>
+        syncMapData(
+          map,
+          electionDataRef.current,
+          choroplethRef.current,
+          paletteRef.current,
+          fullDataRef.current,
+          colorModeRef.current,
+        )
       map.once('idle', onReady)
-      return () => { map.off('idle', onReady) }
+      return () => {
+        map.off('idle', onReady)
+      }
     }
     syncMapData(map, electionData, choroplethData, palette, fullData, colorMode)
   }, [choroplethData, electionData, fullData, palette, colorMode])
@@ -919,11 +1137,20 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     if (!map) return
     const apply = () => {
       applyMapTheme(map, isDark)
-      syncMapData(map, electionDataRef.current, choroplethRef.current, paletteRef.current, fullDataRef.current, colorModeRef.current)
+      syncMapData(
+        map,
+        electionDataRef.current,
+        choroplethRef.current,
+        paletteRef.current,
+        fullDataRef.current,
+        colorModeRef.current,
+      )
     }
     if (!map.isStyleLoaded()) {
       map.once('idle', apply)
-      return () => { map.off('idle', apply) }
+      return () => {
+        map.off('idle', apply)
+      }
     }
     apply()
   }, [isDark])
@@ -956,7 +1183,13 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       map.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
     } else {
       const [w, s, e, n] = flyBounds
-      map.fitBounds([[w, s], [e, n]], { padding: 60, duration: 800, maxZoom: 12 })
+      map.fitBounds(
+        [
+          [w, s],
+          [e, n],
+        ],
+        { padding: 60, duration: 800, maxZoom: 12 },
+      )
     }
     setFlyBounds(null)
   }, [flyBounds, setFlyBounds, metroFit])
@@ -969,7 +1202,9 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
     const apply = () => applyDeptFocus(map, focusedDept)
     if (!map.isStyleLoaded()) {
       map.once('idle', apply)
-      return () => { map.off('idle', apply) }
+      return () => {
+        map.off('idle', apply)
+      }
     }
     apply()
   }, [focusedDept])
@@ -981,12 +1216,20 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
 
     if (prevSelectedRef.current) {
       map.setFeatureState(
-        { source: prevSelectedRef.current.source, sourceLayer: prevSelectedRef.current.sourceLayer, id: prevSelectedRef.current.id },
+        {
+          source: prevSelectedRef.current.source,
+          sourceLayer: prevSelectedRef.current.sourceLayer,
+          id: prevSelectedRef.current.id,
+        },
         { selected: false },
       )
     }
     if (clickedCommune) {
-      const { sourceLayer: clickLayer, source: clickSource, featureId } = clickedSourceLayerRef.current
+      const {
+        sourceLayer: clickLayer,
+        source: clickSource,
+        featureId,
+      } = clickedSourceLayerRef.current
       // clickedCommune holds an INSEE code; the PMTiles circo layer uses Z-codes and
       // merged-commune polygons carry obsolete codes. Prefer the raw feature id of the
       // click when it still resolves to clickedCommune; otherwise the selection came
@@ -1003,8 +1246,8 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       const mapId = clickedFeatureMatches
         ? (featureId as string)
         : source === 'circo'
-        ? (INSEE_TO_CIRCO_ZCODE[clickedCommune] ?? clickedCommune)
-        : clickedCommune
+          ? (INSEE_TO_CIRCO_ZCODE[clickedCommune] ?? clickedCommune)
+          : clickedCommune
       map.setFeatureState({ source, sourceLayer, id: mapId }, { selected: true })
       prevSelectedRef.current = { id: mapId, sourceLayer, source }
     } else {
@@ -1023,17 +1266,57 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
           <OverseasInsets electionData={electionData} palette={palette} />
         </div>
       )}
-      {!mobile && !isOverview && (
-        <button
-          className="absolute top-3 left-3 z-20 text-xs text-gray-600 hover:text-gray-900 bg-white dark:bg-slate-900 dark:text-gray-300 dark:hover:text-gray-100 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 shadow-sm"
-          onClick={() => {
-            setFocusedTerritory(null)
-            setClickedCommune(null)
-            mapRef.current?.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
-          }}
-        >
-          ← Vue générale
-        </button>
+      {/* NOTE (R3): the desktop "← Vue générale" button used to live here. It's
+          gone — the floating wordmark (DesktopLayout) grows a back arrow and
+          does the same job, so the corner carries one affordance, not two. */}
+      {/* Desktop util stack, top-right: zoom + theme as one group. Zoom needs
+          the map instance, hence this lives in FranceMap rather than the layout.
+          z-10 keeps it under the Hemicycle cover (z-20) — there's nothing to
+          zoom there. */}
+      {!mobile && (
+        <div className="absolute right-3 top-4 z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
+          <button
+            type="button"
+            aria-label="Zoomer"
+            className="flex h-9 w-9 items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-slate-800 dark:hover:text-gray-100"
+            onClick={() => mapRef.current?.zoomIn()}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <span className="mx-2 h-px bg-gray-200 dark:bg-slate-700" />
+          <button
+            type="button"
+            aria-label="Dézoomer"
+            className="flex h-9 w-9 items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-slate-800 dark:hover:text-gray-100"
+            onClick={() => mapRef.current?.zoomOut()}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+            </svg>
+          </button>
+          <span className="mx-2 h-px bg-gray-200 dark:bg-slate-700" />
+          <ThemeToggle className="flex h-9 w-9 items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-slate-800 dark:hover:text-gray-100" />
+        </div>
       )}
       {/* Mobile: icon-only "back to overview" — shown whenever the map is away from
           the overview (a selection/focus is active OR the user has zoomed in, by
@@ -1050,7 +1333,17 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
             mapRef.current?.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -1067,7 +1360,16 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
             className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800"
             onClick={() => mapRef.current?.zoomIn()}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
           </button>
@@ -1078,7 +1380,16 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
             className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800"
             onClick={() => mapRef.current?.zoomOut()}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
               <path d="M5 12h14" />
             </svg>
           </button>
@@ -1086,10 +1397,11 @@ export function FranceMap({ electionData, choroplethData, fullData, palette, col
       )}
       {/* Mobile overseas inset — rendered into the geo-anchored Marker's element,
           so it lives ON the map (pans/zooms with it) rather than floating above. */}
-      {mobile && createPortal(
-        <MobileOverseasCluster electionData={electionData} palette={palette} />,
-        overseasInsetEl,
-      )}
+      {mobile &&
+        createPortal(
+          <MobileOverseasCluster electionData={electionData} palette={palette} />,
+          overseasInsetEl,
+        )}
     </div>
   )
 }

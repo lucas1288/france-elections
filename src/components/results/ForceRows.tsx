@@ -60,21 +60,34 @@ export function ForceRows({ model, mode, palette, density, activeParty, onPick }
               active
                 ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/60 dark:ring-blue-800'
                 : touch
-                ? 'active:bg-gray-100 dark:active:bg-slate-800'
-                : 'hover:bg-gray-50 dark:hover:bg-slate-800/60'
+                  ? 'active:bg-gray-100 dark:active:bg-slate-800'
+                  : 'hover:bg-gray-50 dark:hover:bg-slate-800/60'
             }`}
           >
-            <div className={touch ? 'flex items-center gap-2.5' : 'flex items-center justify-between mb-0.5'}>
+            <div
+              className={
+                touch ? 'flex items-center gap-2.5' : 'flex items-center justify-between mb-0.5'
+              }
+            >
               {touch ? (
                 <>
                   <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color }} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{c.name}</span>
-                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{c.party}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">
+                    {c.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                    {c.party}
+                  </span>
                 </>
               ) : (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{c.name}</span>
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ background: color }}
+                  />
+                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate">
+                    {c.name}
+                  </span>
                 </div>
               )}
               <span
@@ -96,18 +109,29 @@ export function ForceRows({ model, mode, palette, density, activeParty, onPick }
                 }`}
               >
                 {b.won > 0 && (
-                  <div className="h-full" style={{ width: `${model.pctOfCircos(b.won)}%`, background: color }} />
+                  <div
+                    className="h-full"
+                    style={{ width: `${model.pctOfCircos(b.won)}%`, background: color }}
+                  />
                 )}
                 {b.lead1st > 0 && (
                   <div
                     className="h-full"
-                    style={{ width: `${model.pctOfCircos(b.lead1st)}%`, background: color, opacity: 0.55 }}
+                    style={{
+                      width: `${model.pctOfCircos(b.lead1st)}%`,
+                      background: color,
+                      opacity: 0.55,
+                    }}
                   />
                 )}
                 {b.second > 0 && (
                   <div
                     className="h-full"
-                    style={{ width: `${model.pctOfCircos(b.second)}%`, background: color, opacity: 0.25 }}
+                    style={{
+                      width: `${model.pctOfCircos(b.second)}%`,
+                      background: color,
+                      opacity: 0.25,
+                    }}
                   />
                 )}
               </div>

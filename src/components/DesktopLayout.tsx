@@ -1,54 +1,32 @@
 import { useElectionStore, useIsOverview } from '../store/electionStore'
-import type { Granularity } from '../store/electionStore'
 import { FranceMap } from './FranceMap'
 import { Hemicycle } from './Hemicycle'
 import { useState } from 'react'
 import { ElectionPicker } from './ElectionPicker'
+import { LayersMenu } from './LayersMenu'
 import { TerritoryNavigator } from './TerritoryNavigator'
 import { TerritorySearchBar } from './TerritorySearchBar'
 import { TimelineStrip } from './TimelineStrip'
 import { ResultsPanel } from './ResultsPanel'
 import { AbroadMap } from './AbroadMap'
-import { ThemeToggle } from './ThemeToggle'
+import { Wordmark } from './Wordmark'
 import type { LayoutProps } from './layoutProps'
 
-function GranularityToggle({
-  value,
-  onChange,
-  available,
-}: {
-  value: Granularity
-  onChange: (g: Granularity) => void
-  available: Granularity[]
-}) {
-  const base = 'px-3 py-1 text-xs font-medium rounded transition-colors'
-  const activeCls = 'bg-blue-600 text-white'
-  const inactive = 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700'
-  const disabled = 'text-gray-300 cursor-not-allowed dark:text-gray-600'
-
-  const btn = (g: Granularity, label: string) => {
-    const ok = available.includes(g)
-    return (
-      <button
-        className={`${base} ${!ok ? disabled : value === g ? activeCls : inactive}`}
-        disabled={!ok}
-        onClick={() => ok && onChange(g)}
-        title={!ok ? 'Données non disponibles' : undefined}
-      >
-        {label}
-      </button>
-    )
-  }
-
-  return (
-    <div className="flex items-center gap-1 border border-gray-200 rounded p-0.5 bg-gray-50 dark:border-slate-700 dark:bg-slate-800">
-      {btn('commune', 'Commune')}
-      {btn('circonscription', 'Circonscription')}
-      {available.includes('hemicycle') && btn('hemicycle', 'Hémicycle')}
-    </div>
-  )
-}
-
+/**
+ * Desktop shell. Since redesign R3 there is NO header container (lucas: kill it,
+ * "search becomes a floating bar, still on top but more centered, like north of
+ * the map"): the map runs the full height of the shell and every control floats
+ * over it —
+ *   top-left    the wordmark, which doubles as the home control
+ *   top-centre  the search pill (geo axis)
+ *   top-right   utilities (zoom + theme), rendered by FranceMap since they drive
+ *               the camera; the abroad panel sits under them
+ *   bottom-left the layers menu (découpage)
+ *   bottom-centre the timeline strip (time axis)
+ * Grouping the two AXIS controls along the bottom edge and identity/search/utils
+ * along the top is what keeps five floating elements legible as two rows rather
+ * than as scattered buttons.
+ */
 export function DesktopLayout(props: LayoutProps) {
   const { selected, granularity, setGranularity } = useElectionStore()
   const isOverview = useIsOverview()
@@ -56,46 +34,11 @@ export function DesktopLayout(props: LayoutProps) {
   const mapZoomedIn = useElectionStore((s) => s.mapZoomedIn)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [navigatorOpen, setNavigatorOpen] = useState(false)
-  const circoAvailable = props.circoAvailable
   const isHemicycle = granularity === 'hemicycle'
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-slate-950">
-      {/* Top bar */}
-      <header className="shrink-0 bg-white dark:bg-slate-900 border-b border-gray-200 flex items-center gap-4 px-4 dark:border-slate-700">
-        <div className="py-3">
-          <h1 className="text-base font-bold text-gray-900 leading-none dark:text-gray-100">
-            Élections France
-          </h1>
-          <p className="text-xs text-gray-400 mt-0.5 dark:text-gray-500">
-            Résultats par {
-              granularity === 'circonscription' && circoAvailable ? 'circonscription' : 'commune'
-            }
-          </p>
-        </div>
-        <div className="border-l border-gray-200 h-8 dark:border-slate-700" />
-
-        {/* NOTE (July 2026): the election chip + T1/T2 toggle used to live here.
-            Both moved to the TimelineStrip (bottom-centre of the map): its stops
-            switch elections, its pills switch rounds, and its list icon opens the
-            full ElectionPicker. The top bar keeps only the view + geo controls. */}
-        <GranularityToggle
-          value={granularity}
-          onChange={setGranularity}
-          available={props.availableGranularities}
-        />
-        {/* Geo-axis control: search pill (settled territory + ✕), opens the navigator */}
-        <TerritorySearchBar
-          onOpen={() => setNavigatorOpen(true)}
-          electionData={props.electionData}
-          communeData={props.communeData}
-          circoData={props.circoData}
-          className="ml-auto w-72"
-        />
-        <ThemeToggle className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-800" />
-      </header>
-
-      {/* Main content */}
+      {/* Main content — full height now that the header is gone */}
       <div className="flex-1 flex overflow-hidden">
         {/* Map area */}
         <div className="flex-1 relative">
@@ -129,6 +72,35 @@ export function DesktopLayout(props: LayoutProps) {
             <Hemicycle circoData={props.circoData} palette={props.palette} round={selected.round} />
           )}
 
+          {/* ── Floating chrome (R3) ─────────────────────────────────────── */}
+
+          {/* Identity + home, top-left. Above the hemicycle cover so you can
+              always get back out of it. */}
+          <Wordmark className="absolute left-4 top-4 z-30" />
+
+          {/* Geo axis, top-centre — "north of the map". Narrower than the old
+              top-bar field so it reads as a control floating over the canvas
+              rather than a docked input. */}
+          <TerritorySearchBar
+            onOpen={() => setNavigatorOpen(true)}
+            electionData={props.electionData}
+            communeData={props.communeData}
+            circoData={props.circoData}
+            className="absolute left-1/2 top-4 z-30 w-80 -translate-x-1/2 bg-white/90 shadow-lg ring-1 ring-black/5 backdrop-blur-sm hover:bg-white dark:bg-slate-900/90 dark:ring-white/10 dark:hover:bg-slate-900"
+          />
+
+          {/* Découpage, bottom-left — paired with the timeline strip along the
+              bottom edge: both answer "what am I looking at", one in space, one
+              in time. Hidden in the hemicycle view, which has no découpage of
+              its own to switch (you leave it via this menu, so it stays
+              reachable — hence z-30, above the cover). */}
+          <LayersMenu
+            value={granularity}
+            onChange={setGranularity}
+            available={props.availableGranularities}
+            className="absolute bottom-4 left-4 z-30"
+          />
+
           {/* Timeline scrubber (two-axis P4) — adjacent moves on the time axis;
               floats bottom-centre, above the hemicycle cover (z-20) so the time
               axis stays reachable in every view. */}
@@ -141,7 +113,11 @@ export function DesktopLayout(props: LayoutProps) {
               results now (mobile model); each row carries its colour key. */}
           {!isHemicycle && (
             <div
-              className="absolute top-4 right-14 z-10 flex flex-col gap-2 max-h-[calc(100vh-5rem)] overflow-y-auto transition-opacity duration-300"
+              // `top-20` clears the floating search pill's row: the pill is
+              // centred on the MAP AREA, so on a narrower window its right edge
+              // reaches into this panel's column. Dropping below the row makes
+              // the two independent of the window width.
+              className="absolute top-20 right-16 z-10 flex flex-col gap-2 max-h-[calc(100vh-6rem)] overflow-y-auto transition-opacity duration-300"
               style={{
                 opacity: mapZoomedIn ? 0 : 1,
                 pointerEvents: mapZoomedIn ? 'none' : 'auto',

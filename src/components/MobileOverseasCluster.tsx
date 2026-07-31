@@ -113,14 +113,25 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
             <div className="mx-auto mt-2.5 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-gray-300 dark:bg-slate-600" />
 
             <div className="flex items-center px-4 pb-2 pt-1">
-              <Drawer.Title className="text-base font-bold text-gray-900 dark:text-gray-100">Outre-mer et Français de l'étranger</Drawer.Title>
+              <Drawer.Title className="text-base font-bold text-gray-900 dark:text-gray-100">
+                Outre-mer et Français de l'étranger
+              </Drawer.Title>
               <button
                 type="button"
                 aria-label="Fermer"
                 onClick={() => setOpen(false)}
                 className="ml-auto rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>
@@ -134,9 +145,25 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
                   onClick={() => focus(t.code)}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors active:bg-gray-100 dark:active:bg-slate-800"
                 >
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: getFill(t.code) }} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{t.label}</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300 dark:text-gray-600" aria-hidden="true">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ background: getFill(t.code) }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">
+                    {t.label}
+                  </span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-gray-300 dark:text-gray-600"
+                    aria-hidden="true"
+                  >
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                 </button>
@@ -146,12 +173,31 @@ export function MobileOverseasCluster({ electionData, palette }: Props) {
               {abroad && (
                 <button
                   type="button"
-                  onClick={() => { setClickedCommune(ABROAD_CODE); setOpen(false) }}
+                  onClick={() => {
+                    setClickedCommune(ABROAD_CODE)
+                    setOpen(false)
+                  }}
                   className="mt-1 flex w-full items-center gap-3 rounded-lg border-t border-gray-100 dark:border-slate-800 px-3 py-3 pt-4 text-left transition-colors active:bg-gray-100 dark:active:bg-slate-800"
                 >
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: getFill(ABROAD_CODE) }} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-gray-500 dark:text-gray-400">Français à l'étranger</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300 dark:text-gray-600" aria-hidden="true">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ background: getFill(ABROAD_CODE) }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm text-gray-500 dark:text-gray-400">
+                    Français à l'étranger
+                  </span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-gray-300 dark:text-gray-600"
+                    aria-hidden="true"
+                  >
                     <path d="M9 18l6-6-6-6" />
                   </svg>
                 </button>
