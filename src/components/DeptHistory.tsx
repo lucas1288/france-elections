@@ -49,12 +49,11 @@ export function DeptHistory({ deptCode }: Props) {
     if (points.length < 2) return null
     const years = points.map((p) => p.y)
     // Index of the selected election on the time axis (fallback: most recent).
-    const selIdx = years.indexOf(selectedYear) === -1 ? years.length - 1 : years.indexOf(selectedYear)
+    const selIdx =
+      years.indexOf(selectedYear) === -1 ? years.length - 1 : years.indexOf(selectedYear)
 
     // Family scores → bloc scores per point.
-    const blocOfFam = new Map(
-      Object.entries(registry.families).map(([id, def]) => [id, def.bloc]),
-    )
+    const blocOfFam = new Map(Object.entries(registry.families).map(([id, def]) => [id, def.bloc]))
     const blocValues = new Map<string, number[]>() // blocId → value per point
     points.forEach((p, i) => {
       for (const [famId, v] of Object.entries(p.fam)) {
@@ -107,48 +106,90 @@ export function DeptHistory({ deptCode }: Props) {
       </div>
 
       {/* Combined bloc chart — one shared 0-based scale */}
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto text-gray-300 dark:text-slate-600" aria-hidden="true">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full h-auto text-gray-300 dark:text-slate-600"
+        aria-hidden="true"
+      >
         {/* baseline + gridlines with % labels */}
-        <line x1={PLOT.left} y1={PLOT.bottom} x2={PLOT.right} y2={PLOT.bottom} stroke="currentColor" strokeWidth="1" />
+        <line
+          x1={PLOT.left}
+          y1={PLOT.bottom}
+          x2={PLOT.right}
+          y2={PLOT.bottom}
+          stroke="currentColor"
+          strokeWidth="1"
+        />
         {gridSteps.map((g) => (
           <g key={g}>
             <line
-              x1={PLOT.left} y1={yPos(g)} x2={PLOT.right} y2={yPos(g)}
-              stroke="currentColor" strokeWidth="0.75" strokeDasharray="3 3"
+              x1={PLOT.left}
+              y1={yPos(g)}
+              x2={PLOT.right}
+              y2={yPos(g)}
+              stroke="currentColor"
+              strokeWidth="0.75"
+              strokeDasharray="3 3"
             />
-            <text x={PLOT.left - 3} y={yPos(g) + 2.5} textAnchor="end" fontSize="7" fill="currentColor">
+            <text
+              x={PLOT.left - 3}
+              y={yPos(g) + 2.5}
+              textAnchor="end"
+              fontSize="7"
+              fill="currentColor"
+            >
               {g}%
             </text>
           </g>
         ))}
         {/* selected-election marker (same blue as the timeline strip's ring) */}
         <line
-          x1={x(years[selIdx])} y1={PLOT.top} x2={x(years[selIdx])} y2={PLOT.bottom}
-          stroke="#3b82f6" strokeWidth="1" opacity="0.45"
+          x1={x(years[selIdx])}
+          y1={PLOT.top}
+          x2={x(years[selIdx])}
+          y2={PLOT.bottom}
+          stroke="#3b82f6"
+          strokeWidth="1"
+          opacity="0.45"
         />
         {/* year ticks */}
         {years.map((y, i) => (
           <text
-            key={y} x={x(y)} y={YEAR_Y} fontSize="8" textAnchor="middle"
+            key={y}
+            x={x(y)}
+            y={YEAR_Y}
+            fontSize="8"
+            textAnchor="middle"
             fontWeight={i === selIdx ? 'bold' : 'normal'}
-            className={i === selIdx ? 'fill-blue-500 dark:fill-blue-400' : 'fill-gray-400 dark:fill-gray-500'}
+            className={
+              i === selIdx ? 'fill-blue-500 dark:fill-blue-400' : 'fill-gray-400 dark:fill-gray-500'
+            }
           >
             {y}
           </text>
         ))}
         {/* bloc lines, drawn lowest-last so leaders sit on top */}
         {[...rows].reverse().map((r) => {
-          const pts = years.map((y, i) => `${x(y).toFixed(1)},${yPos(r.values[i]).toFixed(1)}`).join(' ')
+          const pts = years
+            .map((y, i) => `${x(y).toFixed(1)},${yPos(r.values[i]).toFixed(1)}`)
+            .join(' ')
           return (
             <g key={r.id}>
               <polyline
-                points={pts} fill="none" stroke={r.def.color} strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round"
+                points={pts}
+                fill="none"
+                stroke={r.def.color}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
               {years.map((y, i) => (
                 <circle
-                  key={y} cx={x(y)} cy={yPos(r.values[i])}
-                  r={i === selIdx ? 2.8 : 1.8} fill={r.def.color}
+                  key={y}
+                  cx={x(y)}
+                  cy={yPos(r.values[i])}
+                  r={i === selIdx ? 2.8 : 1.8}
+                  fill={r.def.color}
                 />
               ))}
             </g>
@@ -184,12 +225,19 @@ export function DeptHistory({ deptCode }: Props) {
                 return `${px.toFixed(1)},${py.toFixed(1)}`
               })
               .join(' ')}
-            fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            fill="none"
+            stroke="#94a3b8"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
           <circle
-            cx={maxYear === minYear ? 48 : 3 + ((years[selIdx] - minYear) / (maxYear - minYear)) * 90}
+            cx={
+              maxYear === minYear ? 48 : 3 + ((years[selIdx] - minYear) / (maxYear - minYear)) * 90
+            }
             cy={19 - (series.participation[selIdx] / 100) * 16}
-            r="2.5" fill="#3b82f6"
+            r="2.5"
+            fill="#3b82f6"
           />
         </svg>
         <span className="w-11 shrink-0 text-right text-sm font-semibold text-gray-500 dark:text-gray-400">

@@ -10,6 +10,8 @@ export interface AdminCenter {
   lat: number
 }
 
+// Hand-aligned columns below — the alignment is the point, so prettier is held off.
+// prettier-ignore
 export const ADMIN_CENTERS: AdminCenter[] = [
   // ── Préfectures ────────────────────────────────────────────────────────────
   { name: 'Bourg-en-Bresse',       inseeCode: '01053', type: 'prefecture', lng:  5.2469, lat: 46.2027 },

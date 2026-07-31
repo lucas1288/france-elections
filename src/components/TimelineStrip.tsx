@@ -41,10 +41,7 @@ export function TimelineStrip({ onOpenPicker, className }: Props) {
   const elections = useMemo(() => index?.elections ?? [], [index])
   const types = useMemo(() => [...new Set(elections.map((e) => e.type))], [elections])
   const lane = useMemo(
-    () =>
-      elections
-        .filter((e) => e.type === selected.type)
-        .sort((a, b) => a.year - b.year),
+    () => elections.filter((e) => e.type === selected.type).sort((a, b) => a.year - b.year),
     [elections, selected.type],
   )
 
@@ -126,7 +123,17 @@ export function TimelineStrip({ onOpenPicker, className }: Props) {
               onClick={onOpenPicker}
               className="ml-1 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-slate-800 dark:hover:text-gray-300"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
               </svg>
             </button>

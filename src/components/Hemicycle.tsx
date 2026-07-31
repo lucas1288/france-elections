@@ -26,7 +26,10 @@ interface Seat {
 function seatLayout(n: number): Array<{ x: number; y: number }> {
   const rows = Math.max(3, Math.round(Math.sqrt(n / 2.6)))
   const innerFrac = 0.38
-  const radii = Array.from({ length: rows }, (_, r) => innerFrac + (1 - innerFrac) * (r / (rows - 1)))
+  const radii = Array.from(
+    { length: rows },
+    (_, r) => innerFrac + (1 - innerFrac) * (r / (rows - 1)),
+  )
   const total = radii.reduce((a, b) => a + b, 0)
 
   const exact = radii.map((rad) => (n * rad) / total)
@@ -69,10 +72,14 @@ export function Hemicycle({ circoData, palette, round }: Props) {
         code: circo.inseeCode,
         circoName: circo.name,
         arrangeParty: cands[0]?.party ?? 'ZZZ',
-        mp: winner ? { name: winner.name, party: winner.party, percentage: winner.percentage } : null,
+        mp: winner
+          ? { name: winner.name, party: winner.party, percentage: winner.percentage }
+          : null,
       }
     })
-    rows.sort((a, b) => spIdx(a.arrangeParty) - spIdx(b.arrangeParty) || a.code.localeCompare(b.code))
+    rows.sort(
+      (a, b) => spIdx(a.arrangeParty) - spIdx(b.arrangeParty) || a.code.localeCompare(b.code),
+    )
 
     const pos = seatLayout(rows.length)
     return rows.map((s, i) => ({
@@ -98,8 +105,14 @@ export function Hemicycle({ circoData, palette, round }: Props) {
 
   return (
     <div className="absolute inset-0 z-20 bg-white dark:bg-slate-900 flex flex-col">
-      <div className="px-6 pt-4 shrink-0">
-        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">Assemblée nationale</h2>
+      {/* Desktop starts BELOW the floating chrome row (R3: wordmark, search
+          pill and util stack all sit at the top of the map area, and this cover
+          is drawn under them). Shifting right instead of down wouldn't work —
+          the centred search pill occupies the middle of that row too. */}
+      <div className="px-6 pt-4 shrink-0 md:pt-20">
+        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">
+          Assemblée nationale
+        </h2>
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {round === 1
             ? `${attributed} / 577 sièges attribués au 1ᵉʳ tour`
@@ -121,7 +134,17 @@ export function Hemicycle({ circoData, palette, round }: Props) {
                 cy={s.sy}
                 r={selected ? dotR + 2.5 : dotR}
                 fill={color}
-                stroke={selected ? (isDark ? '#f8fafc' : '#0f172a') : hovered === i ? (isDark ? '#cbd5e1' : '#334155') : seatRing}
+                stroke={
+                  selected
+                    ? isDark
+                      ? '#f8fafc'
+                      : '#0f172a'
+                    : hovered === i
+                      ? isDark
+                        ? '#cbd5e1'
+                        : '#334155'
+                      : seatRing
+                }
                 strokeWidth={selected ? 2 : 1}
                 style={{ cursor: 'pointer' }}
                 onMouseEnter={() => setHovered(i)}
@@ -144,7 +167,9 @@ export function Hemicycle({ circoData, palette, round }: Props) {
               maxWidth: 240,
             }}
           >
-            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{hov.circoName}</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {hov.circoName}
+            </p>
             {hov.mp ? (
               <>
                 <p className="text-gray-800 dark:text-gray-200 truncate">{hov.mp.name}</p>

@@ -43,18 +43,26 @@ export function Headline({ commune, palette, density }: Props) {
       <div className={touch ? 'px-4 pt-3' : 'px-4 pt-3'}>
         <div className="flex items-baseline justify-between gap-2">
           <div className="min-w-0">
-            <p className={`truncate font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-base' : 'text-sm'}`}>
+            <p
+              className={`truncate font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-base' : 'text-sm'}`}
+            >
               {first.name}
             </p>
-            <p className={`font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-2xl' : 'text-xl'}`}>
+            <p
+              className={`font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-2xl' : 'text-xl'}`}
+            >
               {fmt(first.percentage)}%
             </p>
           </div>
           <div className="min-w-0 text-right">
-            <p className={`truncate text-gray-500 dark:text-gray-400 ${touch ? 'text-base' : 'text-sm'}`}>
+            <p
+              className={`truncate text-gray-500 dark:text-gray-400 ${touch ? 'text-base' : 'text-sm'}`}
+            >
               {second.name}
             </p>
-            <p className={`font-semibold text-gray-500 dark:text-gray-400 ${touch ? 'text-2xl' : 'text-xl'}`}>
+            <p
+              className={`font-semibold text-gray-500 dark:text-gray-400 ${touch ? 'text-2xl' : 'text-xl'}`}
+            >
               {fmt(second.percentage)}%
             </p>
           </div>
@@ -76,10 +84,14 @@ export function Headline({ commune, palette, density }: Props) {
     <div className="px-4 pt-3">
       <div className="flex items-center gap-2">
         <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: firstColor }} />
-        <p className={`min-w-0 flex-1 truncate font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-base' : 'text-sm'}`}>
+        <p
+          className={`min-w-0 flex-1 truncate font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-base' : 'text-sm'}`}
+        >
           {first.name}
         </p>
-        <p className={`shrink-0 font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-2xl' : 'text-xl'}`}>
+        <p
+          className={`shrink-0 font-bold text-gray-900 dark:text-gray-100 ${touch ? 'text-2xl' : 'text-xl'}`}
+        >
           {fmt(first.percentage)}%
         </p>
       </div>

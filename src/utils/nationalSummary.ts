@@ -122,7 +122,11 @@ export function bucketCounts(
   showLeadBucket: boolean,
   fmtInt: (n: number) => string,
 ): string {
-  return [hasSeats ? fmtInt(b.won) : null, showLeadBucket ? fmtInt(b.lead1st) : null, fmtInt(b.second)]
+  return [
+    hasSeats ? fmtInt(b.won) : null,
+    showLeadBucket ? fmtInt(b.lead1st) : null,
+    fmtInt(b.second),
+  ]
     .filter((v) => v !== null)
     .join(' | ')
 }

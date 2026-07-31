@@ -58,12 +58,16 @@ export function resolveTerritory(
       commune = direct
     } else {
       const deptCode = overseasDeptCode(activeCode)
-      commune = deptCode ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null) : null
+      commune = deptCode
+        ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null)
+        : null
     }
   } else if (granularity === 'commune' && communeDataMissing) {
     // No full commune file for this round: stand in the département entry.
     const deptCode = communeDeptCode(activeCode)
-    const dept = deptCode ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null) : null
+    const dept = deptCode
+      ? (electionData?.communes.find((c) => c.inseeCode === deptCode) ?? null)
+      : null
     if (dept) return { commune: dept, isOverseasFallback: false, isRoundFallback: true }
     commune = electionData?.communes.find((c) => c.inseeCode === activeCode) ?? null
   } else if (granularity !== 'commune' && circoData) {
@@ -91,7 +95,9 @@ export type NationalPctLookup = (name: string, party?: string) => number | null
  * both levels + legislative commune) and by party/nuance code (legislative circo,
  * where local rows are persons but the nuance carries the national figure).
  */
-export function makeNationalPctLookup(electionData: RoundData | undefined): NationalPctLookup | null {
+export function makeNationalPctLookup(
+  electionData: RoundData | undefined,
+): NationalPctLookup | null {
   if (!electionData) return null
   const totals = computeNationalTotals(electionData)
   const byName = new Map<string, number>()
@@ -100,7 +106,7 @@ export function makeNationalPctLookup(electionData: RoundData | undefined): Nati
     byName.set(c.name, c.percentage)
     if (c.party && !byParty.has(c.party)) byParty.set(c.party, c.percentage)
   }
-  return (name, party) => byName.get(name) ?? (party ? byParty.get(party) ?? null : null)
+  return (name, party) => byName.get(name) ?? (party ? (byParty.get(party) ?? null) : null)
 }
 
 export interface TerritoryView extends ResolvedTerritory {
@@ -151,7 +157,7 @@ export function useTerritoryView(
   const parentCode = activeCode ? parentDeptCode(activeCode) : null
   const parentDept =
     parentCode && parentCode !== commune?.inseeCode
-      ? electionData?.communes.find((c) => c.inseeCode === parentCode) ?? null
+      ? (electionData?.communes.find((c) => c.inseeCode === parentCode) ?? null)
       : null
 
   const reg = commune?.registeredVoters ?? 0

@@ -42,18 +42,34 @@ function loadRecents(): RecentEntry[] {
 
 /** Accent- and case-insensitive haystack normalisation for local search. */
 function norm(s: string): string {
-  return s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
 }
 
 const KIND_BADGE: Record<TerritoryKind, { label: string; cls: string }> = {
   commune: { label: 'C', cls: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300' },
   departement: { label: 'D', cls: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300' },
-  circonscription: { label: 'Ci', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+  circonscription: {
+    label: 'Ci',
+    cls: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  },
 }
 
 function SearchIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
     </svg>
@@ -79,7 +95,8 @@ interface Props {
  * centered modal on desktop.
  */
 export function TerritoryNavigator({ open, onClose, electionData, circoData }: Props) {
-  const { granularity, setGranularity, selectTerritory, settleDept, setFlyTarget, setFlyBounds } = useElectionStore()
+  const { granularity, setGranularity, selectTerritory, settleDept, setFlyTarget, setFlyBounds } =
+    useElectionStore()
   const [term, setTerm] = useState('')
   const [hits, setHits] = useState<CommuneHit[]>([])
   const [resultsFor, setResultsFor] = useState('')
@@ -121,7 +138,9 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
           setHits(results.filter((c) => c.centre))
           setResultsFor(q)
         })
-        .catch(() => {/* aborted or network error — keep previous results */})
+        .catch(() => {
+          /* aborted or network error — keep previous results */
+        })
     }, 250)
     return () => {
       clearTimeout(timer)
@@ -141,7 +160,8 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
 
   // Local matches (no debounce needed — in-memory filters).
   const q = norm(term.trim())
-  const deptHits = q.length >= 2 ? departements.filter((d) => norm(d.name).includes(q)).slice(0, 6) : []
+  const deptHits =
+    q.length >= 2 ? departements.filter((d) => norm(d.name).includes(q)).slice(0, 6) : []
   const circoHits =
     q.length >= 2 && circoData
       ? circoData.communes
@@ -151,13 +171,24 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
       : []
 
   const remember = (entry: RecentEntry) => {
-    const next = [entry, ...loadRecents().filter((r) => !(r.kind === entry.kind && r.code === entry.code))].slice(0, MAX_RECENTS)
+    const next = [
+      entry,
+      ...loadRecents().filter((r) => !(r.kind === entry.kind && r.code === entry.code)),
+    ].slice(0, MAX_RECENTS)
     try {
       window.localStorage.setItem(RECENTS_KEY, JSON.stringify(next))
-    } catch {/* storage full/blocked — recents are a nicety */}
+    } catch {
+      /* storage full/blocked — recents are a nicety */
+    }
   }
 
-  const selectCommune = (code: string, name: string, lng: number, lat: number, zoom = SEARCH_FLY_ZOOM) => {
+  const selectCommune = (
+    code: string,
+    name: string,
+    lng: number,
+    lat: number,
+    zoom = SEARCH_FLY_ZOOM,
+  ) => {
     if (granularity !== 'commune') setGranularity('commune')
     selectTerritory(code)
     setFlyTarget({ lng, lat, zoom })
@@ -181,14 +212,16 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
   }
 
   const selectRecent = (r: RecentEntry) => {
-    if (r.kind === 'commune' && r.lng != null && r.lat != null) selectCommune(r.code, r.name, r.lng, r.lat)
+    if (r.kind === 'commune' && r.lng != null && r.lat != null)
+      selectCommune(r.code, r.name, r.lng, r.lat)
     else if (r.kind === 'departement') selectDept(r.code, r.name)
     else if (r.kind === 'circonscription') selectCirco(r.code, r.name)
   }
 
   const showResults = term.trim().length >= 2
   const pending = showResults && resultsFor !== term.trim() && hits.length === 0
-  const nothing = showResults && !pending && hits.length === 0 && deptHits.length === 0 && circoHits.length === 0
+  const nothing =
+    showResults && !pending && hits.length === 0 && deptHits.length === 0 && circoHits.length === 0
 
   return (
     <div
@@ -198,13 +231,17 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
           : 'pointer-events-none translate-y-full md:translate-y-0 md:opacity-0'
       }`}
       aria-hidden={!open}
-      onClick={(e) => { if (e.target === e.currentTarget) close() }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close()
+      }}
     >
       <div className="flex min-h-0 flex-1 flex-col md:h-[70vh] md:w-full md:max-w-md md:flex-none md:overflow-hidden md:rounded-2xl md:bg-white md:shadow-2xl dark:md:bg-slate-900">
         {/* Search bar header */}
         <div className="flex items-center gap-2 px-3 pb-3 pt-[max(1rem,env(safe-area-inset-top))] md:pt-4">
           <div className="flex flex-1 items-center gap-2 rounded-xl bg-gray-100 dark:bg-slate-800 px-3 py-2.5">
-            <span className="text-gray-400 dark:text-gray-500"><SearchIcon /></span>
+            <span className="text-gray-400 dark:text-gray-500">
+              <SearchIcon />
+            </span>
             <input
               ref={inputRef}
               type="search"
@@ -230,7 +267,13 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
                 <>
                   <SectionLabel>Récents</SectionLabel>
                   {recents.map((r) => (
-                    <Row key={`${r.kind}-${r.code}`} kind={r.kind} name={r.name} sub={r.code} onClick={() => selectRecent(r)} />
+                    <Row
+                      key={`${r.kind}-${r.code}`}
+                      kind={r.kind}
+                      name={r.name}
+                      sub={r.code}
+                      onClick={() => selectRecent(r)}
+                    />
                   ))}
                 </>
               )}
@@ -240,12 +283,20 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
                   key={city.inseeCode}
                   kind="commune"
                   name={city.name}
-                  onClick={() => selectCommune(city.inseeCode, city.name, city.lng, city.lat, city.zoom)}
+                  onClick={() =>
+                    selectCommune(city.inseeCode, city.name, city.lng, city.lat, city.zoom)
+                  }
                 />
               ))}
               <SectionLabel>Départements</SectionLabel>
               {departements.map((d) => (
-                <Row key={d.code} kind="departement" name={d.name} sub={d.code} onClick={() => selectDept(d.code, d.name)} />
+                <Row
+                  key={d.code}
+                  kind="departement"
+                  name={d.name}
+                  sub={d.code}
+                  onClick={() => selectDept(d.code, d.name)}
+                />
               ))}
             </>
           ) : (
@@ -257,19 +308,39 @@ export function TerritoryNavigator({ open, onClose, electionData, circoData }: P
                   kind="commune"
                   name={c.nom}
                   sub={c.codeDepartement}
-                  onClick={() => c.centre && selectCommune(c.code, c.nom, c.centre.coordinates[0], c.centre.coordinates[1])}
+                  onClick={() =>
+                    c.centre &&
+                    selectCommune(c.code, c.nom, c.centre.coordinates[0], c.centre.coordinates[1])
+                  }
                 />
               ))}
               {deptHits.length > 0 && <SectionLabel>Départements</SectionLabel>}
               {deptHits.map((d) => (
-                <Row key={d.code} kind="departement" name={d.name} sub={d.code} onClick={() => selectDept(d.code, d.name)} />
+                <Row
+                  key={d.code}
+                  kind="departement"
+                  name={d.name}
+                  sub={d.code}
+                  onClick={() => selectDept(d.code, d.name)}
+                />
               ))}
               {circoHits.length > 0 && <SectionLabel>Circonscriptions</SectionLabel>}
               {circoHits.map((c) => (
-                <Row key={c.code} kind="circonscription" name={c.name} onClick={() => selectCirco(c.code, c.name)} />
+                <Row
+                  key={c.code}
+                  kind="circonscription"
+                  name={c.name}
+                  onClick={() => selectCirco(c.code, c.name)}
+                />
               ))}
-              {pending && <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">Recherche…</p>}
-              {nothing && <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">Aucun lieu trouvé</p>}
+              {pending && (
+                <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">Recherche…</p>
+              )}
+              {nothing && (
+                <p className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">
+                  Aucun lieu trouvé
+                </p>
+              )}
             </>
           )}
         </div>
@@ -286,7 +357,17 @@ function SectionLabel({ children }: { children: string }) {
   )
 }
 
-function Row({ kind, name, sub, onClick }: { kind: TerritoryKind; name: string; sub?: string; onClick: () => void }) {
+function Row({
+  kind,
+  name,
+  sub,
+  onClick,
+}: {
+  kind: TerritoryKind
+  name: string
+  sub?: string
+  onClick: () => void
+}) {
   const badge = KIND_BADGE[kind]
   return (
     <button
@@ -294,10 +375,14 @@ function Row({ kind, name, sub, onClick }: { kind: TerritoryKind; name: string; 
       onClick={onClick}
       className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-gray-50 active:bg-gray-100 dark:hover:bg-slate-800/60 dark:active:bg-slate-800"
     >
-      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${badge.cls}`}>
+      <span
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${badge.cls}`}
+      >
         {badge.label}
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">
+        {name}
+      </span>
       {sub && <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{sub}</span>}
     </button>
   )

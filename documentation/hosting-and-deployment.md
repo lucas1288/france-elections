@@ -83,9 +83,19 @@ See [`roadmap.md`](roadmap.md) for the future-feature thinking.
   `france-elections`, production branch `main`).
 - **Data**: R2 bucket `france-elections-data`, public base
   `https://pub-dc194401b9554e44a944ff785d4ced48.r2.dev` (the value baked in as
-  `VITE_DATA_BASE_URL` at build). 37 objects under `data/...`, CORS allows the prod
-  origin + localhost.
-- Deployed via **direct upload** (`wrangler pages deploy`), not Git-connected CI yet.
+  `VITE_DATA_BASE_URL` at build). 83 objects under `data/...` as of the 2012 ingestion,
+  CORS allows the prod origin + localhost.
+- **The Pages project is Git-connected**: merging to `main` triggers a production build +
+  deploy automatically. `VITE_DATA_BASE_URL` is set as a build environment variable in the
+  Pages dashboard (not in the repo), which is why the built site fetches from R2.
+  `scripts/deploy/deploy-pages.sh` still exists as a manual direct-upload escape hatch
+  (see the runbook), but it is **not** how the site normally ships.
+- **Data does NOT ride the app deploy.** `public/data/**` and `data-sources/**` are
+  untracked, so the Pages build has no data to publish — data reaches production only via
+  the manual `scripts/deploy/sync-r2.sh`. The two halves are therefore deployed
+  independently, and **the order matters**: when new app code requires newly-shaped data,
+  sync R2 *first*, then merge. (Additive fields are safe either way — the old app just
+  ignores them and the new app renders the pre-existing shape.)
 - ⚠️ Per-deploy hash URLs (`<hash>.france-elections.pages.dev`) and any non-`main`
   preview branch are *different origins* the R2 CORS does not yet allow — they'll load
   the app shell but fail to fetch data. Use the apex prod URL. Widen CORS (wildcard
@@ -126,7 +136,7 @@ traffic; revisit when usage grows or when a custom domain is set up.**
 Defaults: R2 bucket `france-elections-data`, Pages project `france-elections`
 (→ `https://france-elections.pages.dev`, which is the origin allowed in
 [`../scripts/deploy/r2-cors.json`](../scripts/deploy/r2-cors.json)). Uploads use your
-`wrangler login` session — no S3 API keys needed (only 37 data files).
+`wrangler login` session — no S3 API keys needed (a few dozen data files).
 
 ```bash
 # 1. Authenticate (browser OAuth)
@@ -141,12 +151,32 @@ npx wrangler r2 bucket dev-url enable france-elections-data
 # 4. Upload public/data/** to R2 + apply CORS
 BUCKET=france-elections-data ./scripts/deploy/sync-r2.sh
 
-# 5. Build against R2 and deploy ONLY the app shell to Pages
-#    (the script strips dist/data so the 230 MB never enters the Pages deploy)
+# 5. Connect the Pages project to the GitHub repo (production branch `main`,
+#    build `npm run build`, output `dist`) and set VITE_DATA_BASE_URL as a build
+#    environment variable in the Pages dashboard. Done once — from then on the
+#    app deploys itself on every merge to `main`.
+```
+
+### Re-deploys (the day-to-day loop)
+
+| What changed | What to do |
+|---|---|
+| **Data** (`public/data/**` — re-ran a parser, `ingest.mjs`, rebuilt tiles) | `BUCKET=france-elections-data ./scripts/deploy/sync-r2.sh` — manual, always |
+| **App code** (`src/**`, deps, config) | merge to `main`; Pages builds and deploys it |
+| **Both** | sync R2 **first**, then merge — see the ordering note under "Live deployment" |
+
+Rebuilt `france-admin.pmtiles`? Also bump the `?v=N` in `TILE_SOURCES`
+(`src/components/FranceMap.tsx`) or cached PMTiles headers give stale byte offsets —
+see gotcha 11 in [`../CLAUDE.md`](../CLAUDE.md).
+
+**Manual app deploy (escape hatch).** Only for shipping without merging — testing a build,
+or Git CI being down. It publishes your local `dist/`, so what lands in production may not
+match `main`:
+
+```bash
 VITE_DATA_BASE_URL=https://pub-xxxx.r2.dev ./scripts/deploy/deploy-pages.sh
 ```
 
-Re-deploys: data changed → re-run step 4; app code changed → re-run step 5.
 Later, swap the r2.dev URL for a custom domain on the bucket (update
 `VITE_DATA_BASE_URL` + the CORS origins, rebuild). Scripts live in
 [`../scripts/deploy/`](../scripts/deploy/).

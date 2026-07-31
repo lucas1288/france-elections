@@ -44,8 +44,13 @@ export function CandidateRows({ candidates, palette, nationalPct }: Props) {
             <div key={cand.name}>
               <div className="flex items-center justify-between mb-0.5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{cand.name}</span>
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ background: color }}
+                  />
+                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate">
+                    {cand.name}
+                  </span>
                 </div>
                 <span className="ml-2 shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {fmt(cand.percentage)}%
@@ -70,7 +75,10 @@ export function CandidateRows({ candidates, palette, nationalPct }: Props) {
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                 {fmtInt(cand.votes)} voix
                 {natPct != null && (
-                  <span className="text-gray-300 dark:text-gray-600"> · national {fmt(natPct)}%</span>
+                  <span className="text-gray-300 dark:text-gray-600">
+                    {' '}
+                    · national {fmt(natPct)}%
+                  </span>
                 )}
               </p>
             </div>

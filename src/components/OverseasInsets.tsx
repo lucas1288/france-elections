@@ -32,21 +32,21 @@ interface InsetDef {
 
 // All overseas territories displayed as a vertical column on the left.
 // Uniform width so the column edge is straight; height tuned per shape.
-const W = 110  // px — column width for all insets
+const W = 110 // px — column width for all insets
 
 const INSETS: InsetDef[] = [
   // DOM
-  { code: '971', label: 'Guadeloupe',              w: W, h: 58 },
-  { code: '972', label: 'Martinique',              w: W, h: 62 },
-  { code: '973', label: 'Guyane',                  w: W, h: 72 },
-  { code: '974', label: 'La Réunion',              w: W, h: 56 },
-  { code: '976', label: 'Mayotte',                 w: W, h: 52 },
+  { code: '971', label: 'Guadeloupe', w: W, h: 58 },
+  { code: '972', label: 'Martinique', w: W, h: 62 },
+  { code: '973', label: 'Guyane', w: W, h: 72 },
+  { code: '974', label: 'La Réunion', w: W, h: 56 },
+  { code: '976', label: 'Mayotte', w: W, h: 52 },
   // COM
-  { code: '975', label: 'St-Pierre-et-Miquelon',  w: W, h: 56 },
-  { code: '977', label: 'St-Martin / St-Barth',   w: W, h: 52 },
-  { code: '986', label: 'Wallis-et-Futuna',        w: W, h: 52 },
-  { code: '987', label: 'Polynésie française',     w: W, h: 52 },
-  { code: '988', label: 'Nouvelle-Calédonie',      w: W, h: 52 },
+  { code: '975', label: 'St-Pierre-et-Miquelon', w: W, h: 56 },
+  { code: '977', label: 'St-Martin / St-Barth', w: W, h: 52 },
+  { code: '986', label: 'Wallis-et-Futuna', w: W, h: 52 },
+  { code: '987', label: 'Polynésie française', w: W, h: 52 },
+  { code: '988', label: 'Nouvelle-Calédonie', w: W, h: 52 },
 ]
 
 const GAP = 4
@@ -62,18 +62,39 @@ interface InsetProps extends InsetDef {
   onClick: () => void
 }
 
-function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, isWon, onEnter, onLeave, onClick }: InsetProps) {
+function SingleInset({
+  label,
+  w,
+  h,
+  feature,
+  fillColor,
+  isHovered,
+  isClicked,
+  isWon,
+  onEnter,
+  onLeave,
+  onClick,
+}: InsetProps) {
   const isDark = useElectionStore((s) => s.isDark)
   const fc = useMemo(
-    () => feature ? { type: 'FeatureCollection' as const, features: [feature] } : null,
+    () => (feature ? { type: 'FeatureCollection' as const, features: [feature] } : null),
     [feature],
   )
   const projection = useMemo(
-    () => fc ? d3geo.geoMercator().fitExtent([[2, 2], [w - 2, h - 2]], fc) : null,
+    () =>
+      fc
+        ? d3geo.geoMercator().fitExtent(
+            [
+              [2, 2],
+              [w - 2, h - 2],
+            ],
+            fc,
+          )
+        : null,
     [fc, w, h],
   )
   const pathGen = useMemo(
-    () => projection ? d3geo.geoPath().projection(projection) : null,
+    () => (projection ? d3geo.geoPath().projection(projection) : null),
     [projection],
   )
   const d = feature && pathGen ? pathGen(feature) : null
@@ -82,14 +103,32 @@ function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, is
     <div style={{ width: w, flexShrink: 0 }}>
       <svg width={w} height={h} style={{ display: 'block', cursor: 'pointer' }}>
         <rect
-          width={w} height={h}
-          fill={isDark ? '#1e293b' : '#f8fafc'} stroke={isDark ? '#475569' : '#cbd5e1'} strokeWidth={0.5} rx={2}
+          width={w}
+          height={h}
+          fill={isDark ? '#1e293b' : '#f8fafc'}
+          stroke={isDark ? '#475569' : '#cbd5e1'}
+          strokeWidth={0.5}
+          rx={2}
         />
         {d && (
           <path
             d={d}
             fill={fillColor}
-            stroke={isClicked ? (isDark ? '#f8fafc' : '#0f172a') : isWon ? '#ffffff' : isHovered ? (isDark ? '#cbd5e1' : '#334155') : (isDark ? '#64748b' : '#94a3b8')}
+            stroke={
+              isClicked
+                ? isDark
+                  ? '#f8fafc'
+                  : '#0f172a'
+                : isWon
+                  ? '#ffffff'
+                  : isHovered
+                    ? isDark
+                      ? '#cbd5e1'
+                      : '#334155'
+                    : isDark
+                      ? '#64748b'
+                      : '#94a3b8'
+            }
             strokeWidth={isClicked ? 1.5 : isWon ? 2 : isHovered ? 1 : 0.5}
             onMouseEnter={onEnter}
             onMouseLeave={onLeave}
@@ -100,7 +139,14 @@ function SingleInset({ label, w, h, feature, fillColor, isHovered, isClicked, is
           </path>
         )}
       </svg>
-      <div style={{ fontSize: 9, textAlign: 'center', color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
+      <div
+        style={{
+          fontSize: 9,
+          textAlign: 'center',
+          color: isDark ? '#94a3b8' : '#64748b',
+          marginTop: 2,
+        }}
+      >
         {label}
       </div>
     </div>
@@ -114,7 +160,14 @@ interface Props {
 
 export function OverseasInsets({ electionData, palette }: Props) {
   const [features, setFeatures] = useState<Map<string, GeoFeature>>(new Map())
-  const { hoveredCommune, clickedCommune, focusedTerritory, setHoveredCommune, setClickedCommune, setFocusedTerritory } = useElectionStore()
+  const {
+    hoveredCommune,
+    clickedCommune,
+    focusedTerritory,
+    setHoveredCommune,
+    setClickedCommune,
+    setFocusedTerritory,
+  } = useElectionStore()
   const colorMode = useElectionStore((s) => s.colorMode)
 
   // Fetch overseas GeoJSON once
@@ -163,11 +216,17 @@ export function OverseasInsets({ electionData, palette }: Props) {
   if (focusedTerritory) return null
 
   return (
-    <div
-      className="absolute z-10 top-4 left-3"
-      style={{ pointerEvents: 'none' }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, pointerEvents: 'auto' }}>
+    // Bounded top and bottom by the floating chrome that owns those corners
+    // (R3: wordmark above, layers menu below) instead of running as tall as its
+    // 11 items want. That also fixes a pre-existing defect: on a short viewport
+    // the column simply overflowed the map and the last territories — Polynésie,
+    // Nouvelle-Calédonie — were unreachable. Now it scrolls.
+    // The whole column is replaced by the overseas orbit in R4.
+    <div className="absolute z-10 top-16 bottom-28 left-3" style={{ pointerEvents: 'none' }}>
+      <div
+        className="max-h-full overflow-y-auto"
+        style={{ display: 'flex', flexDirection: 'column', gap: GAP, pointerEvents: 'auto' }}
+      >
         {INSETS.map((inset) => (
           <SingleInset
             key={inset.code}
@@ -179,7 +238,10 @@ export function OverseasInsets({ electionData, palette }: Props) {
             isWon={wonByCode.has(inset.code)}
             onEnter={() => setHoveredCommune(inset.code)}
             onLeave={() => setHoveredCommune(null)}
-            onClick={() => { setClickedCommune(inset.code); setFocusedTerritory(inset.code) }}
+            onClick={() => {
+              setClickedCommune(inset.code)
+              setFocusedTerritory(inset.code)
+            }}
           />
         ))}
       </div>

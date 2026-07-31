@@ -21,11 +21,12 @@ interface Props {
 }
 
 const W = 220
-const H = Math.round(W * 490 / 960) // ≈ 112 — Natural Earth 1 aspect ratio
+const H = Math.round((W * 490) / 960) // ≈ 112 — Natural Earth 1 aspect ratio
 
 // Module-level constants: projection is fully determined by W/H
-const projection = d3geo.geoNaturalEarth1()
-  .scale(153 * W / 960)
+const projection = d3geo
+  .geoNaturalEarth1()
+  .scale((153 * W) / 960)
   .translate([W / 2, H / 2])
 const pathFn = d3geo.geoPath(projection)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,17 +35,17 @@ const GRATICULE_PATH = pathFn(d3geo.geoGraticule().step([30, 30])()) ?? ''
 
 // Approximate geographic centroids for each overseas French circo
 const CIRCO_CENTERS: Record<string, [number, number]> = {
-  '9901': [-100,  46],  // Amériques du Nord
-  '9902': [ -55, -15],  // Amériques du Sud
-  '9903': [  -5,  56],  // Europe du Nord (UK, Scandinavie…)
-  '9904': [   5,  51],  // Bénélux
-  '9905': [  -5,  38],  // Péninsule ibérique + Maroc
-  '9906': [   8,  47],  // Suisse
-  '9907': [  15,  51],  // Europe centrale
-  '9908': [  13,  28],  // Afrique du Nord + Proche-Orient
-  '9909': [  22,  -5],  // Afrique subsaharienne
-  '9910': [  55,  25],  // Moyen-Orient + Asie centrale
-  '9911': [ 120,  15],  // Asie + Pacifique
+  '9901': [-100, 46], // Amériques du Nord
+  '9902': [-55, -15], // Amériques du Sud
+  '9903': [-5, 56], // Europe du Nord (UK, Scandinavie…)
+  '9904': [5, 51], // Bénélux
+  '9905': [-5, 38], // Péninsule ibérique + Maroc
+  '9906': [8, 47], // Suisse
+  '9907': [15, 51], // Europe centrale
+  '9908': [13, 28], // Afrique du Nord + Proche-Orient
+  '9909': [22, -5], // Afrique subsaharienne
+  '9910': [55, 25], // Moyen-Orient + Asie centrale
+  '9911': [120, 15], // Asie + Pacifique
 }
 
 export function AbroadMap({ electionData, circoChoro, fullData, granularity, palette }: Props) {
@@ -55,18 +56,20 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
 
   useEffect(() => {
     fetch(dataUrl('/data/geo/land-110m.json'))
-      .then(r => r.json())
+      .then((r) => r.json())
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((topo: any) => {
         const land = topojson.feature(topo, topo.objects.land)
         setLandPath(pathFn(land as GeoJSON.GeoJSON) ?? '')
       })
-      .catch(() => {/* silently ignore if file unavailable */})
+      .catch(() => {
+        /* silently ignore if file unavailable */
+      })
   }, [])
 
   const candidates = circoChoro?.candidates ?? electionData?.candidates ?? []
   const parties = partyByName(candidates)
-  const abroadEntries = (circoChoro?.communes ?? []).filter(c => c.inseeCode.startsWith('99'))
+  const abroadEntries = (circoChoro?.communes ?? []).filter((c) => c.inseeCode.startsWith('99'))
 
   // Mode-aware color for an abroad circo: leader/abstention ride the choropleth,
   // the party gradient needs the full circo data (only loaded on the circo tab —
@@ -74,25 +77,40 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
   const national = electionData ? computeNationalTotals(electionData) : null
   const fullByCode = new Map((fullData?.communes ?? []).map((e) => [e.inseeCode, e]))
   const neutral = isDark ? '#334155' : '#e2e8f0'
-  const dotColor = (c: { inseeCode: string; leadingCandidate: string; abstention?: number; decidedAtR1?: boolean }) => {
+  const dotColor = (c: {
+    inseeCode: string
+    leadingCandidate: string
+    abstention?: number
+    decidedAtR1?: boolean
+  }) => {
     if (colorMode.kind === 'leader') {
-      const color = getCandidateColor(c.leadingCandidate, 0, parties.get(c.leadingCandidate), palette)
+      const color = getCandidateColor(
+        c.leadingCandidate,
+        0,
+        parties.get(c.leadingCandidate),
+        palette,
+      )
       // Round-1-decided circo shown in a T2 view: mute it (see decidedAtR1Shade).
       return c.decidedAtR1 ? decidedAtR1Shade(color, neutral) : color
     }
-    if (colorMode.kind === 'abstention') return c.abstention != null ? abstentionShade(c.abstention) : neutral
+    if (colorMode.kind === 'abstention')
+      return c.abstention != null ? abstentionShade(c.abstention) : neutral
     const entry = fullByCode.get(c.inseeCode)
     return entry ? territoryColor(entry, colorMode, palette, national, undefined, neutral) : neutral
   }
 
   // Overall abroad winner: prefer '99' aggregate; fall back to modal leader
-  const abroad99 = electionData?.communes.find(c => c.inseeCode === '99')
-  const overallWinner = abroad99?.leadingCandidate ?? (() => {
-    if (!abroadEntries.length) return null
-    const counts = new Map<string, number>()
-    abroadEntries.forEach(c => counts.set(c.leadingCandidate, (counts.get(c.leadingCandidate) ?? 0) + 1))
-    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
-  })()
+  const abroad99 = electionData?.communes.find((c) => c.inseeCode === '99')
+  const overallWinner =
+    abroad99?.leadingCandidate ??
+    (() => {
+      if (!abroadEntries.length) return null
+      const counts = new Map<string, number>()
+      abroadEntries.forEach((c) =>
+        counts.set(c.leadingCandidate, (counts.get(c.leadingCandidate) ?? 0) + 1),
+      )
+      return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+    })()
 
   const isCirco = granularity === 'circonscription'
 
@@ -113,7 +131,8 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
           display: 'block',
           cursor: isCirco ? 'default' : 'pointer',
           borderRadius: 4,
-          outline: aggregateSelected && !isCirco ? `2px solid ${isDark ? '#f8fafc' : '#0f172a'}` : 'none',
+          outline:
+            aggregateSelected && !isCirco ? `2px solid ${isDark ? '#f8fafc' : '#0f172a'}` : 'none',
         }}
         onClick={isCirco ? undefined : () => setClickedCommune('99')}
       >
@@ -121,13 +140,25 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
         <path d={SPHERE_PATH} fill={isDark ? '#172554' : '#dbeafe'} />
 
         {/* Land masses */}
-        {landPath && <path d={landPath} fill={isDark ? '#334155' : '#e2e8f0'} stroke={isDark ? '#64748b' : '#94a3b8'} strokeWidth={0.4} />}
+        {landPath && (
+          <path
+            d={landPath}
+            fill={isDark ? '#334155' : '#e2e8f0'}
+            stroke={isDark ? '#64748b' : '#94a3b8'}
+            strokeWidth={0.4}
+          />
+        )}
 
         {/* Graticule */}
-        <path d={GRATICULE_PATH} fill="none" stroke={isDark ? '#1e3a8a' : '#bfdbfe'} strokeWidth={0.3} />
+        <path
+          d={GRATICULE_PATH}
+          fill="none"
+          stroke={isDark ? '#1e3a8a' : '#bfdbfe'}
+          strokeWidth={0.3}
+        />
 
         {/* Circo dots — visible in all tabs */}
-        {abroadEntries.map(c => {
+        {abroadEntries.map((c) => {
           const center = CIRCO_CENTERS[c.inseeCode]
           if (!center) return null
           const projected = projection(center)
@@ -139,20 +170,33 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
           return (
             <circle
               key={c.inseeCode}
-              cx={x} cy={y}
+              cx={x}
+              cy={y}
               r={isSelected ? 7 : 5}
               fill={color}
               fillOpacity={0.92}
               stroke={isDark ? '#0f172a' : 'white'}
               strokeWidth={isSelected ? 2.5 : 1.5}
               style={{ cursor: isCirco ? 'pointer' : 'default' }}
-              onClick={isCirco ? (e) => { e.stopPropagation(); setClickedCommune(c.inseeCode) } : undefined}
+              onClick={
+                isCirco
+                  ? (e) => {
+                      e.stopPropagation()
+                      setClickedCommune(c.inseeCode)
+                    }
+                  : undefined
+              }
             />
           )
         })}
 
         {/* Sphere outline */}
-        <path d={SPHERE_PATH} fill="none" stroke={isDark ? '#475569' : '#94a3b8'} strokeWidth={0.8} />
+        <path
+          d={SPHERE_PATH}
+          fill="none"
+          stroke={isDark ? '#475569' : '#94a3b8'}
+          strokeWidth={0.8}
+        />
       </svg>
 
       {/* Dept/Commune mode: aggregate winner label (leader view only) */}
@@ -161,7 +205,9 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
           En tête :{' '}
           <span
             className="font-semibold"
-            style={{ color: getCandidateColor(overallWinner, 0, parties.get(overallWinner), palette) }}
+            style={{
+              color: getCandidateColor(overallWinner, 0, parties.get(overallWinner), palette),
+            }}
           >
             {overallWinner}
           </span>
@@ -171,7 +217,7 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
       {/* Circo mode: compact ranked list */}
       {isCirco && abroadEntries.length > 0 && (
         <div className="mt-2 space-y-0.5">
-          {abroadEntries.map(c => {
+          {abroadEntries.map((c) => {
             const num = parseInt(c.inseeCode.replace('99', ''), 10)
             const color = dotColor(c)
             const isSelected = clickedCommune === c.inseeCode
@@ -186,10 +232,14 @@ export function AbroadMap({ electionData, circoChoro, fullData, granularity, pal
                 onClick={() => setClickedCommune(c.inseeCode)}
               >
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                <span className={`w-5 text-right shrink-0 ${isSelected ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}>
+                <span
+                  className={`w-5 text-right shrink-0 ${isSelected ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}
+                >
                   {num}e
                 </span>
-                <span className={`min-w-0 truncate ${isSelected ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-600 dark:text-gray-300'}`}>
+                <span
+                  className={`min-w-0 truncate ${isSelected ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-600 dark:text-gray-300'}`}
+                >
                   {displayName}
                 </span>
               </button>

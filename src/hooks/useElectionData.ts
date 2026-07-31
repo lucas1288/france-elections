@@ -1,5 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import type { DeptHistoryFile, ElectionRef, FamiliesRegistry, Palette, RoundData } from '../types/election'
+import type {
+  DeptHistoryFile,
+  ElectionRef,
+  FamiliesRegistry,
+  Palette,
+  RoundData,
+} from '../types/election'
 import { dataUrl } from '../utils/dataUrl'
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -23,7 +29,13 @@ export interface ChoroplethData {
    *  `decidedAtR1` (legislative round 2 only — these are the round-1 figures,
    *  carried because the circo was won outright at T1) by
    *  scripts/carry-r1-into-round2.mjs. */
-  communes: Array<{ inseeCode: string; leadingCandidate: string; abstention?: number; annulled?: boolean; decidedAtR1?: boolean }>
+  communes: Array<{
+    inseeCode: string
+    leadingCandidate: string
+    abstention?: number
+    annulled?: boolean
+    decidedAtR1?: boolean
+  }>
 }
 
 /**

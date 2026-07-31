@@ -15,7 +15,16 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 function rgbToHex(rgb: number[]): string {
-  return '#' + rgb.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('')
+  return (
+    '#' +
+    rgb
+      .map((v) =>
+        Math.round(Math.max(0, Math.min(255, v)))
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')
+  )
 }
 
 /** Linear blend between two hex colors. t=0 → a, t=1 → b. */
@@ -59,13 +68,16 @@ export function decidedAtR1Shade(color: string, neutral: string): string {
   return mixHex(color, neutral, R1_MUTE_T)
 }
 
-const ABSTENTION_LOW = '#e5e7eb'  // light grey — low abstention
+const ABSTENTION_LOW = '#e5e7eb' // light grey — low abstention
 const ABSTENTION_HIGH = '#111827' // near-black — high abstention
 const ABSTENTION_MIN = 15
 const ABSTENTION_MAX = 60
 
 /** Grey shade for abstention view; higher abstention → darker. */
 export function abstentionShade(abstentionPct: number): string {
-  const t = Math.max(0, Math.min(1, (abstentionPct - ABSTENTION_MIN) / (ABSTENTION_MAX - ABSTENTION_MIN)))
+  const t = Math.max(
+    0,
+    Math.min(1, (abstentionPct - ABSTENTION_MIN) / (ABSTENTION_MAX - ABSTENTION_MIN)),
+  )
   return mixHex(ABSTENTION_LOW, ABSTENTION_HIGH, t)
 }

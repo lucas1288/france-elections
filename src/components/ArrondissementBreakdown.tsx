@@ -34,20 +34,27 @@ export function ArrondissementBreakdown({ cityCode, communeChoro, communeData, p
 
   const rows = useMemo(() => {
     if (!meta) return []
-    const choroLeader = new Map(communeChoro?.communes.map((c) => [c.inseeCode, c.leadingCandidate]))
-    const choroParties = communeChoro ? partyByName(communeChoro.candidates) : new Map<string, string>()
+    const choroLeader = new Map(
+      communeChoro?.communes.map((c) => [c.inseeCode, c.leadingCandidate]),
+    )
+    const choroParties = communeChoro
+      ? partyByName(communeChoro.candidates)
+      : new Map<string, string>()
     const fullByCode = new Map(communeData?.communes.map((c) => [c.inseeCode, c]))
 
     const codes = new Set<string>()
-    for (const c of communeChoro?.communes ?? []) if (c.inseeCode.startsWith(meta.prefix)) codes.add(c.inseeCode)
-    for (const c of communeData?.communes ?? []) if (c.inseeCode.startsWith(meta.prefix)) codes.add(c.inseeCode)
+    for (const c of communeChoro?.communes ?? [])
+      if (c.inseeCode.startsWith(meta.prefix)) codes.add(c.inseeCode)
+    for (const c of communeData?.communes ?? [])
+      if (c.inseeCode.startsWith(meta.prefix)) codes.add(c.inseeCode)
 
     return [...codes]
       .map((code) => {
         const full = fullByCode.get(code)
-        const top = full && !full.annulled
-          ? [...full.candidates].sort((a, b) => b.votes - a.votes)[0]
-          : undefined
+        const top =
+          full && !full.annulled
+            ? [...full.candidates].sort((a, b) => b.votes - a.votes)[0]
+            : undefined
         const choroName = choroLeader.get(code)
         const leader = top?.name ?? choroName ?? null
         const party = top?.party ?? (choroName ? choroParties.get(choroName) : undefined)

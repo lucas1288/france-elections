@@ -74,7 +74,9 @@ export function MobileLayout(props: LayoutProps) {
             const isHemi = g === 'hemicycle'
             return (
               <div key={g} className="flex items-center">
-                {isHemi && i > 0 && <span className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />}
+                {isHemi && i > 0 && (
+                  <span className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />
+                )}
                 <button
                   type="button"
                   onClick={() => setGranularity(g)}

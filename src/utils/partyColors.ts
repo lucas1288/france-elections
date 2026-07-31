@@ -6,6 +6,8 @@
  * Both forms are listed here so lookups work regardless of source.
  */
 
+// Hand-aligned columns below — the alignment is the point, so prettier is held off.
+// prettier-ignore
 const BY_NAME: Record<string, string> = {
   // 2022 Presidential — ministry format (last name all-caps)
   'Emmanuel MACRON':         '#FF8C00',
@@ -27,6 +29,8 @@ const BY_NAME: Record<string, string> = {
   'Jean-Luc Mélenchon':     '#CC2443',
 }
 
+// Hand-aligned columns below — the alignment is the point, so prettier is held off.
+// prettier-ignore
 const BY_PARTY: Record<string, string> = {
   LREM: '#FF8C00',
   RN:   '#003189',
@@ -42,6 +46,8 @@ const BY_PARTY: Record<string, string> = {
   NPA:  '#E05206',
 }
 
+// Hand-aligned columns below — the alignment is the point, so prettier is held off.
+// prettier-ignore
 const FALLBACK_COLORS = [
   '#6366f1', '#ec4899', '#14b8a6', '#f59e0b',
   '#84cc16', '#a855f7', '#f97316', '#06b6d4',
@@ -50,7 +56,9 @@ const FALLBACK_COLORS = [
 import type { Palette } from '../types/election'
 
 /** Builds a candidate-name → party-code lookup from an election's candidate list. */
-export function partyByName(candidates: Array<{ name: string; party: string }>): Map<string, string> {
+export function partyByName(
+  candidates: Array<{ name: string; party: string }>,
+): Map<string, string> {
   return new Map(candidates.map((c) => [c.name, c.party]))
 }
 

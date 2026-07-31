@@ -30,9 +30,7 @@ export type FlyBounds = [number, number, number, number] | 'overview'
  * - `abstention` — grey ramp by abstention rate
  */
 export type ColorMode =
-  | { kind: 'leader' }
-  | { kind: 'party'; party: string }
-  | { kind: 'abstention' }
+  { kind: 'leader' } | { kind: 'party'; party: string } | { kind: 'abstention' }
 
 const LEADER: ColorMode = { kind: 'leader' }
 
@@ -138,7 +136,11 @@ export const useElectionStore = create<ElectionStore>((set) => ({
       // fight the bbox fit — FranceMap's flyBounds effect runs last, so the bbox
       // wins, but we still clear the focus so `useIsOverview` stays coherent.
       const bbox = DEPT_BBOXES[deptCode]
-      set({ clickedCommune: deptCode, focusedTerritory: null, ...(bbox ? { flyBounds: bbox as FlyBounds } : {}) })
+      set({
+        clickedCommune: deptCode,
+        focusedTerritory: null,
+        ...(bbox ? { flyBounds: bbox as FlyBounds } : {}),
+      })
     }
   },
   setFocusedTerritory: (focusedTerritory) => set({ focusedTerritory }),
@@ -154,10 +156,15 @@ export const useElectionStore = create<ElectionStore>((set) => ({
   },
   togglePartyMode: (party) =>
     set((s) => ({
-      colorMode: s.colorMode.kind === 'party' && s.colorMode.party === party ? LEADER : { kind: 'party', party },
+      colorMode:
+        s.colorMode.kind === 'party' && s.colorMode.party === party
+          ? LEADER
+          : { kind: 'party', party },
     })),
   toggleAbstentionMode: () =>
-    set((s) => ({ colorMode: s.colorMode.kind === 'abstention' ? LEADER : { kind: 'abstention' } })),
+    set((s) => ({
+      colorMode: s.colorMode.kind === 'abstention' ? LEADER : { kind: 'abstention' },
+    })),
   setLeaderMode: () => set({ colorMode: LEADER }),
 }))
 

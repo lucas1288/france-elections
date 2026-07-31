@@ -27,7 +27,9 @@ export function Participation({ turnout, registeredVoters, turnoutPct, blankPct,
         Participation
       </p>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{fmt(turnoutPct)}%</span>
+        <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {fmt(turnoutPct)}%
+        </span>
         <span className="text-xs text-gray-500 dark:text-gray-400">
           ({fmtInt(turnout)} / {fmtInt(registeredVoters)} inscrits)
         </span>
