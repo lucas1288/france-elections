@@ -15,6 +15,7 @@ import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
 import { OverseasInsets } from './OverseasInsets'
 import { ThemeToggle } from './ThemeToggle'
+import { UNDER_HEADER, UNDER_LAYERS } from '../utils/mobileChrome'
 import { MobileOverseasCluster } from './MobileOverseasCluster'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
@@ -1326,7 +1327,8 @@ export function FranceMap({
         <button
           type="button"
           aria-label="Revenir à la vue d'ensemble"
-          className="pointer-events-auto absolute left-3 top-[calc(8.25rem+env(safe-area-inset-top))] z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
+          style={{ top: UNDER_HEADER }}
+          className="pointer-events-auto absolute left-3 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
           onClick={() => {
             setFocusedTerritory(null)
             setClickedCommune(null)
@@ -1353,7 +1355,10 @@ export function FranceMap({
           taken by the theme chip and the national snippet card spans above it);
           z-10 keeps them under the Hemicycle cover (z-20) so they vanish there. */}
       {mobile && (
-        <div className="absolute right-3 top-[calc(8.25rem+env(safe-area-inset-top))] z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
+        <div
+          style={{ top: UNDER_LAYERS }}
+          className="absolute right-3 z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10"
+        >
           <button
             type="button"
             aria-label="Zoomer"
@@ -1393,6 +1398,11 @@ export function FranceMap({
               <path d="M5 12h14" />
             </svg>
           </button>
+          {/* Theme joins zoom in one group (R3), mirroring the desktop util
+              stack. It used to be a lone chip in the bottom-right corner —
+              that corner now belongs to the timeline strip. */}
+          <span className="mx-2 h-px bg-gray-200 dark:bg-slate-700" />
+          <ThemeToggle className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800" />
         </div>
       )}
       {/* Mobile overseas inset — rendered into the geo-anchored Marker's element,

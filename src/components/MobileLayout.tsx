@@ -1,27 +1,31 @@
 import { useState } from 'react'
 import { useElectionStore } from '../store/electionStore'
-import type { Granularity } from '../store/electionStore'
 import { FranceMap } from './FranceMap'
 import { Hemicycle } from './Hemicycle'
 import { MobileDetailSheet } from './MobileDetailSheet'
 import { AffichageSheet } from './AffichageSheet'
 import { HemicycleSheet } from './HemicycleSheet'
-import { ThemeToggle } from './ThemeToggle'
 import { ElectionPicker } from './ElectionPicker'
 import { TerritoryNavigator } from './TerritoryNavigator'
 import { TerritorySearchBar } from './TerritorySearchBar'
 import { TimelineStrip } from './TimelineStrip'
+import { LayersMenu } from './LayersMenu'
+import { UNDER_HEADER } from '../utils/mobileChrome'
 import type { LayoutProps } from './layoutProps'
 
-const GRAN_LABEL: Record<Granularity, string> = {
-  commune: 'Communes',
-  circonscription: 'Circos',
-  hemicycle: 'Hémi.',
-}
-
 /**
- * Mobile-first shell: full-bleed map + floating top bar (search pill above the
- * timeline strip — the two axes) + bottom manifest-driven granularity switcher.
+ * Mobile-first shell (redesign R3). Full-bleed map with:
+ *   top        a ONE-row header — just the search pill (geo axis)
+ *   top-right  the layers menu (découpage), under the search; FranceMap's
+ *              zoom + theme stack sits below it
+ *   bottom     the timeline strip (time axis), pinned
+ *
+ * lucas moved the strip from the top to the bottom: "consistent with the desktop
+ * one and easier to navigate on mobile devices" — i.e. into the thumb zone. The
+ * bottom band therefore belongs to the time axis, which is why the granularity
+ * switcher that used to live there became the layers menu at top-right, and why
+ * the detail sheet stops at `SHEET_BOTTOM` instead of the viewport floor: the
+ * time axis stays reachable while you read a territory.
  */
 export function MobileLayout(props: LayoutProps) {
   const { selected, granularity, setGranularity } = useElectionStore()
@@ -51,11 +55,8 @@ export function MobileLayout(props: LayoutProps) {
         </div>
       )}
 
-      {/* Top bar — two rows: geo axis (search pill) above, time axis below.
-          The timeline strip (two-axis P4) took over the slot previously held
-          by the election chip + T1/T2 toggle: it IS the time selector now; the
-          full picker opens from its list icon. */}
-      <header className="absolute inset-x-0 top-0 z-20 flex flex-col gap-1.5 px-3 pb-2 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/90 backdrop-blur-sm border-b border-gray-200/70 dark:bg-slate-900/90 dark:border-slate-700/70">
+      {/* Top bar — ONE row now: the geo axis. The time axis moved to the bottom. */}
+      <header className="absolute inset-x-0 top-0 z-20 px-3 pb-2 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/90 backdrop-blur-sm border-b border-gray-200/70 dark:bg-slate-900/90 dark:border-slate-700/70">
         <TerritorySearchBar
           onOpen={() => setSearchOpen(true)}
           electionData={props.electionData}
@@ -63,38 +64,30 @@ export function MobileLayout(props: LayoutProps) {
           circoData={props.circoData}
           className="w-full"
         />
-        <TimelineStrip onOpenPicker={() => setPickerOpen(true)} className="w-full" />
       </header>
 
-      {/* Bottom granularity switcher — view axis (manifest-driven) */}
-      <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2">
-        <div className="flex items-center gap-0.5 rounded-xl bg-white/90 p-1 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
-          {props.availableGranularities.map((g, i) => {
-            const active = granularity === g
-            const isHemi = g === 'hemicycle'
-            return (
-              <div key={g} className="flex items-center">
-                {isHemi && i > 0 && (
-                  <span className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />
-                )}
-                <button
-                  type="button"
-                  onClick={() => setGranularity(g)}
-                  className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                    active ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  {GRAN_LABEL[g]}
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      {/* Découpage — top-right under the search, since the bottom band is the
+          time axis now. Opens downward/left: at this corner the desktop's
+          up-and-right popover would run off the screen edge. z-30 keeps the menu
+          above the Hemicycle cover, which you leave through this same menu. */}
+      <LayersMenu
+        value={granularity}
+        onChange={setGranularity}
+        available={props.availableGranularities}
+        placement="left-down"
+        style={{ top: UNDER_HEADER }}
+        // z-50: ABOVE the detail sheet (z-40). The menu opens downward into the
+        // sheet's band, so at the sheet's level or below it opens invisibly —
+        // the button lights up and nothing appears.
+        className="absolute right-3 z-50"
+      />
 
-      {/* Theme chip — bottom-right corner (bottom-left holds the results chip, the
-          centre the granularity switcher, and the snippet card spans above them). */}
-      <ThemeToggle className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 text-gray-600 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-300 dark:ring-white/10" />
+      {/* Time axis — pinned to the bottom (thumb zone), mirroring the desktop
+          strip's floating-card treatment. */}
+      <TimelineStrip
+        onOpenPicker={() => setPickerOpen(true)}
+        className="absolute inset-x-3 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 rounded-xl bg-white/95 px-3 pb-1.5 pt-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-slate-900/95 dark:ring-white/10"
+      />
 
       {!isHemicycle && (
         <AffichageSheet

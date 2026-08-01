@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Drawer } from 'vaul'
+import { ABOVE_STRIP, UNDER_LAYERS } from '../utils/mobileChrome'
 import type { Palette, RoundData } from '../types/election'
 import { getCandidateColor } from '../utils/partyColors'
 import { useElectionStore } from '../store/electionStore'
@@ -77,7 +78,8 @@ export function HemicycleSheet({ circoData, palette, electionLabel, round }: Pro
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Voir la répartition des sièges"
-        className="absolute inset-x-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-sm"
+        style={{ bottom: ABOVE_STRIP }}
+        className="absolute inset-x-4 z-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-sm"
       >
         {title && (
           <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{title}</p>
@@ -134,12 +136,15 @@ export function HemicycleSheet({ circoData, palette, electionLabel, round }: Pro
         </div>
       </button>
 
-      {/* Chip — bottom-left, same slot as the AffichageSheet palette chip. */}
+      {/* Chip — top-right rail, below the layers menu (R3). It used to sit
+          bottom-left, which is now under the pinned timeline strip; on this view
+          the map zoom stack is hidden by the cover, so that slot is free. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Répartition des sièges"
-        className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 dark:bg-slate-900/90 text-gray-600 dark:text-gray-300 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:ring-white/10"
+        style={{ top: UNDER_LAYERS }}
+        className="absolute right-3 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 dark:bg-slate-900/90 text-gray-600 dark:text-gray-300 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:ring-white/10"
       >
         <SeatIcon />
       </button>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Palette, RoundData } from '../types/election'
 import { useElectionStore } from '../store/electionStore'
 import { getCandidateColor } from '../utils/partyColors'
+import { UNDER_HEADER } from '../utils/mobileChrome'
 
 interface Props {
   circoData: RoundData | null
@@ -105,11 +106,14 @@ export function Hemicycle({ circoData, palette, round }: Props) {
 
   return (
     <div className="absolute inset-0 z-20 bg-white dark:bg-slate-900 flex flex-col">
-      {/* Desktop starts BELOW the floating chrome row (R3: wordmark, search
-          pill and util stack all sit at the top of the map area, and this cover
-          is drawn under them). Shifting right instead of down wouldn't work —
-          the centred search pill occupies the middle of that row too. */}
-      <div className="px-6 pt-4 shrink-0 md:pt-20">
+      {/* Starts BELOW the top chrome on BOTH platforms (R3): desktop floats the
+          wordmark/search/utils over this cover, mobile has its search header
+          above it — and this title used to render underneath the mobile header,
+          invisible. Shifting right instead of down wouldn't work on desktop
+          either: the centred search pill occupies the middle of that row. */}
+      {/* `pl-16` on mobile clears the round back button, which sits at this same
+          offset on the left; desktop has no button there. */}
+      <div className="shrink-0 pl-16 pr-6 pt-4 md:pl-6" style={{ paddingTop: UNDER_HEADER }}>
         <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">
           Assemblée nationale
         </h2>

@@ -43,9 +43,29 @@ interface Props {
   available: Granularity[]
   /** Positioning classes — the caller places this on the map. */
   className?: string
+  /** Positioning that can't be a Tailwind class (e.g. a shared calc() offset). */
+  style?: React.CSSProperties
+  /**
+   * Where the popover opens, relative to the button. Desktop sits bottom-left of
+   * the map so the menu goes up-and-right; mobile sits top-right, where that
+   * direction would run straight off the screen edge.
+   */
+  placement?: 'right-up' | 'left-down'
 }
 
-export function LayersMenu({ value, onChange, available, className = '' }: Props) {
+const MENU_POSITION: Record<NonNullable<Props['placement']>, string> = {
+  'right-up': 'bottom-0 left-full ml-2',
+  'left-down': 'right-0 top-full mt-2',
+}
+
+export function LayersMenu({
+  value,
+  onChange,
+  available,
+  className = '',
+  style,
+  placement = 'right-up',
+}: Props) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -146,7 +166,7 @@ export function LayersMenu({ value, onChange, available, className = '' }: Props
   // source order silently makes `relative` win — which drops the caller's
   // offsets and lets the button fall out of the layout entirely.
   return (
-    <div ref={rootRef} className={className}>
+    <div ref={rootRef} className={className} style={style}>
       <div className="relative">
         <button
           type="button"
@@ -170,7 +190,7 @@ export function LayersMenu({ value, onChange, available, className = '' }: Props
             role="menu"
             aria-label="Découpage"
             onKeyDown={onMenuKeyDown}
-            className="absolute bottom-0 left-full ml-2 w-64 rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10"
+            className={`absolute z-10 w-64 rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10 ${MENU_POSITION[placement]}`}
           >
             <p className="px-2.5 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
               Découpage
