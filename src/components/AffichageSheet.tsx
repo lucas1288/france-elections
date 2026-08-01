@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Drawer } from 'vaul'
+import { ABOVE_STRIP } from '../utils/mobileChrome'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor } from '../utils/partyColors'
@@ -105,7 +106,8 @@ export function AffichageSheet({
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Voir les résultats nationaux"
-          className="absolute inset-x-4 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-sm"
+          style={{ bottom: ABOVE_STRIP }}
+          className="absolute inset-x-4 z-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-sm"
         >
           {title && (
             <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{title}</p>

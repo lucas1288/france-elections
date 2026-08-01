@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useElectionStore } from '../store/electionStore'
+import { ABOVE_STRIP, HIDE_BELOW_STRIP } from '../utils/mobileChrome'
 import { usePanelTabs, type PanelTabId } from '../utils/panelTabs'
 import { PanelTabs } from './results/PanelTabs'
 import { Headline } from './results/Headline'
@@ -84,9 +85,13 @@ export function MobileDetailSheet({
   const close = () => setClickedCommune(null)
 
   return (
+    // Stops ABOVE the pinned timeline strip (R3) rather than at the viewport
+    // floor, so the time axis stays usable while a territory is open — you can
+    // switch election/round and watch this sheet update in place.
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[72%] flex-col rounded-t-2xl bg-white dark:bg-slate-900 shadow-[0_-4px_24px_rgba(0,0,0,0.16)] transition-transform duration-300 ${
-        open ? 'translate-y-0' : 'pointer-events-none translate-y-full'
+      style={{ bottom: ABOVE_STRIP, transform: open ? undefined : HIDE_BELOW_STRIP }}
+      className={`fixed inset-x-2 z-40 flex max-h-[72%] flex-col rounded-2xl bg-white dark:bg-slate-900 shadow-[0_-4px_24px_rgba(0,0,0,0.16)] transition-transform duration-300 ${
+        open ? '' : 'pointer-events-none'
       }`}
       aria-hidden={!open}
     >
