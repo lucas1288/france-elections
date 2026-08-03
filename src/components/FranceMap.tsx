@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import maplibregl from 'maplibre-gl'
 import { Protocol } from 'pmtiles'
@@ -13,9 +13,9 @@ import type { NationalTotals } from '../utils/nationalResults'
 import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
-import { OverseasInsets } from './OverseasInsets'
 import { ThemeToggle } from './ThemeToggle'
 import { UNDER_HEADER, UNDER_LAYERS } from '../utils/mobileChrome'
+import { metroPadding } from '../utils/orbitGeometry'
 import { MobileOverseasCluster } from './MobileOverseasCluster'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
@@ -64,14 +64,10 @@ const METRO_BOUNDS: maplibregl.LngLatBoundsLike = [
   [-5.5, 41.2],
   [9.7, 51.2],
 ]
-// Extra padding on the right shifts the metropolitan view left so Corsica (far
-// south-east) isn't hidden behind the Legend / Français-à-l'étranger overlays.
-// Top/bottom padding clears the floating chrome introduced in R3 (search pill
-// north, layers menu + timeline strip south) now that the header container is
-// gone and the map runs the full height of the shell.
-const METRO_FIT: maplibregl.FitBoundsOptions = {
-  padding: { top: 80, bottom: 80, left: 50, right: 270 },
-}
+// Desktop padding is DERIVED from the orbit circle (see utils/orbitGeometry):
+// the ring must stay a perfect circle at any window size with all of métropole
+// inside it, so the fit can't be a constant — it's recomputed from the live
+// container size here and re-applied on resize.
 // Mobile portrait: the view is width-constrained (France's ~1.4:1 box in a tall
 // phone viewport), so minimal horizontal padding lets France grow as large as
 // possible — cutting the inherent vertical whitespace. The floating chrome (top
@@ -736,7 +732,16 @@ export function FranceMap({
   geometry,
   mobile = false,
 }: Props) {
-  const metroFit = mobile ? METRO_FIT_MOBILE : METRO_FIT
+  const getMetroFit = useCallback((): maplibregl.FitBoundsOptions => {
+    if (mobile) return METRO_FIT_MOBILE
+    const el = containerRef.current
+    // `||`, not `??`: an unlaid-out container reports 0, not null. A zero size
+    // yields padding that can't fit its own canvas, MapLibre logs "Map cannot
+    // fit within canvas" and SKIPS the fit — and since the resize re-fit below
+    // ignores its first callback, nothing ever corrected it: métropole simply
+    // never appeared.
+    return { padding: metroPadding(el?.clientWidth || 1200, el?.clientHeight || 800) }
+  }, [mobile])
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const electionDataRef = useRef(electionData)
@@ -778,14 +783,11 @@ export function FranceMap({
     flyBounds,
     setFlyBounds,
     setMapZoomedIn,
-    mapZoomedIn,
     zoomedAway,
     setZoomedAway,
     isDark,
   } = useElectionStore()
   const isOverview = useIsOverview()
-  // Overseas insets share the overlay auto-hide: visible only at the overview AND not zoomed in.
-  const showInsets = isOverview && !mapZoomedIn
   // `zoomedAway` (store) — whether the map is zoomed in past the overview baseline
   // (any amount). Drives the mobile "back to overview" button AND the national
   // snippet's auto-hide, so both react even to a mild dept-level zoom, unlike the
@@ -817,7 +819,7 @@ export function FranceMap({
       container: containerRef.current,
       style: makeStyle(geometryRef.current),
       bounds: METRO_BOUNDS,
-      fitBoundsOptions: metroFit,
+      fitBoundsOptions: getMetroFit(),
       attributionControl: false,
     })
 
@@ -848,7 +850,8 @@ export function FranceMap({
       // "Away from overview" = zoomed in beyond the overview's own zoom (+ a small
       // margin so a settle wobble doesn't flicker the back button).
       if (!overviewZoomRef.current) {
-        overviewZoomRef.current = map.cameraForBounds(METRO_BOUNDS, metroFit)?.zoom ?? map.getZoom()
+        overviewZoomRef.current =
+          map.cameraForBounds(METRO_BOUNDS, getMetroFit())?.zoom ?? map.getZoom()
       }
       const away = map.getZoom() > overviewZoomRef.current + 0.3
       if (away !== wasAway) {
@@ -1068,7 +1071,7 @@ export function FranceMap({
     setClickedCommune,
     setMapZoomedIn,
     setZoomedAway,
-    metroFit,
+    getMetroFit,
     mobile,
     overseasInsetEl,
   ])
@@ -1156,6 +1159,29 @@ export function FranceMap({
     apply()
   }, [isDark])
 
+  // ── Re-fit métropole when the map area resizes ────────────────────────────
+  // The orbit's circle is derived from the container, so on resize the ring
+  // changes size — without this the "all of métropole inside the circle"
+  // invariant would only hold at the size the page happened to load at.
+  // Overview only: re-fitting while the user is zoomed in would yank the camera.
+  useEffect(() => {
+    const el = containerRef.current
+    const map = mapRef.current
+    if (!el || !map || mobile || !isOverview || zoomedAway) return
+    let first = true
+    const ro = new ResizeObserver(() => {
+      // ResizeObserver fires once on observe; that first call is the size we
+      // already fitted to, so skip it rather than re-animating on mount.
+      if (first) {
+        first = false
+        return
+      }
+      map.fitBounds(METRO_BOUNDS, { ...getMetroFit(), duration: 0 })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [mobile, isOverview, zoomedAway, getMetroFit])
+
   // ── Fly to focused overseas territory ─────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
@@ -1163,9 +1189,9 @@ export function FranceMap({
     if (focusedTerritory && OVERSEAS_BOUNDS[focusedTerritory]) {
       map.fitBounds(OVERSEAS_BOUNDS[focusedTerritory], { padding: 40, duration: 800 })
     } else if (!focusedTerritory) {
-      map.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
+      map.fitBounds(METRO_BOUNDS, { ...getMetroFit(), duration: 800 })
     }
-  }, [focusedTerritory, metroFit])
+  }, [focusedTerritory, getMetroFit])
 
   // ── Fly to programmatic target (e.g. city list click) ────────────────────
   useEffect(() => {
@@ -1181,7 +1207,7 @@ export function FranceMap({
     const map = mapRef.current
     if (!map || !flyBounds) return
     if (flyBounds === 'overview') {
-      map.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
+      map.fitBounds(METRO_BOUNDS, { ...getMetroFit(), duration: 800 })
     } else {
       const [w, s, e, n] = flyBounds
       map.fitBounds(
@@ -1193,7 +1219,7 @@ export function FranceMap({
       )
     }
     setFlyBounds(null)
-  }, [flyBounds, setFlyBounds, metroFit])
+  }, [flyBounds, setFlyBounds, getMetroFit])
 
   // ── Département focus: dim the map outside the settled dept (two-axis P2) ──
   const focusedDept = clickedCommune && isDeptCode(clickedCommune) ? clickedCommune : null
@@ -1259,14 +1285,9 @@ export function FranceMap({
   return (
     <div className="h-full w-full relative">
       <div ref={containerRef} className="h-full w-full" />
-      {!mobile && (
-        <div
-          className="transition-opacity duration-300"
-          style={{ opacity: showInsets ? 1 : 0, pointerEvents: showInsets ? 'auto' : 'none' }}
-        >
-          <OverseasInsets electionData={electionData} palette={palette} />
-        </div>
-      )}
+      {/* NOTE (R4): the desktop overseas insets column used to live here. It's
+          gone — the `OverseasOrbit` (DesktopLayout) replaced both it and the
+          top-right abroad panel with one ring around the mainland. */}
       {/* NOTE (R3): the desktop "← Vue générale" button used to live here. It's
           gone — the floating wordmark (DesktopLayout) grows a back arrow and
           does the same job, so the corner carries one affordance, not two. */}
@@ -1332,7 +1353,7 @@ export function FranceMap({
           onClick={() => {
             setFocusedTerritory(null)
             setClickedCommune(null)
-            mapRef.current?.fitBounds(METRO_BOUNDS, { ...metroFit, duration: 800 })
+            mapRef.current?.fitBounds(METRO_BOUNDS, { ...getMetroFit(), duration: 800 })
           }}
         >
           <svg
