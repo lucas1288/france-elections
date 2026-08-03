@@ -20,7 +20,8 @@ interface Territory {
 // light map margin in both themes, so it isn't theme-switched.
 const NEUTRAL = '#e2e8f0'
 
-// DOM then COM, matching the desktop OverseasInsets order.
+// DOM then COM. (Desktop uses the R4 orbit instead; this cluster is the
+// mobile stand-in until R4's mobile half lands.)
 const TERRITORIES: Territory[] = [
   { code: '971', label: 'Guadeloupe' },
   { code: '972', label: 'Martinique' },

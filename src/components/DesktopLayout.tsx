@@ -8,7 +8,7 @@ import { TerritoryNavigator } from './TerritoryNavigator'
 import { TerritorySearchBar } from './TerritorySearchBar'
 import { TimelineStrip } from './TimelineStrip'
 import { ResultsPanel } from './ResultsPanel'
-import { AbroadMap } from './AbroadMap'
+import { OverseasOrbit } from './OverseasOrbit'
 import { Wordmark } from './Wordmark'
 import type { LayoutProps } from './layoutProps'
 
@@ -31,7 +31,10 @@ export function DesktopLayout(props: LayoutProps) {
   const { selected, granularity, setGranularity } = useElectionStore()
   const isOverview = useIsOverview()
   const colorMode = useElectionStore((s) => s.colorMode)
-  const mapZoomedIn = useElectionStore((s) => s.mapZoomedIn)
+  const zoomedAway = useElectionStore((s) => s.zoomedAway)
+  // The orbit is an OVERVIEW device: it shows only when nothing is settled and
+  // the map is at its baseline zoom.
+  const showOrbit = isOverview && !zoomedAway
   const [pickerOpen, setPickerOpen] = useState(false)
   const [navigatorOpen, setNavigatorOpen] = useState(false)
   const isHemicycle = granularity === 'hemicycle'
@@ -108,36 +111,30 @@ export function DesktopLayout(props: LayoutProps) {
             onOpenPicker={() => setPickerOpen(true)}
             className="absolute bottom-4 left-1/2 z-30 w-[24rem] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-xl bg-white/95 px-4 pb-1.5 pt-2 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-slate-900/95 dark:ring-white/10"
           />
-          {/* Top-right overlay: abroad panel (map views only). The old "En tête"
-              legend is gone — force selection lives in the sidebar's national
-              results now (mobile model); each row carries its colour key. */}
+          {/* Overseas ORBIT (R4) — one control replacing the old left-hand
+              insets column AND the top-right abroad panel. It exists only at
+              the overview: the moment you zoom in or settle a territory you're
+              working on the mainland, and the ring would just be in the way. */}
+          {/* GOTCHA: this wrapper spans the WHOLE map area, so it must stay
+              `pointer-events: none` — with `auto` it swallowed every wheel event
+              and the map could not be zoomed at all. Interactivity is granted
+              per-DISC inside (via `interactive`), never on the full-area layer.
+              Hidden as soon as the user zooms AT ALL (`zoomedAway`), not at the
+              coarser z8 `mapZoomedIn` threshold: the ring is an overview device,
+              and leaving it up during a zoom is exactly when it's in the way. */}
           {!isHemicycle && (
             <div
-              // `top-20` clears the floating search pill's row: the pill is
-              // centred on the MAP AREA, so on a narrower window its right edge
-              // reaches into this panel's column. Dropping below the row makes
-              // the two independent of the window width.
-              className="absolute top-20 right-16 z-10 flex flex-col gap-2 max-h-[calc(100vh-6rem)] overflow-y-auto transition-opacity duration-300"
-              style={{
-                opacity: mapZoomedIn ? 0 : 1,
-                pointerEvents: mapZoomedIn ? 'none' : 'auto',
-              }}
+              className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300"
+              style={{ opacity: showOrbit ? 1 : 0 }}
             >
-              <div
-                className="transition-opacity duration-300"
-                style={{
-                  opacity: isOverview ? 1 : 0,
-                  pointerEvents: isOverview ? 'auto' : 'none',
-                }}
-              >
-                <AbroadMap
-                  electionData={props.electionData}
-                  circoChoro={props.circoChoro}
-                  fullData={props.fullData}
-                  granularity={granularity}
-                  palette={props.palette}
-                />
-              </div>
+              <OverseasOrbit
+                electionData={props.electionData}
+                circoChoro={props.circoChoro}
+                circoData={props.circoData}
+                fullData={props.fullData}
+                palette={props.palette}
+                interactive={showOrbit}
+              />
             </div>
           )}
         </div>
