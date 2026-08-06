@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Drawer } from 'vaul'
-import { ABOVE_STRIP } from '../utils/mobileChrome'
+import { MobileSnippetCard } from './results/MobileSnippetCard'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
 import { getCandidateColor } from '../utils/partyColors'
@@ -102,84 +102,38 @@ export function AffichageSheet({
   return (
     <>
       {showSnippet && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Voir les résultats nationaux"
-          style={{ bottom: ABOVE_STRIP }}
-          className="absolute inset-x-4 z-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-sm"
-        >
-          {title && (
-            <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{title}</p>
-          )}
-
-          {/* Participation — mirrors the full sheet's block (big %, inscrits, bar, Blancs/Nuls). */}
-          <div className="mt-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Participation
-            </p>
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {fmtPct(turnoutPct)}%
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                ({fmtInt(totals.turnout)} / {fmtInt(totals.registeredVoters)} inscrits)
-              </span>
-            </div>
-            <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
-              <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${turnoutPct}%` }} />
-            </div>
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              Blancs&nbsp;: {fmtPct(blankPct)}% — Nuls&nbsp;: {fmtPct(nullPct)}%
-            </p>
-          </div>
-
-          {/* Top 3 candidates/forces — same row layout + score bar as the full sheet. */}
-          <div className="mt-3 space-y-2">
-            {topThree.map((c, i) => {
-              const color = getCandidateColor(c.name, i, c.party, palette)
-              return (
-                <div key={c.name}>
-                  <div className="flex items-center gap-2.5">
-                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color }} />
-                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">
-                      {c.name}
-                    </span>
-                    <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
-                      {c.party}
-                    </span>
-                    <span className="w-12 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {fmtPct(c.percentage)}%
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${c.percentage}%`, background: color }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="mt-2.5 flex items-center justify-end gap-1 text-xs font-medium text-blue-600 dark:text-blue-400">
-            <span>Détails</span>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </div>
-        </button>
+        <MobileSnippetCard
+          title={title}
+          ariaLabel="Voir les résultats nationaux"
+          onOpen={() => setOpen(true)}
+          meta={
+            <>
+              {/* One line instead of four: the big turnout figure, the inscrits
+                  count and the standalone Blancs/Nuls line all lived here. The
+                  full sheet still carries them. */}
+              <div className="flex items-baseline gap-2 text-xs">
+                <span className="text-gray-500 dark:text-gray-400">Participation</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                  {fmtPct(turnoutPct)}%
+                </span>
+                <span className="ml-auto truncate text-gray-400 dark:text-gray-500">
+                  Blancs&nbsp;{fmtPct(blankPct)}% · Nuls&nbsp;{fmtPct(nullPct)}%
+                </span>
+              </div>
+              <div className="mt-1 h-1 w-full rounded-full bg-gray-100 dark:bg-slate-800">
+                <div className="h-1 rounded-full bg-blue-500" style={{ width: `${turnoutPct}%` }} />
+              </div>
+            </>
+          }
+          rows={topThree.map((c, i) => ({
+            key: c.name,
+            label: c.name,
+            party: c.party,
+            value: `${fmtPct(c.percentage)}%`,
+            pct: c.percentage,
+            color: getCandidateColor(c.name, i, c.party, palette),
+          }))}
+        />
       )}
 
       <Drawer.Root open={open} onOpenChange={setOpen}>

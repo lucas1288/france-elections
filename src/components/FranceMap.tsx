@@ -1,5 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
+import { useRef, useEffect, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import { Protocol } from 'pmtiles'
 import type { CommuneResult, Palette, RoundData } from '../types/election'
@@ -14,9 +13,7 @@ import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
 import { ThemeToggle } from './ThemeToggle'
-import { UNDER_HEADER, UNDER_LAYERS } from '../utils/mobileChrome'
-import { metroPadding } from '../utils/orbitGeometry'
-import { MobileOverseasCluster } from './MobileOverseasCluster'
+import { metroPadding, mobileMetroPadding, UTIL_STACK_TOP } from '../utils/orbitGeometry'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
 import { MERGED_COMMUNE_TO_CURRENT } from '../utils/mergedCommunes'
@@ -68,20 +65,11 @@ const METRO_BOUNDS: maplibregl.LngLatBoundsLike = [
 // the ring must stay a perfect circle at any window size with all of métropole
 // inside it, so the fit can't be a constant — it's recomputed from the live
 // container size here and re-applied on resize.
-// Mobile portrait: the view is width-constrained (France's ~1.4:1 box in a tall
-// phone viewport), so minimal horizontal padding lets France grow as large as
-// possible — cutting the inherent vertical whitespace. The floating chrome (top
-// bar, bottom switcher, corner buttons) is translucent, so France may sit under
-// it like the desktop overlays; only a little top/bottom breathing room is kept.
-const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = {
-  padding: { top: 40, bottom: 380, left: 8, right: 8 },
-}
-// Geo anchor for the mobile overseas inset (MapLibre Marker): the Bay of Biscay,
-// south-west of France's coast (≈ Corsica's latitude, left side — lucas's spot).
-// Open sea on this map, so the inset reads as part of the map, pans/zooms with
-// the terrain, and slides out of view naturally when zooming into the mainland.
-const OVERSEAS_INSET_LNGLAT: [number, number] = [-3.4, 42.5]
-
+// Mobile portrait is DERIVED too, from the same orbit constants (M4): the two
+// disc rows bracket métropole above and below, so the vertical padding is what
+// reserves their bands. Horizontal padding stays minimal — the phone view is
+// width-bound, so every px taken there shrinks France directly.
+const METRO_FIT_MOBILE: maplibregl.FitBoundsOptions = { padding: mobileMetroPadding() }
 // Bounding boxes for overseas territories (used for flyTo on inset click)
 // Hand-aligned columns below — the alignment is the point, so prettier is held off.
 // prettier-ignore
@@ -777,7 +765,6 @@ export function FranceMap({
     clickedCommune,
     granularity,
     focusedTerritory,
-    setFocusedTerritory,
     flyTarget,
     setFlyTarget,
     flyBounds,
@@ -796,12 +783,6 @@ export function FranceMap({
   const overviewZoomRef = useRef(0)
   // Mirrors `isDark` for callbacks that outlive renders (geometry-change re-theme).
   const isDarkRef = useRef(false)
-  // Portal container for the mobile overseas inset — handed to a MapLibre Marker
-  // (geo-anchored at OVERSEAS_INSET_LNGLAT) so the inset moves with the map.
-  // Created once per mount via the lazy initializer (detached until the marker
-  // adopts it); React renders into it through createPortal below.
-  const [overseasInsetEl] = useState(() => document.createElement('div'))
-
   // Fast lookup for the hover tooltip: département entries + full per-territory data.
   useEffect(() => {
     const m = new Map<string, CommuneResult>()
@@ -829,14 +810,6 @@ export function FranceMap({
     // desktop. It's replaced by our own util stack (below) so zoom and theme
     // read as ONE floating group in the app's own chrome style, per lucas's
     // "floating util stack top-right (theme/zoom merged)".
-
-    // Mobile: geo-anchor the overseas inset in the sea below France, printed-map
-    // style — it pans/zooms with the terrain instead of floating over it.
-    if (mobile) {
-      new maplibregl.Marker({ element: overseasInsetEl, anchor: 'center' })
-        .setLngLat(OVERSEAS_INSET_LNGLAT)
-        .addTo(map)
-    }
 
     // Auto-hide the floating overlays once zoomed in (only fire on threshold crossing).
     let wasZoomedIn = false
@@ -1066,15 +1039,7 @@ export function FranceMap({
       map.remove()
       mapRef.current = null
     }
-  }, [
-    setHoveredCommune,
-    setClickedCommune,
-    setMapZoomedIn,
-    setZoomedAway,
-    getMetroFit,
-    mobile,
-    overseasInsetEl,
-  ])
+  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, setZoomedAway, getMetroFit, mobile])
 
   // ── Geometry version change (era switch) → rebuild style, then re-sync ─────
   useEffect(() => {
@@ -1176,7 +1141,16 @@ export function FranceMap({
         first = false
         return
       }
-      map.fitBounds(METRO_BOUNDS, { ...getMetroFit(), duration: 0 })
+      // Re-baseline the overview zoom BEFORE the fit, not after: `fitBounds`
+      // with duration 0 fires its `zoom` event synchronously, and that handler
+      // compares against this ref. Left stale, a resize that widens the map
+      // raises the fitted zoom above the cached baseline, the map decides the
+      // user has "zoomed away", and the overseas orbit + national snippet
+      // silently vanish until a reload — the effect above bails on
+      // `zoomedAway`, so it can't even re-fit itself back.
+      const fit = getMetroFit()
+      overviewZoomRef.current = map.cameraForBounds(METRO_BOUNDS, fit)?.zoom ?? map.getZoom()
+      map.fitBounds(METRO_BOUNDS, { ...fit, duration: 0 })
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -1294,9 +1268,17 @@ export function FranceMap({
       {/* Desktop util stack, top-right: zoom + theme as one group. Zoom needs
           the map instance, hence this lives in FranceMap rather than the layout.
           z-10 keeps it under the Hemicycle cover (z-20) — there's nothing to
-          zoom there. */}
+          zoom there.
+
+          It starts BELOW the corner rather than at `top-4`: the orbit's Français
+          de l'étranger disc owns that corner now (see UTIL_STACK_TOP). The two
+          swapped because FE dodging this stack sideways was pushing the whole
+          overseas arc — and métropole with it — 70px down the screen. */}
       {!mobile && (
-        <div className="absolute right-3 top-4 z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10">
+        <div
+          style={{ top: UTIL_STACK_TOP }}
+          className="absolute right-3 z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10"
+        >
           <button
             type="button"
             aria-label="Zoomer"
@@ -1340,99 +1322,13 @@ export function FranceMap({
           <ThemeToggle className="flex h-9 w-9 items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-slate-800 dark:hover:text-gray-100" />
         </div>
       )}
-      {/* Mobile: icon-only "back to overview" — shown whenever the map is away from
-          the overview (a selection/focus is active OR the user has zoomed in, by
-          click or pinch). Lives here (not MobileLayout) so it can fitBounds the map.
-          `pointer-events-auto` keeps it tappable even if a sheet locks the body. */}
-      {mobile && (zoomedAway || !isOverview) && (
-        <button
-          type="button"
-          aria-label="Revenir à la vue d'ensemble"
-          style={{ top: UNDER_HEADER }}
-          className="pointer-events-auto absolute left-3 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:text-gray-200 dark:ring-white/10"
-          onClick={() => {
-            setFocusedTerritory(null)
-            setClickedCommune(null)
-            mapRef.current?.fitBounds(METRO_BOUNDS, { ...getMetroFit(), duration: 800 })
-          }}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      )}
-      {/* Mobile: +/− zoom buttons for users who prefer taps over pinch. Top-right
-          under the header (mirrors the back button top-left; the bottom-right is
-          taken by the theme chip and the national snippet card spans above it);
-          z-10 keeps them under the Hemicycle cover (z-20) so they vanish there. */}
-      {mobile && (
-        <div
-          style={{ top: UNDER_LAYERS }}
-          className="absolute right-3 z-10 flex flex-col overflow-hidden rounded-xl bg-white/90 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:bg-slate-900/90 dark:ring-white/10"
-        >
-          <button
-            type="button"
-            aria-label="Zoomer"
-            className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800"
-            onClick={() => mapRef.current?.zoomIn()}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </button>
-          <span className="mx-2 h-px bg-gray-200 dark:bg-slate-700" />
-          <button
-            type="button"
-            aria-label="Dézoomer"
-            className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800"
-            onClick={() => mapRef.current?.zoomOut()}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14" />
-            </svg>
-          </button>
-          {/* Theme joins zoom in one group (R3), mirroring the desktop util
-              stack. It used to be a lone chip in the bottom-right corner —
-              that corner now belongs to the timeline strip. */}
-          <span className="mx-2 h-px bg-gray-200 dark:bg-slate-700" />
-          <ThemeToggle className="flex h-11 w-11 items-center justify-center text-gray-700 active:bg-gray-100 dark:text-gray-200 dark:active:bg-slate-800" />
-        </div>
-      )}
-      {/* Mobile overseas inset — rendered into the geo-anchored Marker's element,
-          so it lives ON the map (pans/zooms with it) rather than floating above. */}
-      {mobile &&
-        createPortal(
-          <MobileOverseasCluster electionData={electionData} palette={palette} />,
-          overseasInsetEl,
-        )}
+      {/* M6: the phone has NO map controls of its own any more. The zoom
+          buttons went at lucas's call ("a bit useless on mobile. People are
+          already quite educated with map-based apps… they know they can zoom in
+          with fingers" — and double-tap still zooms), the theme toggle followed
+          them into the layers menu since it was part of that same stack, and the
+          back-to-overview chip moved to MobileLayout, which can reach the
+          overview through the store (`setFlyBounds`) without touching the map. */}
     </div>
   )
 }

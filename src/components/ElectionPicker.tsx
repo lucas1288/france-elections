@@ -68,7 +68,7 @@ export function ElectionPicker({ open, onClose }: Props) {
 
   return (
     <div
-      className={`fixed inset-0 z-40 flex flex-col bg-white dark:bg-slate-900 transition-transform duration-300 md:flex-row md:items-center md:justify-center md:bg-black/40 md:transition-opacity dark:md:bg-black/60 ${
+      className={`fixed inset-0 z-[60] flex flex-col bg-white dark:bg-slate-900 transition-transform duration-300 md:flex-row md:items-center md:justify-center md:bg-black/40 md:transition-opacity dark:md:bg-black/60 ${
         open
           ? 'translate-y-0 md:opacity-100'
           : 'pointer-events-none translate-y-full md:translate-y-0 md:opacity-0'

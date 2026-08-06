@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react'
 import type { Palette, RoundData } from '../types/election'
 import { useElectionStore } from '../store/electionStore'
 import { getCandidateColor } from '../utils/partyColors'
-import { UNDER_HEADER } from '../utils/mobileChrome'
+import { BELOW_TOP_CHROME } from '../utils/mobileChrome'
 
 interface Props {
   circoData: RoundData | null
   palette: Palette | null
   round: number
+  /** Phone: the header has to clear two rows of top chrome, not desktop's one. */
+  mobile?: boolean
 }
 
 const VBW = 840
@@ -53,7 +55,7 @@ function seatLayout(n: number): Array<{ x: number; y: number }> {
   return pts
 }
 
-export function Hemicycle({ circoData, palette, round }: Props) {
+export function Hemicycle({ circoData, palette, round, mobile = false }: Props) {
   const { clickedCommune, setClickedCommune } = useElectionStore()
   const isDark = useElectionStore((s) => s.isDark)
   const [hovered, setHovered] = useState<number | null>(null)
@@ -111,9 +113,15 @@ export function Hemicycle({ circoData, palette, round }: Props) {
           above it — and this title used to render underneath the mobile header,
           invisible. Shifting right instead of down wouldn't work on desktop
           either: the centred search pill occupies the middle of that row. */}
-      {/* `pl-16` on mobile clears the round back button, which sits at this same
-          offset on the left; desktop has no button there. */}
-      <div className="shrink-0 pl-16 pr-6 pt-4 md:pl-6" style={{ paddingTop: UNDER_HEADER }}>
+      {/* Since M6 the mobile top chrome is two full rows (search bar, then the
+          chip row), so the title clears it by going BELOW rather than beside —
+          no left padding needed any more. That offset is far too deep for
+          desktop, whose floating row is one short pill, so it is applied only on
+          the phone and desktop keeps `md:pt-20`. */}
+      <div
+        className="shrink-0 px-6 pt-4 md:pt-20"
+        style={mobile ? { paddingTop: BELOW_TOP_CHROME } : undefined}
+      >
         <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">
           Assemblée nationale
         </h2>

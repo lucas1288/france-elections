@@ -59,11 +59,30 @@ const CELL_OVER_DISC = 1.45
 const GAP_OVER_DISC = 0.35
 /**
  * Where the free-floating Français de l'étranger disc sits, in px from the map
- * area's top-right corner. `FE_RIGHT` clears FranceMap's zoom/theme stack
- * (`right-3`, ~44px wide) with room to breathe.
+ * area's top-right corner — hard into it, aligned with the zoom/theme stack's
+ * own `right-3`.
+ *
+ * It used to sit at `right: 64`, dodging that stack sideways, which parked it
+ * exactly on the east column's outer envelope: it read as a sixth item in that
+ * column, and — worse — it tripped the collision rule below and pushed the whole
+ * arc down, costing métropole 70px of height (7%) at a 1620×1140 map area. FE
+ * and the stack swapped instead (lucas): FE owns the corner, the stack starts
+ * below it at UTIL_STACK_TOP. In the corner FE is ~159px clear of the column, so
+ * the arc keeps its full height.
  */
-export const FE_RIGHT = 64
+export const FE_RIGHT = 12
 export const FE_TOP = 12
+
+/**
+ * Where FranceMap's zoom/theme stack starts, in px from the top of the map area
+ * — clear of FE's cell, which now owns the corner above it.
+ *
+ * Derived from the LARGEST disc rather than the live one on purpose: the stack
+ * is chrome and exists at every zoom, while FE only shows at the overview, so a
+ * live-derived offset would shift it around as the window resizes and leave it
+ * anchored to something that isn't on screen half the time.
+ */
+export const UTIL_STACK_TOP = FE_TOP + DISC_MAX + LABEL_H + 8
 
 export interface Arc {
   /** Centre of the métropole BOUNDING BOX — what the map is fitted to. */
@@ -200,10 +219,11 @@ export function orbitArc(w: number, h: number): Arc {
   }
 
   const arc = build(TOP_CHROME)
-  // Français de l'étranger owns the top-right corner, and on a narrow desktop
-  // the east column's top disc swings right underneath it. Detected rather than
+  // Français de l'étranger owns the top-right corner, and on a narrow window the
+  // east column's top disc can still swing underneath it. Detected rather than
   // reserved unconditionally: paying for FE's height on every window would cost
-  // métropole real size at the widths where the two never meet.
+  // métropole real size at the widths where the two never meet — which, since FE
+  // moved into the corner proper, is every ordinary desktop size.
   const eastTopX = arc.arcCx + arc.rxE * COS_EXT
   const feX = w - FE_RIGHT - arc.cellW / 2
   const feClash =
@@ -281,4 +301,191 @@ export function slotPoint(arc: Arc, slot: ArcSlot) {
   const east = slot.side === 'east'
   const rx = east ? arc.rxE : arc.rxW
   return { x: arc.arcCx + (east ? 1 : -1) * rx * Math.cos(t), y: arc.arcCy + arc.ry * Math.sin(t) }
+}
+
+// ── Mobile (M6) ───────────────────────────────────────────────────────────────
+/**
+ * The phone does NOT lay the territories out around métropole. It hides them
+ * behind ONE button, and opens them as a ring in an overlay.
+ *
+ * lucas, Aug 6 2026: "I don't think there's any easy solution on mobile for
+ * displaying all overseas territories at once. So I'd rather hide them on mobile
+ * behind a single button, that could actually reuse the current symbol of french
+ * abroad." M4/M5 had tried the other answer — two rows bracketing the mainland —
+ * and the arithmetic never got good: eleven touch-sized discs cost ~90px of a
+ * budget where métropole was already the thing being squeezed, and the rows had
+ * to dodge every floating control on the way.
+ *
+ * What replaces them has to carry the information the rows carried, or the trade
+ * is just a deletion. That is what the button's ring is for: eleven equal arcs,
+ * one per territory, in each territory's own winner colour (see `aggregate` in
+ * utils/overseasDiscs). You still read the overseas balance from the map screen;
+ * you tap only to find out WHICH territory is which.
+ *
+ * The freed budget goes straight back to the map: with no disc rows to clear,
+ * the only band reserved above métropole is the search bar's.
+ */
+
+/** Diameter of the aggregate button on the map screen. */
+export const MOBILE_BUTTON_DISC = 52
+/** Its inset from the map area's bottom-left corner. */
+export const MOBILE_BUTTON_LEFT = 12
+/** Clearance between the button and the national snippet it sits on top of. */
+export const MOBILE_BUTTON_GAP = 8
+
+/**
+ * Bands the phone's chrome takes out of the map, for `fitBounds`.
+ *
+ * Only the SEARCH BAR is reserved at the top. Everything else up there — the
+ * back chip, the layers button — floats over the map the way Google Maps'
+ * controls do, which is the model lucas asked for ("a bit like in google maps
+ * again"). That distinction is what makes his two-row top layout affordable:
+ * opaque CONTENT needs a reserved band, translucent CHROME does not.
+ */
+const MOBILE_SEARCH_BAND = 64
+/** Strip band + its margin, mirroring ABOVE_STRIP in utils/mobileChrome. */
+const MOBILE_STRIP_BAND = 64
+/**
+ * Nominal height of the national snippet card, used ONLY to derive the map's
+ * fitBounds padding. The live value is measured and published as a CSS variable
+ * (see SNIPPET_H_VAR) for the surfaces that stack on the card; the map fit is
+ * computed once at init, before the card has rendered, so it uses this instead.
+ * Both are the same number today — keep them in step.
+ */
+const MOBILE_SNIPPET_NOMINAL = 196
+const MOBILE_MARGIN = 8
+
+/**
+ * fitBounds padding for the phone. Deliberately NOT recomputed on resize (the
+ * re-fit effect is desktop-only): a phone viewport only changes on rotation, and
+ * a re-fit would fight the camera.
+ */
+export function mobileMetroPadding() {
+  return {
+    top: MOBILE_SEARCH_BAND,
+    bottom: MOBILE_STRIP_BAND + MOBILE_SNIPPET_NOMINAL + MOBILE_MARGIN,
+    left: MOBILE_MARGIN,
+    right: MOBILE_MARGIN,
+  }
+}
+
+/**
+ * Order of the eleven discs around the overlay's ring, CLOCKWISE FROM THE TOP.
+ *
+ * This is the desktop's two parentheses closed into a loop, and it reads the
+ * same way: down the right side you get the east column top-to-bottom
+ * (Polynésie → Mayotte), and continuing round and up the left side you get the
+ * west column bottom-to-top (Guyane → St-Pierre) — so on screen the left half
+ * still runs St-Pierre → Guyane downward, exactly as it does on desktop.
+ *
+ * Français de l'étranger takes the apex. It is the one territory with no
+ * location, which is why it sits outside the brackets on desktop; at 12 o'clock
+ * it is outside them here too, at the seam where the loop closes.
+ */
+export const RING_SLOTS: { code: string; label: string }[] = [
+  ABROAD_SLOT,
+  ...ARC_SLOTS.filter((s) => s.side === 'east').map(({ code, label }) => ({ code, label })),
+  ...ARC_SLOTS.filter((s) => s.side === 'west')
+    .map(({ code, label }) => ({ code, label }))
+    .reverse(),
+]
+
+export interface Ring {
+  cx: number
+  cy: number
+  rx: number
+  ry: number
+  disc: number
+  /** Width allotted to a label under a disc — the ring's tightest pitch. */
+  labelW: number
+}
+
+const RING_DISC = 60
+const RING_DISC_MIN = 44
+const RING_MARGIN = 10
+/** Room under the lowest disc for its label, and above the ring for the title. */
+const RING_LABEL_H = 30
+/**
+ * Floor for the top of the ring — i.e. clearance under the overlay's title.
+ *
+ * Was 56, which left the apex disc 6px under "11 territoires — touchez pour
+ * ouvrir": the globe read as part of the heading rather than as the first item
+ * of the ring (lucas: "a bit more padding between the circle of overseas
+ * territories and the title"). At 96 the gap is ~46px and the ring's centre
+ * moves down with it, closer to the middle of the screen.
+ */
+const RING_TOP_PAD = 96
+/**
+ * How much of the bottom the ring keeps clear, PREFERRED and MINIMUM.
+ *
+ * Preferred is the band the national snippet and the timeline strip occupy under
+ * the scrim: keeping off it lands the ring over the MAP, which is the thing it
+ * stands in for. But that is an aesthetic preference, and on a short viewport it
+ * costs something that isn't — at 375×667 the reserved band left so little
+ * height that the labels down the flanks overlapped each other ("St-Martin /
+ * St-Barth" ran into "Guadeloupe"). Legibility of eleven names beats not
+ * overlapping a card that is dimmed behind a scrim anyway, so the reserve gives
+ * way as far as the minimum when the ring needs the room.
+ */
+const RING_BOTTOM_RESERVE = 268
+const RING_BOTTOM_RESERVE_MIN = 88
+/** How far from circular the ellipse may get, either way. */
+const RING_ASPECT_MIN = 0.85
+const RING_ASPECT_MAX = 1.8
+
+/**
+ * The overlay's ring. An ELLIPSE, not a circle — the phone is portrait, so a
+ * circle inscribed in its width would leave the screen lopsided while cramming
+ * the discs together.
+ *
+ * Stretching it vertically buys the one thing the map screen could never afford:
+ * ROOM FOR THE NAMES. On a circle the pitch between discs is uniform, and at
+ * 375px wide eleven of them leave only ~85px between centres everywhere;
+ * stretched, that tight pitch is confined to the apex and the nadir, and every
+ * disc down the sides gets its label space back.
+ *
+ * The stretch is CLAMPED, though. Left to fill the viewport it reaches an aspect
+ * of 2.2 on a tall phone, at which point the discs stop reading as a ring at all
+ * and just look scattered down the two edges.
+ */
+export function overlayRing(w: number, h: number): Ring {
+  const n = RING_SLOTS.length
+  const disc = Math.max(RING_DISC_MIN, Math.min(RING_DISC, (w - 2 * RING_MARGIN) * 0.16))
+  const rx = w / 2 - RING_MARGIN - disc / 2
+  // Vertical room left once the apex disc, the nadir disc, its label and the
+  // title are accounted for — then clamped to stay recognisably a ring.
+  const bandTop = RING_TOP_PAD
+  // Height at which the ring stops crowding itself: down the flanks, adjacent
+  // centres are ry·sin(Δθ) apart, and a disc plus its label has to fit in that.
+  // Solve for the band that yields exactly that ry, then claw back only as much
+  // of the bottom reserve as it takes to get there.
+  const comfortable =
+    (2 * (disc + RING_LABEL_H)) / Math.sin((2 * Math.PI) / n) + disc + RING_LABEL_H
+  const reserve = Math.max(
+    RING_BOTTOM_RESERVE_MIN,
+    Math.min(RING_BOTTOM_RESERVE, h - bandTop - comfortable),
+  )
+  const bandBottom = h - reserve
+  const room = (bandBottom - bandTop - disc - RING_LABEL_H) / 2
+  const ry = Math.min(rx * RING_ASPECT_MAX, Math.max(rx * RING_ASPECT_MIN, room))
+  // CENTRE the ring in its band rather than hanging it from the top. When the
+  // band is the binding constraint the two are the same thing, but when the
+  // aspect clamp bites (a very tall viewport) the slack would otherwise all pool
+  // at the bottom and leave the ring riding high under the title.
+  // `bandTop` stays a floor so a short viewport crowds the snippet, never the title.
+  const total = 2 * ry + disc + RING_LABEL_H
+  const top = Math.max(bandTop, bandTop + (bandBottom - bandTop - total) / 2)
+  const cy = top + disc / 2 + ry
+  // The tightest centre-to-centre spacing is at the apex, where the ellipse is
+  // flattest: adjacent discs are ~rx·Δθ apart horizontally.
+  const labelW = Math.max(disc, rx * ((2 * Math.PI) / n))
+  return { cx: w / 2, cy, rx, ry, disc, labelW }
+}
+
+/** Screen position of ring slot `i`'s DISC CENTRE. */
+export function ringPoint(ring: Ring, i: number, n = RING_SLOTS.length) {
+  // −90° puts slot 0 at the top; increasing i turns clockwise on screen, since
+  // y grows downward.
+  const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
+  return { x: ring.cx + ring.rx * Math.cos(a), y: ring.cy + ring.ry * Math.sin(a) }
 }
