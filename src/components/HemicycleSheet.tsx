@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Drawer } from 'vaul'
-import { ABOVE_STRIP, UNDER_LAYERS } from '../utils/mobileChrome'
+import { MobileSnippetCard } from './results/MobileSnippetCard'
+import { BELOW_TOP_CHROME } from '../utils/mobileChrome'
 import type { Palette, RoundData } from '../types/election'
 import { getCandidateColor } from '../utils/partyColors'
 import { useElectionStore } from '../store/electionStore'
@@ -73,68 +74,21 @@ export function HemicycleSheet({ circoData, palette, electionLabel, round }: Pro
 
   return (
     <>
-      {/* Snippet card — top 3 forces by seats, same footprint as the national snippet. */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Voir la répartition des sièges"
-        style={{ bottom: ABOVE_STRIP }}
-        className="absolute inset-x-4 z-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-sm"
-      >
-        {title && (
-          <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{title}</p>
-        )}
-
-        <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-          Répartition des sièges
-        </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{majorityLine}</p>
-
-        <div className="mt-2.5 space-y-2">
-          {topThree.map((r, i) => {
-            const color = getCandidateColor(r.label, i, r.party, palette)
-            return (
-              <div key={r.party}>
-                <div className="flex items-center gap-2.5">
-                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color }} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-200">
-                    {r.label}
-                  </span>
-                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
-                    {r.party}
-                  </span>
-                  <span className="w-20 shrink-0 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {seatsLabel(r.seats)}
-                  </span>
-                </div>
-                <div className="mt-1 h-1.5 w-full rounded-full bg-gray-100 dark:bg-slate-800">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${(r.seats / total) * 100}%`, background: color }}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="mt-2.5 flex items-center justify-end gap-1 text-xs font-medium text-blue-600 dark:text-blue-400">
-          <span>Détails</span>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M9 18l6-6-6-6" />
-          </svg>
-        </div>
-      </button>
+      <MobileSnippetCard
+        title={title}
+        ariaLabel="Voir la répartition des sièges"
+        onOpen={() => setOpen(true)}
+        valueWidth="w-20"
+        meta={<p className="truncate text-xs text-gray-500 dark:text-gray-400">{majorityLine}</p>}
+        rows={topThree.map((r, i) => ({
+          key: r.party,
+          label: r.label,
+          party: r.party,
+          value: seatsLabel(r.seats),
+          pct: (r.seats / total) * 100,
+          color: getCandidateColor(r.label, i, r.party, palette),
+        }))}
+      />
 
       {/* Chip — top-right rail, below the layers menu (R3). It used to sit
           bottom-left, which is now under the pinned timeline strip; on this view
@@ -143,7 +97,7 @@ export function HemicycleSheet({ circoData, palette, electionLabel, round }: Pro
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Répartition des sièges"
-        style={{ top: UNDER_LAYERS }}
+        style={{ top: BELOW_TOP_CHROME }}
         className="absolute right-3 z-20 flex h-11 w-11 items-center justify-center rounded-xl bg-white/90 dark:bg-slate-900/90 text-gray-600 dark:text-gray-300 shadow-lg backdrop-blur-sm ring-1 ring-black/5 dark:ring-white/10"
       >
         <SeatIcon />

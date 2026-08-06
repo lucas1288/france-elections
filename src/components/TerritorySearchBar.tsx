@@ -27,6 +27,24 @@ interface Props {
   communeData: RoundData | null
   circoData: RoundData | null
   className?: string
+  /** Positioning that can't be a Tailwind class (e.g. a shared calc() offset). */
+  style?: React.CSSProperties
+  /**
+   * `inline` sits in a container that provides its own surface (the desktop
+   * floating pill); `floating` IS the surface — it lands directly on the map, so
+   * it carries the card treatment the other mobile controls have.
+   *
+   * A variant rather than an override via `className`: the two differ in
+   * `bg-*`, and Tailwind resolves same-property conflicts by source order, not
+   * by call site, so a passed-in background would win or lose unpredictably.
+   */
+  variant?: 'inline' | 'floating'
+}
+
+const SURFACE: Record<NonNullable<Props['variant']>, string> = {
+  inline: 'rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700',
+  floating:
+    'rounded-xl bg-white/95 shadow-lg ring-1 ring-black/5 backdrop-blur-sm active:bg-gray-50 dark:bg-slate-900/95 dark:ring-white/10 dark:active:bg-slate-800',
 }
 
 /**
@@ -41,6 +59,8 @@ export function TerritorySearchBar({
   communeData,
   circoData,
   className = '',
+  style,
+  variant = 'inline',
 }: Props) {
   const { clickedCommune, granularity, setClickedCommune, setFocusedTerritory, setFlyBounds } =
     useElectionStore()
@@ -65,11 +85,12 @@ export function TerritorySearchBar({
       role="button"
       tabIndex={0}
       onClick={onOpen}
+      style={style}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onOpen()
       }}
       aria-label="Rechercher un territoire"
-      className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 ${className}`}
+      className={`flex min-w-0 cursor-pointer items-center gap-2 px-3 py-2 text-sm ${SURFACE[variant]} ${className}`}
     >
       <span className="shrink-0 text-gray-400 dark:text-gray-500">
         <SearchIcon />

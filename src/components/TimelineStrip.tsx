@@ -14,6 +14,19 @@ const NEUTRAL_DOT = '#cbd5e1'
 interface Props {
   /** Opens the full ElectionPicker (the "browse the whole history" jump list). */
   onOpenPicker?: () => void
+  /**
+   * Collapsed presentation (M3, mobile). lucas: "at first sight I would honestly
+   * only keep the strip itself with the coloured dots and the dates below.
+   * Nothing else… only when clicking on it users can see more options."
+   *
+   * So the type tabs and the list icon go, the lane and the T1/T2 pills share
+   * one row instead of two, and tapping anywhere ELSE on the strip opens the
+   * picker — which carries the type filter, so switching lane is still reachable.
+   * The round pills stay VISIBLE by lucas's call: round-switching is the
+   * highest-frequency action on this axis and the two-axis design put it at top
+   * level on purpose; burying it behind a tap would be the one real regression.
+   */
+  compact?: boolean
   /** Positioning + card chrome are the caller's: desktop passes a floating
    *  card, mobile passes plain full-width (it lives inside the header). */
   className?: string
@@ -33,7 +46,7 @@ interface Props {
  * dashed rupture in the lane when a circo is settled — all current elections
  * are post-2010, so there is nothing to draw yet.
  */
-export function TimelineStrip({ onOpenPicker, className }: Props) {
+export function TimelineStrip({ onOpenPicker, compact = false, className }: Props) {
   const { data: index } = useElectionIndex()
   const selected = useElectionStore((s) => s.selected)
   const setSelected = useElectionStore((s) => s.setSelected)
@@ -74,11 +87,99 @@ export function TimelineStrip({ onOpenPicker, className }: Props) {
     pickStop(nearest)
   }
 
+  const roundPills = rounds > 1 && (
+    <div className="pointer-events-auto flex shrink-0 items-center gap-1">
+      {Array.from({ length: rounds }, (_, i) => i + 1).map((r) => {
+        const active = selected.round === r
+        return (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setSelected({ ...selected, round: r })}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+              active
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-500 ring-1 ring-inset ring-gray-200 dark:text-gray-400 dark:ring-slate-700'
+            }`}
+          >
+            T{r}
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  // The lane itself. `pointer-events-none` on the container with `auto` on each
+  // stop is what lets a tap on EMPTY lane fall through to the collapsed strip's
+  // background button (see below) while the dots still work.
+  const laneEl = (
+    <div className={`pointer-events-none relative h-10 ${compact ? '' : 'mt-1'}`}>
+      <div className="absolute left-2 right-2 top-[9px] h-0.5 rounded bg-gray-200 dark:bg-slate-700" />
+      {lane.map((e) => {
+        const isCurrent = e.year === selected.year
+        return (
+          <button
+            key={e.year}
+            type="button"
+            onClick={() => pickStop(e)}
+            title={`${e.label}${e.winner ? ` — ${e.winner.name}` : ''}`}
+            className="pointer-events-auto absolute top-0 flex -translate-x-1/2 flex-col items-center gap-0.5"
+            style={{ left: `${x(e.year)}%` }}
+          >
+            <span
+              className={`rounded-full border-2 border-white shadow dark:border-slate-900 ${
+                isCurrent
+                  ? 'h-5 w-5 ring-2 ring-blue-500'
+                  : 'mt-[3px] h-3.5 w-3.5 ring-1 ring-black/10 dark:ring-white/20'
+              }`}
+              style={{ background: e.winner?.color ?? NEUTRAL_DOT }}
+            />
+            <span
+              className={`text-[10px] leading-none ${
+                isCurrent
+                  ? 'font-bold text-gray-900 dark:text-gray-100'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              {e.year}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  if (compact) {
+    return (
+      // TWO wrappers on purpose: the outer takes the caller's positioning
+      // (`absolute inset-x-3 bottom-…`), the inner is the background button's
+      // `relative` anchor. Both on one element and Tailwind's source order makes
+      // `relative` win, silently dropping the offsets — the same trap as
+      // LayersMenu.
+      <div className={className}>
+        <div className="relative">
+          {onOpenPicker && (
+            <button
+              type="button"
+              aria-label="Toutes les élections"
+              onClick={onOpenPicker}
+              className="absolute inset-0 rounded-lg"
+            />
+          )}
+          <div className="pointer-events-none relative flex items-center gap-2">
+            <div className="min-w-0 flex-1">{laneEl}</div>
+            {roundPills}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={className}>
       {/* Head: type tabs (lane switch) · round pills · full-picker affordance */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex min-w-0 items-center gap-2.5">
           {types.map((t) => {
             const active = t === selected.type
             return (
@@ -98,24 +199,7 @@ export function TimelineStrip({ onOpenPicker, className }: Props) {
           })}
         </div>
         <div className="ml-auto flex items-center gap-1">
-          {rounds > 1 &&
-            Array.from({ length: rounds }, (_, i) => i + 1).map((r) => {
-              const active = selected.round === r
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setSelected({ ...selected, round: r })}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                    active
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-500 ring-1 ring-inset ring-gray-200 dark:text-gray-400 dark:ring-slate-700'
-                  }`}
-                >
-                  T{r}
-                </button>
-              )
-            })}
+          {roundPills}
           {onOpenPicker && (
             <button
               type="button"
@@ -141,41 +225,7 @@ export function TimelineStrip({ onOpenPicker, className }: Props) {
         </div>
       </div>
 
-      {/* Lane: line + winner-coloured stops with year labels */}
-      <div className="relative mt-1 h-10">
-        <div className="absolute left-2 right-2 top-[9px] h-0.5 rounded bg-gray-200 dark:bg-slate-700" />
-        {lane.map((e) => {
-          const isCurrent = e.year === selected.year
-          return (
-            <button
-              key={e.year}
-              type="button"
-              onClick={() => pickStop(e)}
-              title={`${e.label}${e.winner ? ` — ${e.winner.name}` : ''}`}
-              className="absolute top-0 flex -translate-x-1/2 flex-col items-center gap-0.5"
-              style={{ left: `${x(e.year)}%` }}
-            >
-              <span
-                className={`rounded-full border-2 border-white shadow dark:border-slate-900 ${
-                  isCurrent
-                    ? 'h-5 w-5 ring-2 ring-blue-500'
-                    : 'mt-[3px] h-3.5 w-3.5 ring-1 ring-black/10 dark:ring-white/20'
-                }`}
-                style={{ background: e.winner?.color ?? NEUTRAL_DOT }}
-              />
-              <span
-                className={`text-[10px] leading-none ${
-                  isCurrent
-                    ? 'font-bold text-gray-900 dark:text-gray-100'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {e.year}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      {laneEl}
     </div>
   )
 }

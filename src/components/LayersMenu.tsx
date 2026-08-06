@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Granularity } from '../store/electionStore'
+import { useElectionStore, type Granularity, type Theme } from '../store/electionStore'
 
 /**
  * The découpage control (redesign R3). lucas: "it might not sit in a toggle,
@@ -51,7 +51,23 @@ interface Props {
    * direction would run straight off the screen edge.
    */
   placement?: 'right-up' | 'left-down'
+  /**
+   * Also offer the light/dark preference in the menu (M6, mobile).
+   *
+   * Removing the phone's zoom buttons took the theme toggle down with them —
+   * they were one stack. Rather than leave a lone chip floating where a group
+   * used to be, dark mode folds in here: this menu already answers "how is the
+   * map drawn", which is the same question. Desktop keeps its own toggle in the
+   * util stack, so it must NOT show it twice.
+   */
+  showTheme?: boolean
 }
+
+const THEMES: { id: Theme; label: string; hint: string }[] = [
+  { id: 'system', label: 'Système', hint: 'Suit les réglages de l’appareil' },
+  { id: 'light', label: 'Clair', hint: 'Toujours en clair' },
+  { id: 'dark', label: 'Sombre', hint: 'Toujours en sombre' },
+]
 
 const MENU_POSITION: Record<NonNullable<Props['placement']>, string> = {
   'right-up': 'bottom-0 left-full ml-2',
@@ -65,8 +81,11 @@ export function LayersMenu({
   className = '',
   style,
   placement = 'right-up',
+  showTheme = false,
 }: Props) {
   const [open, setOpen] = useState(false)
+  const theme = useElectionStore((s) => s.theme)
+  const setTheme = useElectionStore((s) => s.setTheme)
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -115,17 +134,23 @@ export function LayersMenu({
     setOpen(false)
   }
 
-  const row = (id: Granularity, label: string, hint: string) => {
-    const ok = available.includes(id)
-    const active = value === id
+  /** One radio row. Shared by the découpage list and the theme list. */
+  const menuRow = (
+    key: string,
+    active: boolean,
+    ok: boolean,
+    label: string,
+    hint: string,
+    onClick: () => void,
+  ) => {
     return (
       <button
-        key={id}
+        key={key}
         type="button"
         role="menuitemradio"
         aria-checked={active}
         disabled={!ok}
-        onClick={() => pick(id)}
+        onClick={onClick}
         className={`flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${
           !ok
             ? 'cursor-not-allowed opacity-40'
@@ -159,6 +184,9 @@ export function LayersMenu({
       </button>
     )
   }
+
+  const row = (id: Granularity, label: string, hint: string) =>
+    menuRow(id, value === id, available.includes(id), label, hint, () => pick(id))
 
   // Two wrappers on purpose: the OUTER one takes the caller's positioning
   // (`absolute bottom-4 left-4`…), the INNER one anchors the popover. Merging
@@ -219,6 +247,18 @@ export function LayersMenu({
                   Autre représentation
                 </p>
                 {row('hemicycle', 'Hémicycle', "Les 577 sièges de l'Assemblée")}
+              </>
+            )}
+
+            {showTheme && (
+              <>
+                <div className="my-1 h-px bg-gray-100 dark:bg-slate-800" />
+                <p className="px-2.5 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  Apparence
+                </p>
+                {THEMES.map((t) =>
+                  menuRow(t.id, theme === t.id, true, t.label, t.hint, () => setTheme(t.id)),
+                )}
               </>
             )}
           </div>
