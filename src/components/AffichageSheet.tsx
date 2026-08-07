@@ -65,14 +65,9 @@ export function AffichageSheet({
   const zoomedAway = useElectionStore((s) => s.zoomedAway)
   const [open, setOpen] = useState(false)
 
-  // Tabs (redesign R2). No "Territoires" here: on mobile the 30 cities live in
-  // the search sheet, so this surface only has Résultats + Historique.
-  const tabs = usePanelTabs({
-    scope: 'national',
-    code: null,
-    isDeptSelection: false,
-    nationalTerritories: false,
-  })
+  // Tabs (redesign R2). The national scope has no "Territoires" tab on either
+  // platform (B1), so this surface is Résultats + Historique.
+  const tabs = usePanelTabs({ scope: 'national', code: null, isDeptSelection: false })
   const [tab, setTab] = useState<PanelTabId>('results')
   const activeTab = tabs.some((t) => t.id === tab) ? tab : 'results'
 

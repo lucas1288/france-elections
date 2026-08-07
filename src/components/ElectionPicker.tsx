@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useElectionIndex } from '../hooks/useElectionData'
 import { useElectionStore } from '../store/electionStore'
 import type { ElectionRef, ElectionType } from '../types/election'
+import { defaultRound } from '../utils/defaultRound'
 
 const TYPE_LABELS: Record<string, string> = {
   presidential: 'Présidentielle',
@@ -43,7 +44,8 @@ function CloseIcon() {
 /**
  * Election picker: a filterable, newest-first chronological timeline of every
  * election in the manifest, each row carrying a winner dot. Selecting one
- * switches the election (round resets to 1). Presentation adapts: full-screen
+ * switches the election and lands on its LAST round (see `defaultRound`).
+ * Presentation adapts: full-screen
  * slide-up on mobile (Phase 3), centered modal dialog over a backdrop on
  * desktop (shared with the mobile picker so both stay in sync).
  */
@@ -116,7 +118,7 @@ export function ElectionPicker({ open, onClose }: Props) {
                 key={`${e.type}-${e.year}`}
                 type="button"
                 onClick={() => {
-                  setSelected({ type: e.type, year: e.year, round: 1 })
+                  setSelected({ type: e.type, year: e.year, round: defaultRound(e) })
                   onClose()
                 }}
                 className={`flex w-full items-center gap-3 px-4 py-3 text-left ${active ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}

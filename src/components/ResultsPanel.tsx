@@ -3,7 +3,6 @@ import { useElectionStore } from '../store/electionStore'
 import type { Granularity } from '../store/electionStore'
 import type { Palette, RoundData } from '../types/election'
 import type { ChoroplethData } from '../hooks/useElectionData'
-import { getCandidateColor } from '../utils/partyColors'
 import { useTerritoryView } from '../utils/territoryDetail'
 import { isPlmCity } from '../utils/deptInsight'
 import { usePanelTabs, type PanelTabId } from '../utils/panelTabs'
@@ -13,7 +12,6 @@ import { Notice } from './results/Notice'
 import { DecidedAtR1Notice } from './results/DecidedAtR1Notice'
 import { Headline } from './results/Headline'
 import { PanelTabs } from './results/PanelTabs'
-import { TOP_CITIES } from '../utils/topCities'
 import { NationalSummary } from './NationalSummary'
 import { DeptInsight } from './DeptInsight'
 import { DeptHistory } from './DeptHistory'
@@ -55,14 +53,7 @@ export function ResultsPanel({
   granularity,
   palette,
 }: Props) {
-  const {
-    hoveredCommune,
-    clickedCommune,
-    setGranularity,
-    selectTerritory,
-    setFlyTarget,
-    settleDept,
-  } = useElectionStore()
+  const { hoveredCommune, clickedCommune, settleDept } = useElectionStore()
 
   const activeCode = clickedCommune ?? hoveredCommune
   const {
@@ -99,12 +90,6 @@ export function ResultsPanel({
   // The available tabs also shift as data loads; fall back rather than blanking.
   const activeTab = tabs.some((t) => t.id === tab) ? tab : 'results'
 
-  const jumpToCity = (city: (typeof TOP_CITIES)[number]) => {
-    if (granularity !== 'commune') setGranularity('commune')
-    selectTerritory(city.inseeCode)
-    setFlyTarget({ lng: city.lng, lat: city.lat, zoom: city.zoom })
-  }
-
   // ── National (nothing selected) ─────────────────────────────────────────────
   if (!commune) {
     const hint =
@@ -117,13 +102,6 @@ export function ResultsPanel({
             : granularity === 'circonscription'
               ? 'Survolez ou cliquez sur une circonscription pour afficher ses résultats'
               : 'Survolez ou cliquez sur une commune pour afficher ses résultats'
-
-    // Fast lookups for the city list's leader dots.
-    const fullCityMap = new Map(communeData?.communes.map((c) => [c.inseeCode, c]))
-    const choroCityMap = new Map(
-      communeChoro?.communes.map((c) => [c.inseeCode, c.leadingCandidate]),
-    )
-    const choroParty = new Map(communeChoro?.candidates.map((c) => [c.name, c.party]))
 
     return (
       <PanelShell
@@ -148,58 +126,6 @@ export function ResultsPanel({
               {hint}
             </p>
           </>
-        )}
-
-        {activeTab === 'territories' && (
-          <div className="px-3 pt-3 pb-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2 mb-1">
-              30 plus grandes villes
-            </p>
-            {TOP_CITIES.map((city, i) => {
-              // 1st and 2nd colors for this city (full data when loaded, else the choropleth leader)
-              const full = fullCityMap.get(city.inseeCode)
-              let dot1: string | null = null
-              let dot2: string | null = null
-              if (full && !full.annulled) {
-                const sorted = [...full.candidates].sort((a, b) => b.votes - a.votes)
-                if (sorted[0]) dot1 = getCandidateColor(sorted[0].name, 0, sorted[0].party, palette)
-                if (sorted[1]) dot2 = getCandidateColor(sorted[1].name, 0, sorted[1].party, palette)
-              } else {
-                const leader = choroCityMap.get(city.inseeCode)
-                if (leader) dot1 = getCandidateColor(leader, 0, choroParty.get(leader), palette)
-              }
-
-              return (
-                <button
-                  key={city.inseeCode}
-                  className="w-full flex items-center gap-2 px-2 py-1 text-left rounded hover:bg-blue-50 dark:hover:bg-slate-800/60 transition-colors group"
-                  onClick={() => jumpToCity(city)}
-                >
-                  <span className="w-5 text-right text-xs text-gray-300 dark:text-gray-600 shrink-0">
-                    {i + 1}
-                  </span>
-                  <span className="flex items-center gap-0.5 shrink-0">
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: dot1 ?? '#e2e8f0' }}
-                    />
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: dot2 ?? '#e2e8f0', opacity: dot2 ? 0.45 : 0.2 }}
-                    />
-                  </span>
-                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-700 truncate">
-                    {city.name}
-                  </span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-                    {city.population >= 1_000_000
-                      ? `${(city.population / 1_000_000).toFixed(1)}M`
-                      : `${Math.round(city.population / 1000)}k`}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
         )}
 
         {activeTab === 'history' && <DeptHistory deptCode="FR" />}
