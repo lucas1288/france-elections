@@ -369,6 +369,45 @@ export function mobileMetroPadding() {
   }
 }
 
+/** Side padding for a territory fit on the phone. */
+const MOBILE_TERRITORY_SIDE = 32
+/** Map band a territory fit will never let the chrome squeeze below. */
+const MOBILE_TERRITORY_MIN_BAND = 200
+
+/**
+ * fitBounds padding for a selected TERRITORY on the phone (M8, Aug 7 2026).
+ *
+ * lucas: the zoomed-in territory sits "too low on the screen, which sometimes
+ * causes the territory itself to be partly hidden". The cause is that the
+ * territory fits used a symmetric `padding: 60`, which centres the territory in
+ * the CANVAS — but since M7 every mobile selection raises the snippet preview
+ * card, so the map the user can actually see is only the band between the search
+ * bar and that card. Centring in the canvas puts the territory ~130px below the
+ * centre of that band, and its southern end goes under the card.
+ *
+ * So a territory reserves the same bands métropole does. Same reasoning as
+ * `mobileMetroPadding`, same numbers — the chrome doesn't change just because
+ * the camera moved.
+ *
+ * CLAMPED, unlike the métropole version: those bands are a fixed ~332px, which
+ * is fine at 812 but would leave almost nothing on a short phone in landscape.
+ * MapLibre answers padding it cannot fit by DECLINING the fit (see
+ * `metroPadding`), so an unclamped value doesn't misplace the territory — it
+ * leaves the camera wherever it was.
+ */
+export function mobileTerritoryPadding(h: number) {
+  const top = MOBILE_SEARCH_BAND
+  const bottom = MOBILE_STRIP_BAND + MOBILE_SNIPPET_NOMINAL + MOBILE_MARGIN
+  const room = Math.max(0, h - MOBILE_TERRITORY_MIN_BAND)
+  const k = Math.min(1, room / (top + bottom))
+  return {
+    top: top * k,
+    bottom: bottom * k,
+    left: MOBILE_TERRITORY_SIDE,
+    right: MOBILE_TERRITORY_SIDE,
+  }
+}
+
 /**
  * Order of the eleven discs around the overlay's ring, CLOCKWISE FROM THE TOP.
  *

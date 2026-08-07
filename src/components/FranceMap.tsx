@@ -13,7 +13,12 @@ import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
 import { ThemeToggle } from './ThemeToggle'
-import { metroPadding, mobileMetroPadding, UTIL_STACK_TOP } from '../utils/orbitGeometry'
+import {
+  metroPadding,
+  mobileMetroPadding,
+  mobileTerritoryPadding,
+  UTIL_STACK_TOP,
+} from '../utils/orbitGeometry'
 import { TOP_CITIES, TOP_CITY_CODES } from '../utils/topCities'
 import { ADMIN_CENTERS } from '../utils/adminCenters'
 import { MERGED_COMMUNE_TO_CURRENT } from '../utils/mergedCommunes'
@@ -730,6 +735,22 @@ export function FranceMap({
     // never appeared.
     return { padding: metroPadding(el?.clientWidth || 1200, el?.clientHeight || 800) }
   }, [mobile])
+  /**
+   * Padding for a fit onto ONE territory (map click, overseas focus, navigator
+   * bbox). Desktop centres it in the canvas, as it always has; the phone
+   * reserves the same chrome bands métropole does, so the territory lands in the
+   * visible sea rather than half under the snippet card (M8).
+   *
+   * Container height is read live rather than captured: one of the three
+   * callers is the map click handler, which is registered inside the init
+   * effect. That effect already re-runs on `mobile`, so the closure can't go
+   * stale across the breakpoint.
+   */
+  const getTerritoryFit = useCallback(
+    (desktopPadding: number): ReturnType<typeof mobileTerritoryPadding> | number =>
+      mobile ? mobileTerritoryPadding(containerRef.current?.clientHeight || 700) : desktopPadding,
+    [mobile],
+  )
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const electionDataRef = useRef(electionData)
@@ -986,7 +1007,12 @@ export function FranceMap({
           setClickedCommune(id)
           if (zoomOnClick && feature?.geometry) {
             const bounds = getFeatureBounds(feature.geometry)
-            if (bounds) map.fitBounds(bounds, { padding: 60, duration: 800, maxZoom: 12 })
+            if (bounds)
+              map.fitBounds(bounds, {
+                padding: getTerritoryFit(60),
+                duration: 800,
+                maxZoom: 12,
+              })
           }
         }
       }
@@ -1039,7 +1065,15 @@ export function FranceMap({
       map.remove()
       mapRef.current = null
     }
-  }, [setHoveredCommune, setClickedCommune, setMapZoomedIn, setZoomedAway, getMetroFit, mobile])
+  }, [
+    setHoveredCommune,
+    setClickedCommune,
+    setMapZoomedIn,
+    setZoomedAway,
+    getMetroFit,
+    getTerritoryFit,
+    mobile,
+  ])
 
   // ── Geometry version change (era switch) → rebuild style, then re-sync ─────
   useEffect(() => {
@@ -1161,19 +1195,34 @@ export function FranceMap({
     const map = mapRef.current
     if (!map) return
     if (focusedTerritory && OVERSEAS_BOUNDS[focusedTerritory]) {
-      map.fitBounds(OVERSEAS_BOUNDS[focusedTerritory], { padding: 40, duration: 800 })
+      map.fitBounds(OVERSEAS_BOUNDS[focusedTerritory], {
+        padding: getTerritoryFit(40),
+        duration: 800,
+      })
     } else if (!focusedTerritory) {
       map.fitBounds(METRO_BOUNDS, { ...getMetroFit(), duration: 800 })
     }
-  }, [focusedTerritory, getMetroFit])
+  }, [focusedTerritory, getMetroFit, getTerritoryFit])
 
   // ── Fly to programmatic target (e.g. city list click) ────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !flyTarget) return
-    map.flyTo({ center: [flyTarget.lng, flyTarget.lat], zoom: flyTarget.zoom, duration: 800 })
+    // Same correction as the territory fits (M8), expressed as a one-shot pixel
+    // offset because this path names a CENTRE rather than a box. `offset` and
+    // not `padding`: easeTo/flyTo padding is written into the map's transform
+    // and would persist into every later camera move.
+    const pad = getTerritoryFit(0)
+    const offset: [number, number] =
+      typeof pad === 'number' ? [0, 0] : [0, (pad.top - pad.bottom) / 2]
+    map.flyTo({
+      center: [flyTarget.lng, flyTarget.lat],
+      zoom: flyTarget.zoom,
+      duration: 800,
+      offset,
+    })
     setFlyTarget(null)
-  }, [flyTarget, setFlyTarget])
+  }, [flyTarget, setFlyTarget, getTerritoryFit])
 
   // ── Fly to programmatic bounds (territory navigator: dept/circo bbox, or
   //    'overview' to re-fit metropolitan France with layout-aware padding) ───
@@ -1189,11 +1238,11 @@ export function FranceMap({
           [w, s],
           [e, n],
         ],
-        { padding: 60, duration: 800, maxZoom: 12 },
+        { padding: getTerritoryFit(60), duration: 800, maxZoom: 12 },
       )
     }
     setFlyBounds(null)
-  }, [flyBounds, setFlyBounds, getMetroFit])
+  }, [flyBounds, setFlyBounds, getMetroFit, getTerritoryFit])
 
   // ── Département focus: dim the map outside the settled dept (two-axis P2) ──
   const focusedDept = clickedCommune && isDeptCode(clickedCommune) ? clickedCommune : null
