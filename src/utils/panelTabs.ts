@@ -26,13 +26,6 @@ export interface PanelTabsInput {
   code: string | null
   /** True when the selection is a settled département (dept insight sections). */
   isDeptSelection: boolean
-  /**
-   * National scope only: whether THIS surface has a territories view. The
-   * desktop sidebar hosts the 30-cities list, but the mobile national sheet
-   * does not — on mobile the cities live in the search sheet's empty state, and
-   * duplicating them here would just be a second copy to keep in sync.
-   */
-  nationalTerritories?: boolean
 }
 
 /**
@@ -40,32 +33,31 @@ export interface PanelTabsInput {
  *
  * A tab is only offered when it has content: the Historique tab needs the
  * history files plus ≥2 elections of the selected type, and the Territoires tab
- * needs something to break down — the 30 cities nationally, the dept insight
- * sections for a département, or the arrondissements of a PLM whole-city
- * (Paris/Lyon/Marseille). A plain commune or circonscription has neither, so it
- * gets a single tab and the caller renders no tab bar at all.
+ * needs something to break down — the dept insight sections for a département,
+ * or the arrondissements of a PLM whole-city (Paris/Lyon/Marseille). A plain
+ * commune or circonscription has neither, so it gets a single tab and the
+ * caller renders no tab bar at all.
+ *
+ * **The NATIONAL scope never has a Territoires tab** (B1, Aug 2026, lucas: the
+ * 30-biggest-cities list it used to hold was "not sure it adds any kind of
+ * value"). The cities are still reachable — they're the territory navigator's
+ * empty state and the map's own city dots.
  *
  * Returning a LIST rather than booleans means both platforms iterate the same
  * order and labels; only the bar's styling differs.
  */
-export function usePanelTabs({
-  scope,
-  code,
-  isDeptSelection,
-  nationalTerritories = true,
-}: PanelTabsInput): PanelTab[] {
+export function usePanelTabs({ scope, code, isDeptSelection }: PanelTabsInput): PanelTab[] {
   // Nationally the history is the 'FR' entry; for a territory it's the dept's
   // own — and only a settled dept shows one (a commune has no history series).
   const historyCode = scope === 'national' ? 'FR' : isDeptSelection ? code : null
   const hasHistory = useHasDeptHistory(historyCode)
 
   const hasTerritories =
-    scope === 'national'
-      ? nationalTerritories
-      : isDeptSelection ||
-        // Lyon/Marseille selected as communes, or Paris reached via its city
-        // dot: the arrondissement breakdown is their territorial view.
-        (!!code && isPlmCity(code))
+    scope === 'territory' &&
+    (isDeptSelection ||
+      // Lyon/Marseille selected as communes, or Paris reached via its city
+      // dot: the arrondissement breakdown is their territorial view.
+      (!!code && isPlmCity(code)))
 
   const tabs: PanelTab[] = [{ id: 'results', label: LABELS.results }]
   if (hasTerritories) tabs.push({ id: 'territories', label: LABELS.territories })

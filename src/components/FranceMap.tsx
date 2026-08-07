@@ -47,8 +47,12 @@ interface Props {
 // Geometry version id → PMTiles file. New entries appear here as historical
 // tilesets are added (e.g. 'circo-1988', 'admin-seine-1965').
 const TILE_SOURCES: Record<string, string> = {
-  'admin-2022': '/data/tiles/france-admin.pmtiles?v=2',
-  'circo-2010': '/data/tiles/circonscriptions.pmtiles',
+  // v=3: generalised rebuild (A3, Aug 7 2026) — see scripts/build-departements.mjs.
+  'admin-2022': '/data/tiles/france-admin.pmtiles?v=3',
+  // v=1: first rebuild of this tileset — clipped to the commune-derived land
+  // outline + generalised to match (scripts/build-circonscriptions.mjs). It had
+  // never carried a cache-buster because it had never been rebuilt.
+  'circo-2010': '/data/tiles/circonscriptions.pmtiles?v=3',
 }
 const DEFAULT_GEOMETRY = { admin: 'admin-2022', circo: 'circo-2010' }
 
@@ -146,6 +150,60 @@ function adminLabelLayer(
   }
 }
 
+/**
+ * Zoom from which a finer mesh covers the whole map — communes on the commune
+ * tab, circonscriptions on the circo tab — so the UNDERLAY fills beneath them
+ * (`dept-fill`, `overseas-fill`) have nothing left to do.
+ *
+ * They are hidden from here up because the only thing they can still contribute
+ * is a FRINGE: two layers built from different geometry are two independent
+ * approximations of the same coastline, and wherever the lower one bulges past
+ * the upper one you see its colour leak out. That was three separate bug
+ * reports (métropole dept slivers; overseas coasts rimmed in the département's
+ * colour; the same again on the circo tab), and no amount of simplification
+ * fixes it — changing a tolerance only changes WHICH pixels disagree.
+ *
+ * 8 rather than 7: `communes-fill` has minzoom 7, but tippecanoe's
+ * `--drop-densest-as-needed` can still be thinning features right at 7. Leaving
+ * one zoom band with a ~1 px fringe beats risking actual holes.
+ *
+ * Consequence to remember: `dept-fill` is no longer the "always-visible base
+ * layer" it is described as elsewhere. It is the base layer for the OVERVIEW.
+ */
+const UNDERLAY_HIDE_ZOOM = 8
+
+/**
+ * Overseas territories whose ONLY geometry is `overseas.geojson`: geo.api
+ * publishes no commune contours for them and the circo tileset never had
+ * polygons either, so nothing is ever drawn on top and there is nothing for
+ * them to disagree with. They must keep their fill at every zoom — gating them
+ * would simply delete Saint-Martin, Wallis, Polynésie and Nouvelle-Calédonie
+ * from the map as soon as you zoom in.
+ */
+const NO_FINER_MESH = ['977', '986', '987', '988']
+
+/**
+ * Opacity for an underlay fill: `visible` below the threshold, 0 above it.
+ * `visible` is 1 normally and the dept-focus dimming expression when a
+ * département is settled — the two have to be composed here rather than fight
+ * over the same paint property.
+ */
+function underlayOpacity(
+  visible: number | maplibregl.ExpressionSpecification,
+  overseas = false,
+): maplibregl.ExpressionSpecification {
+  // Above the threshold everything goes to 0, EXCEPT the territories that have
+  // no finer mesh to be covered by.
+  const above: number | maplibregl.ExpressionSpecification = overseas
+    ? ['case', ['in', ['get', 'code'], ['literal', NO_FINER_MESH]], visible, 0]
+    : 0
+  // GOTCHA: `["zoom"]` may only be the input of a TOP-LEVEL step/interpolate.
+  // Nesting the zoom test inside the `case` above (the obvious way to write
+  // this) is rejected by the style validator and takes the whole style with it
+  // — every layer's paint fails and the map renders blank.
+  return ['step', ['zoom'], visible, UNDERLAY_HIDE_ZOOM, above]
+}
+
 function makeStyle(geometry: { admin: string; circo: string }): maplibregl.StyleSpecification {
   const adminUrl = pmtilesUrl(TILE_SOURCES[geometry.admin] ?? TILE_SOURCES[DEFAULT_GEOMETRY.admin])
   const circoUrl = pmtilesUrl(TILE_SOURCES[geometry.circo] ?? TILE_SOURCES[DEFAULT_GEOMETRY.circo])
@@ -154,9 +212,11 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
   // over the colored dept-fill beneath it, so the same winner showed slightly
   // different shades depending on the département underneath. Hover/selected
   // feedback comes from the outlines instead.
-  const fillPaint = (): maplibregl.FillLayerSpecification['paint'] => ({
+  const fillPaint = (
+    opacity: number | maplibregl.ExpressionSpecification = 1,
+  ): maplibregl.FillLayerSpecification['paint'] => ({
     'fill-color': ['coalesce', ['feature-state', 'color'], '#e2e8f0'],
-    'fill-opacity': 1,
+    'fill-opacity': opacity,
   })
 
   const outlinePaint = (width: number): maplibregl.LineLayerSpecification['paint'] => ({
@@ -240,13 +300,15 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
     layers: [
       { id: 'background', type: 'background', paint: { 'background-color': '#f1f5f9' } },
 
-      // Overseas territory fill — dept-level coloring, always visible for zoom support
-      { id: 'overseas-fill', type: 'fill', source: 'overseas', paint: fillPaint() },
+      // Overseas territory fill — dept-level coloring. UNDERLAY: hidden past
+      // UNDERLAY_HIDE_ZOOM except for the four territories with no finer mesh.
+      { id: 'overseas-fill', type: 'fill', source: 'overseas', paint: fillPaint(underlayOpacity(1, true)) },
       { id: 'overseas-outline', type: 'line', source: 'overseas', paint: outlinePaint(1.4) },
 
-      // Département fill — always the base layer; provides full-France coverage at any zoom
+      // Département fill — the base layer at OVERVIEW zooms; hidden past
+      // UNDERLAY_HIDE_ZOOM, where the commune/circo mesh covers everything.
       { id: 'dept-fill', type: 'fill', source: 'admin', 'source-layer': 'departements',
-        layout: { visibility: 'visible' }, paint: fillPaint() },
+        layout: { visibility: 'visible' }, paint: fillPaint(underlayOpacity(1)) },
 
       // Commune fill — rendered ON TOP of dept; only starts appearing where tippecanoe
       // has tiles (around zoom 7+). Starts hidden; shown in commune mode via setLayoutProperty.
@@ -470,9 +532,13 @@ const DEPT_TO_CIRCO_ZPREFIX: Record<string, string> = {
 
 function applyDeptFocus(map: maplibregl.Map, deptCode: string | null) {
   if (!deptCode) {
-    for (const id of ['dept-fill', 'overseas-fill', 'communes-fill', 'circo-fill']) {
+    for (const id of ['communes-fill', 'circo-fill']) {
       map.setPaintProperty(id, 'fill-opacity', 1)
     }
+    // The underlays reset to their ZOOM GATE, not to 1 — resetting them flat
+    // would silently undo the gate the first time a dept was unsettled.
+    map.setPaintProperty('dept-fill', 'fill-opacity', underlayOpacity(1))
+    map.setPaintProperty('overseas-fill', 'fill-opacity', underlayOpacity(1, true))
     return
   }
   const focus = (test: maplibregl.ExpressionSpecification): maplibregl.ExpressionSpecification => [
@@ -483,8 +549,11 @@ function applyDeptFocus(map: maplibregl.Map, deptCode: string | null) {
   ]
   // Dept layers match on the full code; communes/circos on their dept prefix
   // (overseas circos via their Z-code prefix — the tiles never saw INSEE codes).
-  map.setPaintProperty('dept-fill', 'fill-opacity', focus(['==', ['get', 'code'], deptCode]))
-  map.setPaintProperty('overseas-fill', 'fill-opacity', focus(['==', ['get', 'code'], deptCode]))
+  // Underlays compose the focus dimming INSIDE the zoom gate — they share one
+  // paint property, so whichever wrote last would otherwise win.
+  const deptFocus = focus(['==', ['get', 'code'], deptCode])
+  map.setPaintProperty('dept-fill', 'fill-opacity', underlayOpacity(deptFocus))
+  map.setPaintProperty('overseas-fill', 'fill-opacity', underlayOpacity(deptFocus, true))
   map.setPaintProperty(
     'communes-fill',
     'fill-opacity',
@@ -854,6 +923,7 @@ export function FranceMap({
       }
     })
     mapRef.current = map
+    if (import.meta.env.DEV) (window as unknown as { __map?: maplibregl.Map }).__map = map
 
     const tipPopup = new maplibregl.Popup({
       closeButton: false,
