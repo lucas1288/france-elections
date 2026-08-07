@@ -41,7 +41,12 @@ while IFS= read -r -d '' file; do
     --remote >/dev/null
   count=$((count + 1))
   printf '  [%2d] %s\n' "$count" "$key"
-done < <(find "$DATA_DIR" -type f -print0)
+  # `.bak` is EXCLUDED on purpose. The tile builders keep a rollback copy next to
+  # their output (`france-admin.pmtiles.bak` etc.) and this loop used to upload
+  # it — 93 MB of dead weight in the bucket, paid for and served to nobody, since
+  # nothing references those keys. Same for the editor/OS leftovers.
+done < <(find "$DATA_DIR" -type f \
+  ! -name '*.bak' ! -name '*.orig' ! -name '*.tmp' ! -name '.DS_Store' -print0)
 
 echo "Applying CORS policy ..."
 npx wrangler r2 bucket cors set "$BUCKET" --file "$ROOT/scripts/deploy/r2-cors.json"
