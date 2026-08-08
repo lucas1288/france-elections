@@ -26,6 +26,10 @@ interface Props {
   electionData?: RoundData
   communeData: RoundData | null
   circoData: RoundData | null
+  /** Full commune file confirmed absent for this round (404), not loading.
+   *  Without it this bar can't apply the same département fallback the detail
+   *  panels do, and a settled territory renders as a bare INSEE code. */
+  communeDataMissing?: boolean
   className?: string
   /** Positioning that can't be a Tailwind class (e.g. a shared calc() offset). */
   style?: React.CSSProperties
@@ -58,6 +62,7 @@ export function TerritorySearchBar({
   electionData,
   communeData,
   circoData,
+  communeDataMissing,
   className = '',
   style,
   variant = 'inline',
@@ -70,7 +75,11 @@ export function TerritorySearchBar({
     electionData,
     communeData,
     circoData,
+    communeDataMissing,
   })
+  // The raw code is a last resort only. It used to show routinely — on rounds
+  // with no full commune file this bar wasn't told the file was missing, so it
+  // couldn't fall back to the département entry and printed "75056" for Paris.
   const settledName = clickedCommune ? (commune?.name ?? clickedCommune) : null
 
   const unsettle = (e: React.MouseEvent) => {

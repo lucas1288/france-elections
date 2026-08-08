@@ -62,6 +62,7 @@ export function ResultsPanel({
     isRoundFallback,
     nationalPct,
     isDeptSelection,
+    isSameAsDept,
     parentDept,
     turnoutPct,
     blankPct,
@@ -155,11 +156,20 @@ export function ResultsPanel({
 
       {activeTab === 'results' && (
         <>
-          {/* Round fallback notice: no full commune file for this round */}
-          {isRoundFallback && (
+          {/* Round fallback notice: no full commune file for this round.
+              Paris is the exception — it IS its département, so the figures
+              below are its own and only the arrondissement level is missing. */}
+          {isRoundFallback && !isSameAsDept && (
             <Notice density="compact">
               Les données par commune n'ont pas été rendues disponibles par le ministère de
               l'Intérieur pour ce tour. Résultats affichés au niveau du département.
+            </Notice>
+          )}
+          {isRoundFallback && isSameAsDept && (
+            <Notice density="compact">
+              Paris étant à la fois commune et département, les résultats ci-dessous sont bien ceux
+              de la commune. Le détail par arrondissement n'a pas été rendu disponible par le
+              ministère de l'Intérieur pour ce tour.
             </Notice>
           )}
 

@@ -62,6 +62,20 @@ export function plmCityOfDept(deptCode: string): string | null {
 }
 
 /**
+ * Communes whose territory IS their whole département — Paris and nothing else.
+ *
+ * Matters for the round fallback: when a round has no full commune file the
+ * panels stand in the département entry and say so, because that is normally a
+ * real loss of granularity. For Paris it is not — 75056 and 75 are the same
+ * electorate, so the figures shown ARE the commune's own (lucas: "the paragraph
+ * is wrong for Paris. The Commune results ARE the department results"). What is
+ * genuinely lost there is the ARRONDISSEMENT level, which is a different claim.
+ */
+export function isCoextensiveWithDept(communeCode: string): boolean {
+  return communeCode === '75056'
+}
+
+/**
  * Département a selection belongs to, for the hierarchy breadcrumb: circo
  * '3401'→'34', commune '2A004'→'2A', overseas circo/commune '97101'→'971'.
  * Returns null for dept codes themselves and for abroad circos (no geometry).

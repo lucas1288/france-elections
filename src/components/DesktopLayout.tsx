@@ -89,6 +89,7 @@ export function DesktopLayout(props: LayoutProps) {
             electionData={props.electionData}
             communeData={props.communeData}
             circoData={props.circoData}
+            communeDataMissing={props.communeDataMissing}
             className="absolute left-1/2 top-4 z-30 w-80 -translate-x-1/2 bg-white/90 shadow-lg ring-1 ring-black/5 backdrop-blur-sm hover:bg-white dark:bg-slate-900/90 dark:ring-white/10 dark:hover:bg-slate-900"
           />
 

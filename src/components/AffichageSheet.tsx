@@ -8,6 +8,7 @@ import { useNationalSummary, type NationalViewMode } from '../utils/nationalSumm
 import { useElectionStore } from '../store/electionStore'
 import { DeptHistory } from './DeptHistory'
 import { ForceRows } from './results/ForceRows'
+import { SeatLegend } from './results/SeatLegend'
 import { ViewModeSwitch } from './results/ViewModeSwitch'
 import { PanelTabs } from './results/PanelTabs'
 import { usePanelTabs, type PanelTabId } from '../utils/panelTabs'
@@ -231,6 +232,9 @@ export function AffichageSheet({
                     activeParty={activeParty}
                     onPick={pickParty}
                   />
+
+                  {/* Key for the seat view — self-gating, same as desktop. */}
+                  <SeatLegend circoData={circoData} palette={palette} density="touch" />
                 </div>
               </>
             )}

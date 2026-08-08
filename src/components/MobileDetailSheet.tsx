@@ -60,6 +60,7 @@ export function MobileDetailSheet({
     isRoundFallback,
     nationalPct,
     isDeptSelection,
+    isSameAsDept,
     parentDept,
     turnoutPct,
     blankPct,
@@ -119,11 +120,13 @@ export function MobileDetailSheet({
   /** One compact line when the figures need a caveat before they're read. */
   const caveat = commune?.decidedAtR1
     ? 'Résultats du 1er tour — pas de second tour ici'
-    : isRoundFallback || isOverseasFallback
-      ? 'Données par commune indisponibles — résultats du département'
-      : commune?.annulled
-        ? 'Suffrages annulés par le Conseil constitutionnel'
-        : null
+    : isRoundFallback && isSameAsDept
+      ? 'Détail par arrondissement indisponible pour ce tour'
+      : isRoundFallback || isOverseasFallback
+        ? 'Données par commune indisponibles — résultats du département'
+        : commune?.annulled
+          ? 'Suffrages annulés par le Conseil constitutionnel'
+          : null
 
   return (
     <>
@@ -236,7 +239,13 @@ export function MobileDetailSheet({
 
             {activeTab === 'results' && (
               <>
-                {isRoundFallback && (
+                {isRoundFallback && isSameAsDept && (
+                  <Notice density="touch">
+                    Paris étant commune et département, ces résultats sont bien ceux de la commune.
+                    Le détail par arrondissement est indisponible pour ce tour.
+                  </Notice>
+                )}
+                {isRoundFallback && !isSameAsDept && (
                   <Notice density="touch">
                     Données par commune indisponibles pour ce tour (ministère de l'Intérieur).
                     Résultats affichés au niveau du département.
