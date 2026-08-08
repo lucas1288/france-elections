@@ -26,7 +26,7 @@
  *    (975xx/98xxx incl.), except FE 'ZZnnn' → '99nnn'; circo = dept + 2-digit.
  */
 import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { deptCode } from './lib/codes.mjs'
 import { pctRound, abstention2, nuanceList as sharedNuanceList, carryDecidedR1, seatCounts, nationalTotals, makeWriter } from './lib/emit.mjs'
 
@@ -38,7 +38,13 @@ if (!['presidential', 'legislative'].includes(TYPE) || !/^\d{4}$/.test(YEAR ?? '
 }
 const IDTYPE = TYPE === 'presidential' ? 'pres' : 'legi'
 const SRC = join(import.meta.dirname, '..', 'data-sources', 'agregees')
-const OUT = join(import.meta.dirname, '..', 'public', 'data', 'elections', TYPE, YEAR)
+// `--out=<dir>` writes elsewhere than the shipped election directory. Used for
+// surgical repairs: emit the full set to a temp dir, validate, then lift only
+// the files you meant to replace (prés-2022 T2 communes, Aug 2026).
+const outArg = process.argv.find((a) => a.startsWith('--out='))
+const OUT = outArg
+  ? resolve(process.cwd(), outArg.slice('--out='.length))
+  : join(import.meta.dirname, '..', 'public', 'data', 'elections', TYPE, YEAR)
 const write = makeWriter(OUT)
 
 // Legislative nuance labels per vintage (shown in the UI).

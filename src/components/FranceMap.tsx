@@ -12,13 +12,7 @@ import type { NationalTotals } from '../utils/nationalResults'
 import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
-import {
-  ELIMINATED_LIGHT,
-  ELIMINATED_DARK,
-  partySeatState,
-  seatCodeSet,
-  type SeatContext,
-} from '../utils/partySeats'
+import { ELIMINATED_LIGHT, ELIMINATED_DARK, type SeatContext } from '../utils/partySeats'
 import { ThemeToggle } from './ThemeToggle'
 import {
   metroPadding,
@@ -251,10 +245,37 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
   // "Came 1st" highlight (single-party view): a white border drawn only where the
   // feature-state `won` flag is set — zero width elsewhere, so it's invisible in
   // every other mode without needing layer-visibility toggling.
-  const wonPaint = (width: number): maplibregl.LineLayerSpecification['paint'] => ({
+  const wonOpacity: maplibregl.ExpressionSpecification = [
+    'case',
+    ['boolean', ['feature-state', 'won'], false],
+    0.95,
+    0,
+  ]
+  /**
+   * `underlay` ties the highlight to the same zoom gate as the fill beneath it.
+   * The dept/overseas outlines are only meaningful while those layers ARE the
+   * map; once the commune or circo mesh covers everything they outline a unit
+   * the reader isn't looking at. Same top-level-`step` rule as
+   * `underlayOpacity` — a nested `["zoom"]` fails validation and blanks
+   * every layer's paint.
+   */
+  const wonPaint = (
+    width: number,
+    underlay: false | 'dept' | 'overseas' = false,
+  ): maplibregl.LineLayerSpecification['paint'] => ({
     'line-color': '#ffffff',
     'line-width': ['case', ['boolean', ['feature-state', 'won'], false], width, 0],
-    'line-opacity': ['case', ['boolean', ['feature-state', 'won'], false], 0.95, 0],
+    'line-opacity': !underlay
+      ? wonOpacity
+      : [
+          'step',
+          ['zoom'],
+          wonOpacity,
+          UNDERLAY_HIDE_ZOOM,
+          underlay === 'overseas'
+            ? ['case', ['in', ['get', 'code'], ['literal', NO_FINER_MESH]], wonOpacity, 0]
+            : 0,
+        ],
   })
 
   return {
@@ -381,12 +402,11 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
 
       // "Came 1st" highlight borders — drawn only where feature-state `won` is set
       // (single-party view). Always present; zero-width when not won.
-      { id: 'overseas-won', type: 'line', source: 'overseas', paint: wonPaint(1.8) },
-      { id: 'dept-won', type: 'line', source: 'admin', 'source-layer': 'departements', paint: wonPaint(1.8) },
+      { id: 'overseas-won', type: 'line', source: 'overseas', paint: wonPaint(1.8, 'overseas') },
+      { id: 'dept-won', type: 'line', source: 'admin', 'source-layer': 'departements', paint: wonPaint(1.8, 'dept') },
       { id: 'communes-won', type: 'line', source: 'admin', 'source-layer': 'communes',
         minzoom: COMMUNE_MIN_ZOOM, filter: NOT_PLM_CITY,
         paint: wonPaint(1.2) },
-      { id: 'circo-won', type: 'line', source: 'circo', 'source-layer': 'circonscriptions', paint: wonPaint(1.6) },
 
       // Top-30 city dots — colored by leading candidate, visible only at low zoom in commune mode
       { id: 'city-dots', type: 'circle', source: 'top-cities-points',
@@ -616,8 +636,6 @@ function computeActiveColors(
 ): Map<string, TerritoryState> {
   const parties = partyByName(choropleth.candidates)
   const codes = mode.kind === 'party' ? partyCodeSet(mode.party, palette) : undefined
-  // Seats count the nuance ONLY, not the alliance members — see `seatCodeSet`.
-  const seatCodes = mode.kind === 'party' ? seatCodeSet(mode.party) : undefined
   const byCode = new Map<string, TerritoryState>()
   for (const c of choropleth.communes) {
     const entry = fullByCode.get(c.inseeCode)
@@ -640,14 +658,8 @@ function computeActiveColors(
     // results — leader mode only, where lightness is otherwise unused (the
     // party/abstention ramps encode a value in it).
     if (mode.kind === 'leader' && c.decidedAtR1) color = decidedAtR1Shade(color, DEFAULT_COLOR)
-    // The `*-won` outline highlight. In single-party view it marks "came 1st"
-    // — except in the SEAT view, where coming 1st at round 1 and winning the
-    // seat are different things and the outline has to agree with the fill.
-    const won = !codes
-      ? false
-      : seats
-        ? !!entry && !!seatCodes && partySeatState(entry, seatCodes, seats.round) === 'elected'
-        : codes.has(parties.get(c.leadingCandidate) ?? '')
+    // "Came 1st" in single-party view — consumed by `communes-won` only.
+    const won = codes ? codes.has(parties.get(c.leadingCandidate) ?? '') : false
     byCode.set(c.inseeCode, { color, won })
   }
   return byCode
@@ -716,9 +728,25 @@ function syncMapData(
     'communes-fill': isCommune,
     'communes-outline': isCommune,
     'communes-won': isCommune, // hide so stale won-state from the other granularity can't draw
+    // NOTE there is no `circo-won`. The white "came 1st" outline was deleted for
+    // the circonscriptions party view (lucas, Aug 8 2026: "I don't see the added
+    // value there anymore") — and he's right, it was pure redundancy: the SEAT
+    // fill already says élu in full colour vs éliminé in grey, so the outline
+    // traced exactly the coloured shapes. It survives on the communes tab
+    // because the score gradient there encodes strength, NOT who came first, so
+    // the outline is the only thing carrying that.
     'circo-fill': isCirco,
     'circo-outline': isCirco,
-    'circo-won': isCirco,
+    // The dept/overseas highlights mark a DIFFERENT unit from the one being
+    // read, so they only belong on the tab where those layers ARE the map.
+    // lucas, on the circo tab: "It's about circonscriptions being highlighted,
+    // not departements. So they shouldn't be underlined in white." He also
+    // spotted the deeper problem — the dept flag is "leads the vote here",
+    // which is not "won seats here": at légis-2024 T2 the NFP leads 24
+    // départements and won ZERO seats in three of them (04, 30, 82), so those
+    // were outlined with nothing red inside.
+    'dept-won': !isCirco,
+    'overseas-won': !isCirco,
     'city-dots': isCommune,
     'prefecture-labels': isCommune,
     'sous-prefecture-labels': isCommune,
