@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { RoundData, CommuneResult } from '../types/election'
 import type { Granularity } from '../store/electionStore'
 import { computeNationalTotals } from './nationalResults'
-import { isDeptCode, parentDeptCode } from './deptInsight'
+import { isDeptCode, parentDeptCode, isCoextensiveWithDept } from './deptInsight'
 
 /**
  * Overseas commune codes are 5 digits starting with 97x or 98x; the
@@ -118,6 +118,13 @@ export interface TerritoryView extends ResolvedTerritory {
    * fallbacks (where the dept entry merely stands in for a commune).
    */
   isDeptSelection: boolean
+  /**
+   * The SELECTED commune is coextensive with its département (Paris, and only
+   * Paris). With `isRoundFallback` this says the dept figures shown are the
+   * commune's own, so the "results shown at département level" advisory would
+   * be wrong — what's actually missing there is the arrondissement level.
+   */
+  isSameAsDept: boolean
   /** Parent département entry, for the "↑ {dept}" breadcrumb. Null at dept level. */
   parentDept: CommuneResult | null
   turnoutPct: number
@@ -154,6 +161,10 @@ export function useTerritoryView(
   const isDeptSelection =
     !!clickedCommune && isDeptCode(clickedCommune) && commune?.inseeCode === clickedCommune
 
+  // Paris is the one commune that IS its département, so the round fallback
+  // costs it no granularity — the panels word their notice differently.
+  const isSameAsDept = !!activeCode && isCoextensiveWithDept(activeCode)
+
   const parentCode = activeCode ? parentDeptCode(activeCode) : null
   const parentDept =
     parentCode && parentCode !== commune?.inseeCode
@@ -165,6 +176,7 @@ export function useTerritoryView(
     ...resolved,
     nationalPct,
     isDeptSelection,
+    isSameAsDept,
     parentDept,
     turnoutPct: commune && reg ? (commune.turnout / reg) * 100 : 0,
     blankPct: commune && reg ? (commune.blankVotes / reg) * 100 : 0,

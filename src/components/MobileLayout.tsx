@@ -97,6 +97,7 @@ export function MobileLayout(props: LayoutProps) {
         electionData={props.electionData}
         communeData={props.communeData}
         circoData={props.circoData}
+        communeDataMissing={props.communeDataMissing}
         style={{ top: TOP_RAIL }}
         className="absolute inset-x-3 z-40"
       />

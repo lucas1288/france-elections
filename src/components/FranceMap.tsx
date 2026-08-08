@@ -12,6 +12,13 @@ import type { NationalTotals } from '../utils/nationalResults'
 import { pmtilesUrl } from '../utils/dataUrl'
 import { territoryColor, partyCodeSet } from '../utils/territoryColor'
 import { abstentionShade, decidedAtR1Shade } from '../utils/gradient'
+import {
+  ELIMINATED_LIGHT,
+  ELIMINATED_DARK,
+  partySeatState,
+  seatCodeSet,
+  type SeatContext,
+} from '../utils/partySeats'
 import { ThemeToggle } from './ThemeToggle'
 import {
   metroPadding,
@@ -29,6 +36,9 @@ import { MERGED_COMMUNE_TO_CURRENT } from '../utils/mergedCommunes'
 let DEFAULT_COLOR = '#e2e8f0'
 const DEFAULT_COLOR_LIGHT = '#e2e8f0'
 const DEFAULT_COLOR_DARK = '#334155'
+// Same treatment for the seat view's "stood and lost" grey: it has to stay
+// distinct from the no-data neutral in both themes, so it flips with it.
+let ELIMINATED_COLOR = ELIMINATED_LIGHT
 
 interface Props {
   electionData: RoundData | undefined
@@ -427,6 +437,7 @@ function makeStyle(geometry: { admin: string; circo: string }): maplibregl.Style
  */
 function applyMapTheme(map: maplibregl.Map, isDark: boolean) {
   DEFAULT_COLOR = isDark ? DEFAULT_COLOR_DARK : DEFAULT_COLOR_LIGHT
+  ELIMINATED_COLOR = isDark ? ELIMINATED_DARK : ELIMINATED_LIGHT
 
   map.setPaintProperty('background', 'background-color', isDark ? '#0f172a' : '#f1f5f9')
 
@@ -601,11 +612,15 @@ function computeActiveColors(
   palette: Palette | null,
   mode: ColorMode,
   national: NationalTotals | null,
+  seats?: SeatContext,
 ): Map<string, TerritoryState> {
   const parties = partyByName(choropleth.candidates)
   const codes = mode.kind === 'party' ? partyCodeSet(mode.party, palette) : undefined
+  // Seats count the nuance ONLY, not the alliance members — see `seatCodeSet`.
+  const seatCodes = mode.kind === 'party' ? seatCodeSet(mode.party) : undefined
   const byCode = new Map<string, TerritoryState>()
   for (const c of choropleth.communes) {
+    const entry = fullByCode.get(c.inseeCode)
     let color: string
     if (mode.kind === 'leader') {
       // Empty leader = annulled ballots (Conseil constitutionnel) → neutral.
@@ -616,16 +631,23 @@ function computeActiveColors(
       // Abstention rides on the lightweight choropleth — no full file needed.
       color = abstentionShade(c.abstention)
     } else {
-      const entry = fullByCode.get(c.inseeCode)
-      color = entry ? territoryColor(entry, mode, palette, national, codes) : DEFAULT_COLOR
+      color = entry
+        ? territoryColor(entry, mode, palette, national, codes, undefined, seats)
+        : DEFAULT_COLOR
     }
     // Legislative T2: territories whose circo(s) were won outright at round 1
     // carry their ROUND-1 figures. Mute them so they don't read as round-2
     // results — leader mode only, where lightness is otherwise unused (the
     // party/abstention ramps encode a value in it).
     if (mode.kind === 'leader' && c.decidedAtR1) color = decidedAtR1Shade(color, DEFAULT_COLOR)
-    // "Came 1st" in single-party view: the territory's leader belongs to the selected force.
-    const won = codes ? codes.has(parties.get(c.leadingCandidate) ?? '') : false
+    // The `*-won` outline highlight. In single-party view it marks "came 1st"
+    // — except in the SEAT view, where coming 1st at round 1 and winning the
+    // seat are different things and the outline has to agree with the fill.
+    const won = !codes
+      ? false
+      : seats
+        ? !!entry && !!seatCodes && partySeatState(entry, seatCodes, seats.round) === 'elected'
+        : codes.has(parties.get(c.leadingCandidate) ?? '')
     byCode.set(c.inseeCode, { color, won })
   }
   return byCode
@@ -655,6 +677,24 @@ function applyActiveLayerColors(
         map.setFeatureState({ source: 'admin', sourceLayer: 'communes', id: oldCode }, state)
     }
   }
+}
+
+/**
+ * When party mode reads as SEATS rather than as score (C1). Exactly one
+ * context qualifies: the circonscriptions tab of a legislative election, where
+ * the unit on screen IS the seat-bearing unit. Everywhere else — the communes
+ * tab, every presidential — `undefined` keeps the score gradient, which is the
+ * only reading those units can support.
+ *
+ * The greys are read from the module values so they follow the theme flip.
+ */
+function seatContext(isCirco: boolean): SeatContext | undefined {
+  // `RoundData` carries the round but not the election TYPE, so the type comes
+  // from the store — the same `getState()` read the focus path already uses,
+  // and consistent by construction since the loaded data is derived from it.
+  const { type, round } = useElectionStore.getState().selected
+  if (!isCirco || type !== 'legislative') return undefined
+  return { round, eliminated: ELIMINATED_COLOR, absent: DEFAULT_COLOR }
 }
 
 // Single source of truth for data → map sync: feature-state colors and layer
@@ -689,7 +729,14 @@ function syncMapData(
 
   if (choroplethData) {
     const fullByCode = new Map((fullData?.communes ?? []).map((e) => [e.inseeCode, e]))
-    const byCode = computeActiveColors(choroplethData, fullByCode, palette, colorMode, national)
+    const byCode = computeActiveColors(
+      choroplethData,
+      fullByCode,
+      palette,
+      colorMode,
+      national,
+      seatContext(isCirco),
+    )
     applyActiveLayerColors(map, choroplethData.granularity, byCode)
     if (isCommune) {
       for (const city of TOP_CITIES) {

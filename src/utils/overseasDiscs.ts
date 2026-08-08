@@ -6,6 +6,7 @@ import { computeNationalTotals } from './nationalResults'
 import { getCandidateColor, partyByName } from './partyColors'
 import { territoryColor, partyCodeSet } from './territoryColor'
 import { abstentionShade, decidedAtR1Shade } from './gradient'
+import { ELIMINATED_LIGHT, ELIMINATED_DARK, type SeatContext } from './partySeats'
 import { dataUrl } from './dataUrl'
 import { ALL_SLOT_CODES } from './orbitGeometry'
 import type { GeoFeature, SilhouettePart } from '../components/overseas/discParts'
@@ -70,9 +71,22 @@ export function useOverseasDiscs({
   const granularity = useElectionStore((s) => s.granularity)
   const colorMode = useElectionStore((s) => s.colorMode)
   const isDark = useElectionStore((s) => s.isDark)
+  const selected = useElectionStore((s) => s.selected)
 
   const neutral = isDark ? '#334155' : '#e2e8f0'
   const isCirco = granularity === 'circonscription'
+
+  // C1: the ring's per-circo segments read as SEATS on the circo tab of a
+  // legislative, matching the map. Only `circoColor` takes it — the disc fill
+  // and the aggregate button are département-level sums, which have no seat.
+  const seats: SeatContext | undefined =
+    isCirco && selected.type === 'legislative'
+      ? {
+          round: selected.round,
+          eliminated: isDark ? ELIMINATED_DARK : ELIMINATED_LIGHT,
+          absent: neutral,
+        }
+      : undefined
 
   const national = useMemo(
     () => (electionData ? computeNationalTotals(electionData) : null),
@@ -151,7 +165,9 @@ export function useOverseasDiscs({
     if (colorMode.kind === 'abstention')
       return c.abstention != null ? abstentionShade(c.abstention) : neutral
     const entry = fullByCode.get(c.inseeCode)
-    return entry ? territoryColor(entry, colorMode, palette, national, undefined, neutral) : neutral
+    return entry
+      ? territoryColor(entry, colorMode, palette, national, undefined, neutral, seats)
+      : neutral
   }
 
   /**

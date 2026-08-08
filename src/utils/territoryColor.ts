@@ -3,6 +3,7 @@ import type { ColorMode } from '../store/electionStore'
 import type { NationalTotals } from './nationalResults'
 import { getCandidateColor } from './partyColors'
 import { partyRatioShade, abstentionShade, decidedAtR1Shade } from './gradient'
+import { partySeatState, seatStateColor, seatCodeSet, type SeatContext } from './partySeats'
 
 /** A party/alliance's set of nuance codes (itself + any alliance members). */
 export function partyCodeSet(party: string, palette: Palette | null): Set<string> {
@@ -31,6 +32,7 @@ export function territoryColor(
   national: NationalTotals | null,
   codes?: Set<string>,
   neutral?: string,
+  seats?: SeatContext,
 ): string {
   if (mode.kind === 'abstention') {
     const reg = entry.registeredVoters
@@ -41,6 +43,16 @@ export function territoryColor(
     const set = codes ?? partyCodeSet(mode.party, palette)
     const base =
       palette?.parties?.[mode.party]?.color ?? getCandidateColor('', 0, mode.party, palette)
+    // C1: on the circonscriptions tab of a legislative election the question is
+    // "did they win the seat here", not "how strong are they here" — so the
+    // score gradient gives way to the seat states. Callers pass `seats` only in
+    // that context; the communes tab and every presidential keep the ratio.
+    // Note the code set: seats count the NUANCE ONLY, not the alliance members
+    // `set` carries — see `seatCodeSet`.
+    if (seats) {
+      const state = partySeatState(entry, seatCodeSet(mode.party), seats.round)
+      return seatStateColor(state, base, seats)
+    }
     let votes = 0
     for (const c of entry.candidates) if (set.has(c.party)) votes += c.votes
     const localPct = entry.expressedVotes ? (votes / entry.expressedVotes) * 100 : 0

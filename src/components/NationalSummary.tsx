@@ -5,6 +5,7 @@ import { useNationalSummary, type NationalViewMode } from '../utils/nationalSumm
 import { useElectionStore } from '../store/electionStore'
 import { ForceRows } from './results/ForceRows'
 import { ViewModeSwitch } from './results/ViewModeSwitch'
+import { SeatLegend } from './results/SeatLegend'
 
 interface Props {
   electionData: RoundData | undefined
@@ -111,6 +112,9 @@ export function NationalSummary({ electionData, palette, circoChoro, circoData }
             onPick={togglePartyMode}
           />
         </div>
+
+        {/* Key for the seat view — renders itself only when that view is on. */}
+        <SeatLegend circoData={circoData} palette={palette} density="compact" />
       </div>
     </div>
   )
